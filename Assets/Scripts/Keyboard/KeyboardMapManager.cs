@@ -20,7 +20,7 @@ namespace Keybound.Keyboard
 
         public event Action<KeyboardKey> KeyPressed;
 
-        private void Start()
+        private void Awake()
         {
             GenerateKeyboard();
         }
