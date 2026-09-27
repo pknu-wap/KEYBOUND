@@ -31,6 +31,22 @@ namespace Keybound.Player
             playerRectTransform = (RectTransform)transform;
         }
 
+        private void OnEnable()
+        {
+            if (keyboardMapManager != null)
+            {
+                keyboardMapManager.KeyPressed += TryMoveTo;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (keyboardMapManager != null)
+            {
+                keyboardMapManager.KeyPressed -= TryMoveTo;
+            }
+        }
+
         private void Start()
         {
             if (keyboardMapManager == null)
@@ -59,6 +75,16 @@ namespace Keybound.Player
 
             CurrentKey = keyboardKey;
             playerRectTransform.position = ((RectTransform)keyboardKey.transform).position;
+        }
+
+        private void TryMoveTo(KeyboardKey targetKey)
+        {
+            if (CurrentKey == null || !keyboardMapManager.IsAdjacent(CurrentKey, targetKey))
+            {
+                return;
+            }
+
+            SetCurrentKey(targetKey);
         }
     }
 }
