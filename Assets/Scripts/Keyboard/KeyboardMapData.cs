@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace Keybound.Keyboard
 {
@@ -7,15 +8,15 @@ namespace Keybound.Keyboard
     {
         private static readonly KeyboardKeyData[] KeyData =
         {
-            new KeyboardKeyData("Q", KeyCode.Q, new Vector2Int(0, 1)),
-            new KeyboardKeyData("W", KeyCode.W, new Vector2Int(1, 1)),
-            new KeyboardKeyData("E", KeyCode.E, new Vector2Int(2, 1)),
-            new KeyboardKeyData("A", KeyCode.A, new Vector2Int(0, 0)),
-            new KeyboardKeyData("S", KeyCode.S, new Vector2Int(1, 0)),
-            new KeyboardKeyData("D", KeyCode.D, new Vector2Int(2, 0)),
+            new KeyboardKeyData("Q", Key.Q, new Vector2Int(0, 1)),
+            new KeyboardKeyData("W", Key.W, new Vector2Int(1, 1)),
+            new KeyboardKeyData("E", Key.E, new Vector2Int(2, 1)),
+            new KeyboardKeyData("A", Key.A, new Vector2Int(0, 0)),
+            new KeyboardKeyData("S", Key.S, new Vector2Int(1, 0)),
+            new KeyboardKeyData("D", Key.D, new Vector2Int(2, 0)),
         };
 
-        private static readonly Dictionary<KeyCode, KeyboardKeyData> KeysByInput =
+        private static readonly Dictionary<Key, KeyboardKeyData> KeysByInput =
             CreateInputLookup();
 
         private static readonly Dictionary<Vector2Int, KeyboardKeyData> KeysByPosition =
@@ -23,7 +24,7 @@ namespace Keybound.Keyboard
 
         public static IReadOnlyList<KeyboardKeyData> Keys => KeyData;
 
-        public static bool TryGetByInput(KeyCode inputKey, out KeyboardKeyData keyData)
+        public static bool TryGetByInput(Key inputKey, out KeyboardKeyData keyData)
         {
             return KeysByInput.TryGetValue(inputKey, out keyData);
         }
@@ -33,9 +34,9 @@ namespace Keybound.Keyboard
             return KeysByPosition.TryGetValue(position, out keyData);
         }
 
-        private static Dictionary<KeyCode, KeyboardKeyData> CreateInputLookup()
+        private static Dictionary<Key, KeyboardKeyData> CreateInputLookup()
         {
-            var lookup = new Dictionary<KeyCode, KeyboardKeyData>(KeyData.Length);
+            var lookup = new Dictionary<Key, KeyboardKeyData>(KeyData.Length);
 
             foreach (KeyboardKeyData keyData in KeyData)
             {
