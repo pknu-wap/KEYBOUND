@@ -1,4 +1,8 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using InputKeyboard = UnityEngine.InputSystem.Keyboard;
 
 namespace Keybound.Keyboard
 {
@@ -11,9 +15,42 @@ namespace Keybound.Keyboard
         [SerializeField] private Vector2 keySpacing = new Vector2(10f, 10f);
         [SerializeField] private float lowerRowOffset = 20f;
 
+        private readonly Dictionary<Key, KeyboardKey> keysByInput =
+            new Dictionary<Key, KeyboardKey>();
+
+        public event Action<KeyboardKey> KeyPressed;
+
         private void Start()
         {
             GenerateKeyboard();
+        }
+
+        private void Update()
+        {
+            InputKeyboard keyboard = InputKeyboard.current;
+
+            if (keyboard == null)
+            {
+                return;
+            }
+
+            foreach (KeyboardKeyData keyData in KeyboardMapData.Keys)
+            {
+                if (!keyboard[keyData.InputKey].wasPressedThisFrame)
+                {
+                    continue;
+                }
+
+                if (TryGetKey(keyData.InputKey, out KeyboardKey keyboardKey))
+                {
+                    KeyPressed?.Invoke(keyboardKey);
+                }
+            }
+        }
+
+        public bool TryGetKey(Key inputKey, out KeyboardKey keyboardKey)
+        {
+            return keysByInput.TryGetValue(inputKey, out keyboardKey);
         }
 
         private void GenerateKeyboard()
@@ -25,6 +62,7 @@ namespace Keybound.Keyboard
             }
 
             Vector2 mapCenter = CalculateMapCenter();
+            keysByInput.Clear();
 
             foreach (KeyboardKeyData keyData in KeyboardMapData.Keys)
             {
@@ -37,6 +75,8 @@ namespace Keybound.Keyboard
                 keyRectTransform.anchorMax = new Vector2(0.5f, 0.5f);
                 keyRectTransform.sizeDelta = keySize;
                 keyRectTransform.anchoredPosition = GetKeyPosition(keyData) - mapCenter;
+
+                keysByInput.Add(keyData.InputKey, keyboardKey);
             }
         }
 
