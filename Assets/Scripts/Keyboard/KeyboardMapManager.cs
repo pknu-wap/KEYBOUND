@@ -53,6 +53,24 @@ namespace Keybound.Keyboard
             return keysByInput.TryGetValue(inputKey, out keyboardKey);
         }
 
+        public bool IsAdjacent(KeyboardKey currentKey, KeyboardKey targetKey)
+        {
+            if (!IsGeneratedKey(currentKey) ||
+                !IsGeneratedKey(targetKey) ||
+                currentKey == targetKey)
+            {
+                return false;
+            }
+
+            Vector2 currentPosition = ((RectTransform)currentKey.transform).anchoredPosition;
+            Vector2 targetPosition = ((RectTransform)targetKey.transform).anchoredPosition;
+            Vector2 offset = targetPosition - currentPosition;
+            Vector2 adjacentRange = keySize + keySpacing;
+
+            return Mathf.Abs(offset.x) <= adjacentRange.x &&
+                   Mathf.Abs(offset.y) <= adjacentRange.y;
+        }
+
         private void GenerateKeyboard()
         {
             if (keyboardKeyPrefab == null)
@@ -104,6 +122,14 @@ namespace Keybound.Keyboard
             return new Vector2(
                 keyData.Position.x * horizontalStep + rowOffset,
                 keyData.Position.y * verticalStep);
+        }
+
+        private bool IsGeneratedKey(KeyboardKey keyboardKey)
+        {
+            return keyboardKey != null &&
+                   keyboardKey.Data != null &&
+                   keysByInput.TryGetValue(keyboardKey.Data.InputKey, out KeyboardKey generatedKey) &&
+                   generatedKey == keyboardKey;
         }
     }
 }
