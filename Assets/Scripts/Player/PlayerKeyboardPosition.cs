@@ -21,6 +21,7 @@ namespace Keybound.Player
 
         [SerializeField] private KeyboardMapManager keyboardMapManager;
         [SerializeField] private StartingKey startingKey = StartingKey.S;
+        [SerializeField] private bool enableDebugLogs = true;
 
         private RectTransform playerRectTransform;
 
@@ -64,6 +65,7 @@ namespace Keybound.Player
             }
 
             SetCurrentKey(startingKeyboardKey);
+            LogDebug($"[플레이어 위치] 시작 키: {CurrentKey.Data.Name}");
         }
 
         public void SetCurrentKey(KeyboardKey keyboardKey)
@@ -79,12 +81,37 @@ namespace Keybound.Player
 
         private void TryMoveTo(KeyboardKey targetKey)
         {
-            if (CurrentKey == null || !keyboardMapManager.IsAdjacent(CurrentKey, targetKey))
+            if (CurrentKey == null)
             {
                 return;
             }
 
+            string currentKeyName = CurrentKey.Data.Name;
+            string targetKeyName = targetKey.Data.Name;
+
+            if (!keyboardMapManager.IsAdjacent(CurrentKey, targetKey))
+            {
+                string reason = CurrentKey == targetKey
+                    ? "현재 위치와 같은 키"
+                    : "인접하지 않은 키";
+
+                LogDebug(
+                    $"[플레이어 이동] {currentKeyName} -> {targetKeyName}: 실패 ({reason})");
+                return;
+            }
+
             SetCurrentKey(targetKey);
+            LogDebug(
+                $"[플레이어 이동] {currentKeyName} -> {targetKeyName}: 성공 " +
+                $"(현재 위치: {CurrentKey.Data.Name})");
+        }
+
+        private void LogDebug(string message)
+        {
+            if (enableDebugLogs)
+            {
+                Debug.Log(message, this);
+            }
         }
     }
 }
