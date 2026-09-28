@@ -23,7 +23,7 @@ jobs:
     name: Code Review
     steps:
       - name: DeepSeek Code Review
-        uses: psvm203/deepseek-review@v1.0
+        uses: psvm203/deepseek-review@v1.1
         with:
           model: "deepseek-v4-flash"
           include-patterns: "*.cs"
