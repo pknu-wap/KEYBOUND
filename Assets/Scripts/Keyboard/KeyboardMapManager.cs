@@ -64,13 +64,10 @@ namespace Keybound.Keyboard
                 return false;
             }
 
-            Vector2 currentPosition = ((RectTransform)currentKey.transform).anchoredPosition;
-            Vector2 targetPosition = ((RectTransform)targetKey.transform).anchoredPosition;
-            Vector2 offset = targetPosition - currentPosition;
-            Vector2 adjacentRange = keySize + keySpacing;
+            int rowDistance = Mathf.Abs(currentKey.Data.Row - targetKey.Data.Row);
+            int columnDistance = Mathf.Abs(currentKey.Data.Column - targetKey.Data.Column);
 
-            return Mathf.Abs(offset.x) <= adjacentRange.x &&
-                   Mathf.Abs(offset.y) <= adjacentRange.y;
+            return rowDistance <= 1 && columnDistance <= 1;
         }
 
         private void GenerateKeyboard()
