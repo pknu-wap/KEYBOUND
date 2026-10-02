@@ -9,8 +9,15 @@ namespace Keybound.Player
     [RequireComponent(typeof(RectTransform))]
     public sealed class PlayerKeyboardPosition : MonoBehaviour
     {
+        private enum MovementInputMode
+        {
+            DirectKey,
+            Wasd,
+        }
+
         [SerializeField] private KeyboardMapManager keyboardMapManager;
         [SerializeField] private KeyboardMapKey startingKey = KeyboardMapKey.S;
+        [SerializeField] private MovementInputMode movementInputMode = MovementInputMode.DirectKey;
         [SerializeField] private bool enableDebugLogs = true;
 
         private RectTransform playerRectTransform;
@@ -28,7 +35,7 @@ namespace Keybound.Player
         {
             if (keyboardMapManager != null)
             {
-                keyboardMapManager.KeyPressed += TryMoveTo;
+                keyboardMapManager.KeyPressed += HandleKeyPressed;
             }
         }
 
@@ -36,7 +43,7 @@ namespace Keybound.Player
         {
             if (keyboardMapManager != null)
             {
-                keyboardMapManager.KeyPressed -= TryMoveTo;
+                keyboardMapManager.KeyPressed -= HandleKeyPressed;
             }
         }
 
@@ -77,6 +84,37 @@ namespace Keybound.Player
             }
         }
 
+        private void HandleKeyPressed(KeyboardKey pressedKey)
+        {
+            if (movementInputMode == MovementInputMode.Wasd)
+            {
+                TryMoveByWasd(pressedKey.Data.InputKey);
+                return;
+            }
+
+            TryMoveTo(pressedKey);
+        }
+
+        private void TryMoveByWasd(Key inputKey)
+        {
+            if (CurrentKey == null || !TryGetDirection(inputKey, out Vector2Int direction))
+            {
+                return;
+            }
+
+            Vector2Int targetPosition = CurrentKey.Data.Position + direction;
+
+            if (!KeyboardMapData.TryGetByPosition(targetPosition, out KeyboardKeyData targetData) ||
+                !keyboardMapManager.TryGetKey(targetData.InputKey, out KeyboardKey targetKey))
+            {
+                LogDebug(
+                    $"[플레이어 이동] {CurrentKey.Data.Name}: 실패 (이동할 키 없음)");
+                return;
+            }
+
+            TryMoveTo(targetKey);
+        }
+
         private void TryMoveTo(KeyboardKey targetKey)
         {
             if (CurrentKey == null)
@@ -102,6 +140,28 @@ namespace Keybound.Player
             LogDebug(
                 $"[플레이어 이동] {currentKeyName} -> {targetKeyName}: 성공 " +
                 $"(현재 위치: {CurrentKey.Data.Name})");
+        }
+
+        private static bool TryGetDirection(Key inputKey, out Vector2Int direction)
+        {
+            switch (inputKey)
+            {
+                case Key.W:
+                    direction = Vector2Int.up;
+                    return true;
+                case Key.A:
+                    direction = Vector2Int.left;
+                    return true;
+                case Key.S:
+                    direction = Vector2Int.down;
+                    return true;
+                case Key.D:
+                    direction = Vector2Int.right;
+                    return true;
+                default:
+                    direction = default;
+                    return false;
+            }
         }
 
         private void LogDebug(string message)

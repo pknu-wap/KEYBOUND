@@ -736,6 +736,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Keybound.Player.PlayerKeyboardPosition
   keyboardMapManager: {fileID: 1648942543}
   startingKey: 31
+  movementInputMode: 0
   enableDebugLogs: 1
 --- !u!114 &1276033145
 MonoBehaviour:
