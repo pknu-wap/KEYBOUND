@@ -14,6 +14,7 @@ namespace Keybound.Keyboard
         [SerializeField] private Vector2 keySize = new Vector2(80f, 80f);
         [SerializeField] private Vector2 keySpacing = new Vector2(10f, 10f);
         [SerializeField] private float lowerRowOffset = 20f;
+        [SerializeField] private Vector2 mapPadding = new Vector2(20f, 20f);
 
         private readonly Dictionary<Key, KeyboardKey> keysByInput =
             new Dictionary<Key, KeyboardKey>();
@@ -23,6 +24,7 @@ namespace Keybound.Keyboard
         private void Awake()
         {
             GenerateKeyboard();
+            FitMapToParent();
         }
 
         private void Update()
@@ -113,15 +115,53 @@ namespace Keybound.Keyboard
             return (minPosition + maxPosition) * 0.5f;
         }
 
+        private Vector2 CalculateMapSize()
+        {
+            Vector2 minPosition = new Vector2(float.PositiveInfinity, float.PositiveInfinity);
+            Vector2 maxPosition = new Vector2(float.NegativeInfinity, float.NegativeInfinity);
+
+            foreach (KeyboardKeyData keyData in KeyboardMapData.Keys)
+            {
+                Vector2 keyPosition = GetKeyPosition(keyData);
+                minPosition = Vector2.Min(minPosition, keyPosition);
+                maxPosition = Vector2.Max(maxPosition, keyPosition);
+            }
+
+            return maxPosition - minPosition + keySize;
+        }
+
+        private void FitMapToParent()
+        {
+            if (!(transform.parent is RectTransform parentRectTransform))
+            {
+                return;
+            }
+
+            Vector2 availableSize = parentRectTransform.rect.size - mapPadding * 2f;
+            Vector2 mapSize = CalculateMapSize();
+
+            if (availableSize.x <= 0f || availableSize.y <= 0f)
+            {
+                return;
+            }
+
+            float scale = Mathf.Min(
+                1f,
+                availableSize.x / mapSize.x,
+                availableSize.y / mapSize.y);
+
+            ((RectTransform)transform).localScale = new Vector3(scale, scale, 1f);
+        }
+
         private Vector2 GetKeyPosition(KeyboardKeyData keyData)
         {
             float horizontalStep = keySize.x + keySpacing.x;
             float verticalStep = keySize.y + keySpacing.y;
-            float rowOffset = keyData.Position.y == 0 ? lowerRowOffset : 0f;
+            float rowOffset = (1 - keyData.Row) * lowerRowOffset;
 
             return new Vector2(
-                keyData.Position.x * horizontalStep + rowOffset,
-                keyData.Position.y * verticalStep);
+                keyData.Column * horizontalStep + rowOffset,
+                keyData.Row * verticalStep);
         }
 
         private bool IsGeneratedKey(KeyboardKey keyboardKey)
