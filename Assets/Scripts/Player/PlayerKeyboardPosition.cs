@@ -9,61 +9,19 @@ namespace Keybound.Player
     [RequireComponent(typeof(RectTransform))]
     public sealed class PlayerKeyboardPosition : MonoBehaviour
     {
-        private enum StartingKey
-        {
-            Digit1 = (int)Key.Digit1,
-            Digit2 = (int)Key.Digit2,
-            Digit3 = (int)Key.Digit3,
-            Digit4 = (int)Key.Digit4,
-            Digit5 = (int)Key.Digit5,
-            Digit6 = (int)Key.Digit6,
-            Digit7 = (int)Key.Digit7,
-            Digit8 = (int)Key.Digit8,
-            Digit9 = (int)Key.Digit9,
-            Digit0 = (int)Key.Digit0,
-            Q = (int)Key.Q,
-            W = (int)Key.W,
-            E = (int)Key.E,
-            R = (int)Key.R,
-            T = (int)Key.T,
-            Y = (int)Key.Y,
-            U = (int)Key.U,
-            I = (int)Key.I,
-            O = (int)Key.O,
-            P = (int)Key.P,
-            A = (int)Key.A,
-            S = (int)Key.S,
-            D = (int)Key.D,
-            F = (int)Key.F,
-            G = (int)Key.G,
-            H = (int)Key.H,
-            J = (int)Key.J,
-            K = (int)Key.K,
-            L = (int)Key.L,
-            Semicolon = (int)Key.Semicolon,
-            Z = (int)Key.Z,
-            X = (int)Key.X,
-            C = (int)Key.C,
-            V = (int)Key.V,
-            B = (int)Key.B,
-            N = (int)Key.N,
-            M = (int)Key.M,
-            Comma = (int)Key.Comma,
-            Period = (int)Key.Period,
-            Slash = (int)Key.Slash,
-        }
-
         [SerializeField] private KeyboardMapManager keyboardMapManager;
-        [SerializeField] private StartingKey startingKey = StartingKey.S;
+        [SerializeField] private KeyboardMapKey startingKey = KeyboardMapKey.S;
         [SerializeField] private bool enableDebugLogs = true;
 
         private RectTransform playerRectTransform;
+        private Rigidbody2D playerRigidbody;
 
         public KeyboardKey CurrentKey { get; private set; }
 
         private void Awake()
         {
             playerRectTransform = (RectTransform)transform;
+            playerRigidbody = GetComponent<Rigidbody2D>();
         }
 
         private void OnEnable()
@@ -110,7 +68,13 @@ namespace Keybound.Player
             }
 
             CurrentKey = keyboardKey;
-            playerRectTransform.position = ((RectTransform)keyboardKey.transform).position;
+            Vector3 targetPosition = ((RectTransform)keyboardKey.transform).position;
+            playerRectTransform.position = targetPosition;
+
+            if (playerRigidbody != null)
+            {
+                playerRigidbody.position = targetPosition;
+            }
         }
 
         private void TryMoveTo(KeyboardKey targetKey)
