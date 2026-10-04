@@ -158,7 +158,7 @@ namespace Keybound.Player
 
         private void TryMoveTo(KeyboardKey targetKey)
         {
-            if (CurrentKey == null)
+            if (CurrentKey == null || targetKey == null)
             {
                 return;
             }
