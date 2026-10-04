@@ -5,6 +5,10 @@ public class StageManager : MonoBehaviour
     // 현재 진행 중인 스테이지 번호
     private int currentStage;
 
+    // UI 등 다른 스크립트에서 현재 스테이지 조회
+    public int CurrentStage => currentStage;
+
+
     // AimManager 참조
     [SerializeField]
     private AimManager aimManager;
@@ -62,7 +66,7 @@ public class StageManager : MonoBehaviour
             currentStage
         );
 
-        // 클리어 시간 보상
+        // 스테이지 클리어 시간 보상
         if (timeManager != null)
         {
             float beforeTime = timeManager.CurrentTime;
@@ -88,7 +92,7 @@ public class StageManager : MonoBehaviour
             );
         }
 
-        // 다음 스테이지로 증가
+        // 다음 스테이지
         currentStage++;
 
         Debug.Log(
