@@ -11,19 +11,22 @@ namespace Keybound.Player
     {
         private enum MovementInputMode
         {
-            DirectKey,
+            AdjacentKey,
             Wasd,
+            Mole,
         }
 
         [SerializeField] private KeyboardMapManager keyboardMapManager;
         [SerializeField] private KeyboardMapKey startingKey = KeyboardMapKey.S;
-        [SerializeField] private MovementInputMode movementInputMode = MovementInputMode.DirectKey;
+        [SerializeField] private MovementInputMode movementInputMode = MovementInputMode.AdjacentKey;
         [SerializeField] private bool enableDebugLogs = true;
 
         private RectTransform playerRectTransform;
         private Rigidbody2D playerRigidbody;
+        private KeyboardKey moleTarget;
 
         public KeyboardKey CurrentKey { get; private set; }
+        public KeyboardKey MoleTarget => moleTarget;
 
         private void Awake()
         {
@@ -45,6 +48,8 @@ namespace Keybound.Player
             {
                 keyboardMapManager.KeyPressed -= HandleKeyPressed;
             }
+
+            ClearMoleTarget();
         }
 
         private void Start()
@@ -65,6 +70,16 @@ namespace Keybound.Player
 
             SetCurrentKey(startingKeyboardKey);
             LogDebug($"[플레이어 위치] 시작 키: {CurrentKey.Data.Name}");
+
+            if (movementInputMode == MovementInputMode.Mole)
+            {
+                SelectNextMoleTarget();
+
+                if (moleTarget != null)
+                {
+                    LogDebug($"[두더지 이동] 목표 키: {moleTarget.Data.Name}");
+                }
+            }
         }
 
         public void SetCurrentKey(KeyboardKey keyboardKey)
@@ -86,13 +101,18 @@ namespace Keybound.Player
 
         private void HandleKeyPressed(KeyboardKey pressedKey)
         {
-            if (movementInputMode == MovementInputMode.Wasd)
+            switch (movementInputMode)
             {
-                TryMoveByWasd(pressedKey.Data.InputKey);
-                return;
+                case MovementInputMode.Wasd:
+                    TryMoveByWasd(pressedKey.Data.InputKey);
+                    break;
+                case MovementInputMode.Mole:
+                    TryMoveByMole(pressedKey);
+                    break;
+                default:
+                    TryMoveTo(pressedKey);
+                    break;
             }
-
-            TryMoveTo(pressedKey);
         }
 
         private void TryMoveByWasd(Key inputKey)
@@ -113,6 +133,27 @@ namespace Keybound.Player
             }
 
             TryMoveTo(targetKey);
+        }
+
+        private void TryMoveByMole(KeyboardKey pressedKey)
+        {
+            if (pressedKey != moleTarget)
+            {
+                return;
+            }
+
+            string currentKeyName = CurrentKey.Data.Name;
+            string targetKeyName = moleTarget.Data.Name;
+
+            SetCurrentKey(moleTarget);
+            SelectNextMoleTarget();
+
+            if (moleTarget != null)
+            {
+                LogDebug(
+                    $"[두더지 이동] {currentKeyName} -> {targetKeyName}: 성공 " +
+                    $"(다음 목표: {moleTarget.Data.Name})");
+            }
         }
 
         private void TryMoveTo(KeyboardKey targetKey)
@@ -161,6 +202,47 @@ namespace Keybound.Player
                 default:
                     direction = default;
                     return false;
+            }
+        }
+
+        private void SelectNextMoleTarget()
+        {
+            moleTarget?.SetHighlighted(false);
+
+            int keyCount = KeyboardMapData.Keys.Count;
+
+            if (keyCount == 0)
+            {
+                moleTarget = null;
+                return;
+            }
+
+            int targetIndex = UnityEngine.Random.Range(0, keyCount);
+            KeyboardKeyData targetData = KeyboardMapData.Keys[targetIndex];
+
+            if (CurrentKey != null &&
+                keyCount > 1 &&
+                targetData.InputKey == CurrentKey.Data.InputKey)
+            {
+                targetIndex = (targetIndex + 1) % keyCount;
+                targetData = KeyboardMapData.Keys[targetIndex];
+            }
+
+            if (!keyboardMapManager.TryGetKey(targetData.InputKey, out moleTarget))
+            {
+                Debug.LogError($"목표 키 {targetData.Name}를 키보드 맵에서 찾을 수 없습니다.", this);
+                return;
+            }
+
+            moleTarget.SetHighlighted(true);
+        }
+
+        private void ClearMoleTarget()
+        {
+            if (moleTarget != null)
+            {
+                moleTarget.SetHighlighted(false);
+                moleTarget = null;
             }
         }
 
