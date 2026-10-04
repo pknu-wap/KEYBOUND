@@ -18,14 +18,13 @@ namespace Keybound.Keyboard
                 throw new ArgumentNullException(nameof(data));
             }
 
-            Data = data;
-
             if (keyNameText == null)
             {
                 Debug.LogError("KeyboardKey에 키 이름을 표시할 TMP_Text가 연결되지 않았습니다.", this);
                 return;
             }
 
+            Data = data;
             keyNameText.text = data.Name;
         }
 
