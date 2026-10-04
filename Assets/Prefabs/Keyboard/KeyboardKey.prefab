@@ -227,5 +227,3 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Keybound.Keyboard.KeyboardKey
   keyNameText: {fileID: 629070216471660915}
-  backgroundImage: {fileID: 8003630586297155142}
-  highlightedColor: {r: 1, g: 0.65, b: 0.1, a: 1}

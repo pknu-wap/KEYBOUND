@@ -1,7 +1,6 @@
 using System;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace Keybound.Keyboard
 {
@@ -9,25 +8,8 @@ namespace Keybound.Keyboard
     public sealed class KeyboardKey : MonoBehaviour
     {
         [SerializeField] private TMP_Text keyNameText;
-        [SerializeField] private Image backgroundImage;
-        [SerializeField] private Color highlightedColor = new Color(1f, 0.65f, 0.1f, 1f);
-
-        private Color defaultBackgroundColor;
 
         public KeyboardKeyData Data { get; private set; }
-
-        private void Awake()
-        {
-            if (backgroundImage == null)
-            {
-                backgroundImage = GetComponent<Image>();
-            }
-
-            if (backgroundImage != null)
-            {
-                defaultBackgroundColor = backgroundImage.color;
-            }
-        }
 
         public void SetData(KeyboardKeyData data)
         {
@@ -46,20 +28,9 @@ namespace Keybound.Keyboard
             keyNameText.text = data.Name;
         }
 
-        public void SetHighlighted(bool highlighted)
-        {
-            if (backgroundImage != null)
-            {
-                backgroundImage.color = highlighted
-                    ? highlightedColor
-                    : defaultBackgroundColor;
-            }
-        }
-
         private void Reset()
         {
             keyNameText = GetComponentInChildren<TMP_Text>();
-            backgroundImage = GetComponent<Image>();
         }
     }
 }
