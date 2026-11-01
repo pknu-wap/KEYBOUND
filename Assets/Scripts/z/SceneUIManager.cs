@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public class UIManager : MonoBehaviour
+public class SceneUIManager : MonoBehaviour
 {
     // 씬 전환을 담당하는 GameSceneManager
     [SerializeField]

@@ -1,105 +1,213 @@
-﻿using UnityEngine;
+﻿
+using System;
+using System.Collections;
+using UnityEngine;
 
 public class StageManager : MonoBehaviour
 {
-    // 현재 진행 중인 스테이지 번호
-    private int currentStage;
+    [Header("References")]
+    [SerializeField] private AimManager aimManager;
+    [SerializeField] private AimConditionProcessor processor;
+    [SerializeField] private TimeManager timeManager;
 
-    // UI 등 다른 스크립트에서 현재 스테이지 조회
-    public int CurrentStage => currentStage;
+    [Header("Stage Settings")]
+    [SerializeField, Min(1)] private int startingStage = 1;
+    [SerializeField, Min(0f)] private float clearRewardTime = 10f;
 
+    [Header("Test Settings")]
+    [SerializeField] private bool autoStartOnPlay = true;
 
-    // AimManager 참조
-    [SerializeField]
-    private AimManager aimManager;
+    public int CurrentStage { get; private set; }
+    public float ClearRewardTime => clearRewardTime;
+    public bool IsGameRunning { get; private set; }
 
-    // TimeManager 참조
-    [SerializeField]
-    private TimeManager timeManager;
+    public event Action<int> OnStageStarted;
+    public event Action<int> OnStageCleared;
+    public event Action<float> OnStageRewardChanged;
+    public event Action OnGameOver;
 
-    // 스테이지 클리어 시 추가할 시간
-    [SerializeField]
-    private float clearTimeBonus = 5f;
+    private Coroutine nextStageCoroutine;
+    private bool isStageTransitioning;
 
+    private void OnEnable()
+    {
+        if (processor != null)
+            processor.OnAimCompleted += HandleAimCompleted;
 
-    // 게임 시작
+        if (timeManager != null)
+            timeManager.OnTimeOver += HandleTimeOver;
+    }
+
     private void Start()
     {
-        Debug.Log("[StageManager] 게임 시작");
-
-        StartGame();
+        if (autoStartOnPlay)
+            StartGame();
     }
 
-
-    // 게임 초기화
-    private void StartGame()
+    private void OnDisable()
     {
-        currentStage = 1;
+        if (processor != null)
+            processor.OnAimCompleted -= HandleAimCompleted;
 
-        Debug.Log(
-            "[StageManager] 첫 스테이지 설정: Stage " +
-            currentStage
-        );
-
-        StartStage();
-    }
-
-
-    // 현재 스테이지 시작
-    private void StartStage()
-    {
-        Debug.Log(
-            "[스테이지 시작] Stage " +
-            currentStage
-        );
-
-        // 새로운 목표 시작
-        aimManager.StartAim();
-    }
-
-
-    // 현재 스테이지 클리어
-    public void ClearStage()
-    {
-        Debug.Log(
-            "[스테이지 클리어] Stage " +
-            currentStage
-        );
-
-        // 스테이지 클리어 시간 보상
         if (timeManager != null)
+            timeManager.OnTimeOver -= HandleTimeOver;
+
+        StopNextStageCoroutine();
+    }
+
+    public void StartGame()
+    {
+        if (aimManager == null ||
+            processor == null ||
+            timeManager == null)
         {
-            float beforeTime = timeManager.CurrentTime;
-
-            timeManager.AddTime(clearTimeBonus);
-
-            float afterTime = timeManager.CurrentTime;
-
-            Debug.Log(
-                "[시간 보상] +" +
-                clearTimeBonus +
-                "초 / " +
-                beforeTime.ToString("F1") +
-                "초 → " +
-                afterTime.ToString("F1") +
-                "초"
+            Debug.LogError(
+                "[StageManager] Missing references.",
+                this
             );
-        }
-        else
-        {
-            Debug.LogWarning(
-                "[StageManager] TimeManager가 연결되지 않았습니다."
-            );
+            return;
         }
 
-        // 다음 스테이지
-        currentStage++;
+        StopNextStageCoroutine();
+        processor.StopAim();
+
+        CurrentStage = Mathf.Max(1, startingStage);
+        IsGameRunning = true;
+        isStageTransitioning = false;
+
+        timeManager.StartTimer();
+
+        if (!timeManager.IsRunning)
+        {
+            Debug.LogError(
+                "[StageManager] Timer failed to start.",
+                this
+            );
+            EndGame();
+            return;
+        }
 
         Debug.Log(
-            "[다음 스테이지] Stage " +
-            currentStage
+            $"[StageManager] GAME START | " +
+            $"Stage: {CurrentStage} | " +
+            $"Remaining: {timeManager.RemainingTime:F1}s",
+            this
         );
 
-        StartStage();
+        OnStageRewardChanged?.Invoke(clearRewardTime);
+        StartCurrentStage();
+    }
+
+    private void StartCurrentStage()
+    {
+        if (!IsGameRunning)
+            return;
+
+        isStageTransitioning = false;
+
+        if (!aimManager.StartRandomAim())
+        {
+            Debug.LogError(
+                "[StageManager] Failed to start aim.",
+                this
+            );
+            EndGame();
+            return;
+        }
+
+        Debug.Log(
+            $"[StageManager] STAGE {CurrentStage} START",
+            this
+        );
+
+        OnStageStarted?.Invoke(CurrentStage);
+    }
+
+    private void HandleAimCompleted(AimData completedAim)
+    {
+        if (!IsGameRunning || isStageTransitioning)
+            return;
+
+        isStageTransitioning = true;
+
+        Debug.Log(
+            $"[StageManager] STAGE {CurrentStage} CLEAR | " +
+            $"Aim: {completedAim.Description}",
+            this
+        );
+
+        OnStageCleared?.Invoke(CurrentStage);
+
+        float before = timeManager.RemainingTime;
+
+        timeManager.AddTime(clearRewardTime);
+
+        Debug.Log(
+            $"[StageManager] TIME REWARD | " +
+            $"+{clearRewardTime:F1}s | " +
+            $"{before:F1}s -> " +
+            $"{timeManager.RemainingTime:F1}s",
+            this
+        );
+
+        StopNextStageCoroutine();
+
+        nextStageCoroutine =
+            StartCoroutine(StartNextStageRoutine());
+    }
+
+    private IEnumerator StartNextStageRoutine()
+    {
+        yield return null;
+
+        nextStageCoroutine = null;
+
+        if (!IsGameRunning)
+            yield break;
+
+        CurrentStage++;
+        StartCurrentStage();
+    }
+
+    private void HandleTimeOver()
+    {
+        Debug.Log(
+            "[StageManager] TIME OVER",
+            this
+        );
+
+        EndGame();
+    }
+
+    private void EndGame()
+    {
+        if (!IsGameRunning)
+            return;
+
+        IsGameRunning = false;
+        isStageTransitioning = false;
+
+        StopNextStageCoroutine();
+
+        processor.StopAim();
+        timeManager.StopTimer();
+
+        Debug.Log(
+            $"[StageManager] GAME OVER | " +
+            $"Stage: {CurrentStage} | " +
+            $"Elapsed: {timeManager.ElapsedTime:F1}s",
+            this
+        );
+
+        OnGameOver?.Invoke();
+    }
+
+    private void StopNextStageCoroutine()
+    {
+        if (nextStageCoroutine == null)
+            return;
+
+        StopCoroutine(nextStageCoroutine);
+        nextStageCoroutine = null;
     }
 }

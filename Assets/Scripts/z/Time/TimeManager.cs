@@ -1,212 +1,141 @@
-﻿using System;
+﻿
+using System;
 using UnityEngine;
 
 public class TimeManager : MonoBehaviour
 {
     [Header("Time Settings")]
+    [SerializeField, Min(0f)]
+    private float initialTime = 60f;
 
-    // 최대 시간
-    [SerializeField]
-    private float maxTime = 60f;
+    [SerializeField, Min(0f)]
+    private float maxRemainingTime = 120f;
 
-    // 시간 감소 속도
-    [SerializeField]
-    private float timeDecreaseSpeed = 1f;
+    public float RemainingTime { get; private set; }
+    public float ElapsedTime { get; private set; }
 
+    // 시간 슬라이더의 최대 기준값
+    public float MaxRemainingTime => maxRemainingTime;
 
-    // 현재 남은 시간
-    private float currentTime;
+    public bool IsRunning { get; private set; }
 
-    // 게임 시작 후 누적 시간
-    private float totalTime;
+    // 기존 시간 표시 이벤트 (초 단위)
+    public event Action<float> OnRemainingTimeChanged;
+    public event Action<float> OnElapsedTimeChanged;
 
-    // 타이머 작동 여부
-    private bool isRunning;
+    // 시간 슬라이더용 실시간 이벤트
+    public event Action<float> OnRemainingTimeUpdated;
 
-
-    // 외부에서 시간 정보를 읽기 위한 프로퍼티
-    public float CurrentTime => currentTime;
-    public float MaxTime => maxTime;
-    public float TotalTime => totalTime;
-    public bool IsRunning => isRunning;
-
-
-    // 현재 시간 변경 이벤트
-    public event Action<float> OnTimeChanged;
-
-    // 누적 시간 변경 이벤트
-    public event Action<float> OnTotalTimeChanged;
-
-    // 시간 종료 이벤트
     public event Action OnTimeOver;
 
+    private int lastRemainingSecond = -1;
+    private int lastElapsedSecond = -1;
 
-    private void Start()
+    public void StartTimer()
     {
-        // 현재 시간을 최대 시간으로 초기화
-        currentTime = Mathf.Max(0f, maxTime);
+        ElapsedTime = 0f;
 
-        // 누적 시간 초기화
-        totalTime = 0f;
-
-        // 시간이 있으면 타이머 시작
-        isRunning = currentTime > 0f;
-
-
-        // 초기 시간 UI 갱신
-        NotifyTimeChanged();
-
-        // 초기 누적 시간 UI 갱신
-        NotifyTotalTimeChanged();
-
-
-        Debug.Log(
-            "[TimeManager] 타이머 시작 / " +
-            "현재 시간: " +
-            currentTime +
-            "초"
+        RemainingTime = Mathf.Clamp(
+            initialTime,
+            0f,
+            maxRemainingTime
         );
+
+        IsRunning = RemainingTime > 0f;
+
+        lastRemainingSecond = -1;
+        lastElapsedSecond = -1;
+
+        OnRemainingTimeUpdated?.Invoke(RemainingTime);
+        NotifyTimeChanged();
     }
 
+    public void StopTimer()
+    {
+        IsRunning = false;
+    }
+
+    public void PauseTimer()
+    {
+        IsRunning = false;
+    }
+
+    public void ResumeTimer()
+    {
+        if (RemainingTime > 0f)
+            IsRunning = true;
+    }
 
     private void Update()
     {
-        // 타이머가 작동 중이 아니면 종료
-        if (!isRunning)
-        {
+        if (!IsRunning)
             return;
-        }
 
+        float delta = Time.deltaTime;
 
-        // 현재 남은 시간 감소
-        ReduceTime(
-            Time.deltaTime * timeDecreaseSpeed
-        );
-
-
-        // 게임 누적 시간 증가
-        totalTime += Time.deltaTime;
-
-
-        // 누적 시간 변경 알림
-        NotifyTotalTimeChanged();
-    }
-
-
-    // 현재 시간 추가
-    public void AddTime(float amount)
-    {
-        if (!isRunning || amount <= 0f)
-        {
+        if (delta <= 0f)
             return;
-        }
 
-        SetTime(
-            currentTime + amount
-        );
-    }
+        ElapsedTime += delta;
 
-
-    // 현재 시간 감소
-    public void ReduceTime(float amount)
-    {
-        if (!isRunning || amount <= 0f)
-        {
-            return;
-        }
-
-        SetTime(
-            currentTime - amount
-        );
-    }
-
-
-    // 현재 시간 설정
-    public void SetTime(float amount)
-    {
-        if (!isRunning)
-        {
-            return;
-        }
-
-
-        // 0 ~ 최대 시간 사이로 제한
-        currentTime = Mathf.Clamp(
-            amount,
+        RemainingTime = Mathf.Max(
             0f,
-            maxTime
+            RemainingTime - delta
         );
 
+        // 슬라이더는 매 프레임 갱신
+        OnRemainingTimeUpdated?.Invoke(RemainingTime);
 
-        // 현재 시간 변경 알림
+        // 텍스트는 초 단위로 갱신
         NotifyTimeChanged();
 
-
-        // 시간이 0이 되면 게임 시간 종료
-        if (currentTime <= 0f)
+        if (RemainingTime <= 0f)
         {
-            TimeOver();
+            IsRunning = false;
+            OnTimeOver?.Invoke();
         }
     }
 
-
-    // 타이머 시작
-    public void StartTimer()
+    public void AddTime(float seconds)
     {
-        if (currentTime > 0f)
-        {
-            isRunning = true;
-        }
+        if (seconds <= 0f || RemainingTime <= 0f)
+            return;
+
+        RemainingTime = Mathf.Clamp(
+            RemainingTime + seconds,
+            0f,
+            maxRemainingTime
+        );
+
+        // 보상 시간이 추가되면 즉시 슬라이더 갱신
+        OnRemainingTimeUpdated?.Invoke(RemainingTime);
+        NotifyTimeChanged();
     }
 
-
-    // 타이머 정지
-    public void StopTimer()
-    {
-        isRunning = false;
-    }
-
-
-    // 현재 시간 변경 알림
     private void NotifyTimeChanged()
     {
-        OnTimeChanged?.Invoke(
-            currentTime
-        );
-    }
+        int remainingSecond =
+            Mathf.CeilToInt(RemainingTime);
 
+        int elapsedSecond =
+            Mathf.FloorToInt(ElapsedTime);
 
-    // 누적 시간 변경 알림
-    private void NotifyTotalTimeChanged()
-    {
-        OnTotalTimeChanged?.Invoke(
-            totalTime
-        );
-    }
-
-
-    // 시간 종료
-    private void TimeOver()
-    {
-        if (!isRunning)
+        if (remainingSecond != lastRemainingSecond)
         {
-            return;
+            lastRemainingSecond = remainingSecond;
+
+            OnRemainingTimeChanged?.Invoke(
+                RemainingTime
+            );
         }
 
+        if (elapsedSecond != lastElapsedSecond)
+        {
+            lastElapsedSecond = elapsedSecond;
 
-        // 타이머 정지
-        isRunning = false;
-
-
-        // 시간 종료 이벤트 발생
-        OnTimeOver?.Invoke();
-
-
-        Debug.Log(
-            "[TimeManager] TIME OVER! / " +
-            "Total Time: " +
-            totalTime.ToString("F1") +
-            "초"
-        );
+            OnElapsedTimeChanged?.Invoke(
+                ElapsedTime
+            );
+        }
     }
 }
