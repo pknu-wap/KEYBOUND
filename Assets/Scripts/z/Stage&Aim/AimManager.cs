@@ -1,144 +1,69 @@
-﻿using Keybound.Keyboard;
+﻿
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class AimManager : MonoBehaviour
 {
-    // StageManager 참조
+    [Header("References")]
+    [SerializeField] private AimConditionGenerator generator;
+    [SerializeField] private AimConditionProcessor processor;
+
+    [Header("Aim Generation Settings")]
     [SerializeField]
-    private StageManager stageManager;
+    private List<AimGenerationSettings> aimSettings =
+        new List<AimGenerationSettings>();
 
-    // 키보드 입력을 관리하는 KeyboardMapManager
-    [SerializeField]
-    private KeyboardMapManager keyboardMapManager;
+    public AimData CurrentAim => processor != null
+        ? processor.CurrentAim
+        : null;
 
-    // 사용할 목표 목록
-    [SerializeField]
-    private AimData[] aims;
-
-
-    // 현재 진행 중인 목표
-    private AimData currentAim;
-
-    // UI 등 다른 스크립트에서 현재 목표 조회
-    public AimData CurrentAim => currentAim;
-
-
-    // 현재 목표 키 입력 횟수
-    private int currentCount;
-
-
-    // 게임 시작 시 키 입력 이벤트 연결
-    private void Start()
+    public bool StartRandomAim()
     {
-        if (keyboardMapManager == null)
+        if (generator == null || processor == null)
         {
             Debug.LogError(
-                "[AimManager] KeyboardMapManager가 연결되지 않았습니다."
+                "[AimManager] Generator or Processor missing.",
+                this
+            );
+            return false;
+        }
+
+        List<AimGenerationSettings> enabledSettings =
+            aimSettings.FindAll(
+                settings => settings != null && settings.Enabled
             );
 
-            return;
-        }
-
-        // KeyboardMapManager의 키 입력 이벤트 구독
-        keyboardMapManager.KeyPressed += HandleKeyPressed;
-
-        Debug.Log(
-            "[AimManager] 키 입력 이벤트 연결 완료"
-        );
-    }
-
-
-    // 오브젝트가 삭제될 때 이벤트 연결 해제
-    private void OnDestroy()
-    {
-        if (keyboardMapManager != null)
-        {
-            keyboardMapManager.KeyPressed -= HandleKeyPressed;
-        }
-    }
-
-
-    // 새로운 목표 시작
-    public void StartAim()
-    {
-        // 등록된 목표가 없는 경우
-        if (aims == null || aims.Length == 0)
+        if (enabledSettings.Count == 0)
         {
             Debug.LogError(
-                "[AimManager] 등록된 Aim이 없습니다."
+                "[AimManager] No enabled aim settings.",
+                this
             );
-
-            return;
+            return false;
         }
 
-        // 등록된 목표 중 하나를 랜덤으로 선택
-        currentAim =
-            aims[Random.Range(0, aims.Length)];
+        int index = Random.Range(0, enabledSettings.Count);
 
-        // 목표 진행 횟수 초기화
-        currentCount = 0;
+        AimGenerationSettings selected = enabledSettings[index];
 
         Debug.Log(
-            "Aim Start: " +
-            currentAim.aimName
-        );
-    }
-
-
-    // KeyboardMapManager에서 키 입력을 받음
-    private void HandleKeyPressed(KeyboardKey pressedKey)
-    {
-        Debug.Log(
-            "[Aim 입력 감지] " +
-            pressedKey.Data.Name
+            $"[AimManager] Selected aim type: {selected.AimType}",
+            this
         );
 
-        // 진행 중인 목표가 없는 경우
-        if (currentAim == null)
+        AimData generatedAim = generator.Generate(selected);
+
+        if (generatedAim == null)
         {
-            return;
+            Debug.LogError(
+                "[AimManager] Aim generation failed.",
+                this
+            );
+            return false;
         }
 
-        // AimData의 목표 키를 Input System Key로 변환
-        Key targetKey =
-            (Key)currentAim.targetKey;
+        processor.StartAim(generatedAim);
 
-        // 목표 키가 아니라면 무시
-        if (pressedKey.Data.InputKey != targetKey)
-        {
-            return;
-        }
-
-        // 목표 키 입력 횟수 증가
-        currentCount++;
-
-        Debug.Log(
-            "[Aim 진행] " +
-            currentAim.aimName +
-            " : " +
-            currentCount +
-            " / " +
-            currentAim.requiredCount
-        );
-
-        // 필요한 입력 횟수를 달성한 경우
-        if (currentCount >= currentAim.requiredCount)
-        {
-            CompleteAim();
-        }
-    }
-
-
-    // 현재 목표 완료
-    private void CompleteAim()
-    {
-        Debug.Log(
-            "Aim Complete: " +
-            currentAim.aimName
-        );
-
-        // 목표 완료 → 현재 스테이지 클리어
-        stageManager.ClearStage();
+        return processor.IsAimActive;
     }
 }
