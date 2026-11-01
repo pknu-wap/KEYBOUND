@@ -1,6 +1,8 @@
 ﻿
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using Keybound.Player;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -8,6 +10,9 @@ public class AimConditionProcessor : MonoBehaviour
 {
     [Header("Input Source")]
     [SerializeField] private MonoBehaviour inputSourceComponent;
+
+    [Header("Player Position")]
+    [SerializeField] private PlayerKeyboardPosition playerPosition;
 
     [Header("Debug")]
     [SerializeField] private bool logProgress = true;
@@ -35,12 +40,27 @@ public class AimConditionProcessor : MonoBehaviour
                 this
             );
         }
+
+        if (playerPosition == null)
+        {
+            Debug.LogError(
+                "[AimProcessor] Player position is not assigned.",
+                this
+            );
+        }
     }
 
     private void OnEnable()
     {
         if (inputSource != null)
+        {
             inputSource.OnKeyPressed += HandleKeyPressed;
+
+            Debug.Log(
+                "[AimProcessor] Input event subscribed.",
+                this
+            );
+        }
     }
 
     private void OnDisable()
@@ -96,8 +116,83 @@ public class AimConditionProcessor : MonoBehaviour
 
     private void HandleKeyPressed(Key key)
     {
+        Debug.Log(
+            $"[AimProcessor] Received Key: {key}",
+            this
+        );
+
         if (!IsAimActive || CurrentAim == null)
+        {
+            Debug.Log(
+                "[AimProcessor] Input ignored: Aim inactive.",
+                this
+            );
             return;
+        }
+
+        StartCoroutine(
+            ProcessKeyAfterMovement(key, CurrentAim)
+        );
+    }
+
+    private IEnumerator ProcessKeyAfterMovement(
+        Key key,
+        AimData aimAtInput)
+    {
+        // Wait for player movement in the current frame.
+        yield return new WaitForEndOfFrame();
+
+        if (!IsAimActive ||
+            CurrentAim == null ||
+            CurrentAim != aimAtInput)
+        {
+            Debug.Log(
+                "[AimProcessor] Input ignored: Aim changed.",
+                this
+            );
+            yield break;
+        }
+
+        if (playerPosition == null)
+        {
+            Debug.LogError(
+                "[AimProcessor] PlayerPosition is NULL.",
+                this
+            );
+            yield break;
+        }
+
+        if (playerPosition.CurrentKey == null)
+        {
+            Debug.LogWarning(
+                "[AimProcessor] CurrentKey is NULL.",
+                this
+            );
+            yield break;
+        }
+
+        Key currentKey =
+            playerPosition.CurrentKey.Data.InputKey;
+
+        Debug.Log(
+            $"[AimProcessor] Input: {key} / Player: {currentKey}",
+            this
+        );
+
+        if (currentKey != key)
+        {
+            Debug.LogWarning(
+                $"[AimProcessor] Position mismatch: " +
+                $"Input={key}, Player={currentKey}",
+                this
+            );
+            yield break;
+        }
+
+        Debug.Log(
+            $"[AimProcessor] Position matched: {key}",
+            this
+        );
 
         switch (CurrentAim.Type)
         {
