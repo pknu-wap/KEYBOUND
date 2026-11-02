@@ -11,117 +11,75 @@ public class AimConditionGenerator : MonoBehaviour
 
     public AimData Generate(AimGenerationSettings settings)
     {
-        if (settings == null || !settings.Enabled)
-            return null;
+        if (settings == null || !settings.Enabled) return null;
 
         List<Key> availableKeys = KeyboardMapData.Keys
-            .Select(data => data.InputKey)
-            .Distinct()
-            .ToList();
+            .Select(data => data.InputKey).Distinct().ToList();
 
         if (availableKeys.Count == 0)
         {
-            Debug.LogError(
-                "[AimGenerator] No available keyboard map keys.",
-                this
-            );
+            Debug.LogError("[AimGenerator] No available keyboard map keys.", this);
             return null;
         }
 
-        AimData aim = new AimData();
-        aim.Type = settings.AimType;
+        int minKeys = Mathf.Clamp(settings.MinKeyCount, 1, availableKeys.Count);
+        int maxKeys = Mathf.Clamp(settings.MaxKeyCount, minKeys, availableKeys.Count);
+        int keyCount = Random.Range(minKeys, maxKeys + 1);
 
-        int minKeyCount = Mathf.Clamp(
-            settings.MinKeyCount, 1, availableKeys.Count
-        );
-
-        int maxKeyCount = Mathf.Clamp(
-            settings.MaxKeyCount, minKeyCount, availableKeys.Count
-        );
-
-        int keyCount = Random.Range(
-            minKeyCount, maxKeyCount + 1
-        );
-
-        // Shuffle the available key pool.
         for (int i = availableKeys.Count - 1; i > 0; i--)
         {
-            int randomIndex = Random.Range(0, i + 1);
-
+            int j = Random.Range(0, i + 1);
             Key temp = availableKeys[i];
-            availableKeys[i] = availableKeys[randomIndex];
-            availableKeys[randomIndex] = temp;
+            availableKeys[i] = availableKeys[j];
+            availableKeys[j] = temp;
         }
+
+        AimData aim = new AimData { Type = settings.AimType };
 
         switch (aim.Type)
         {
             case AimType.PressCount:
-            {
-                // PressCount uses one target key.
                 aim.TargetKeys.Add(availableKeys[0]);
 
                 int minPress = Mathf.Max(1, settings.MinPressCount);
-                int maxPress = Mathf.Max(
-                    minPress, settings.MaxPressCount
-                );
+                int maxPress = Mathf.Max(minPress, settings.MaxPressCount);
 
-                aim.RequiredCount = Random.Range(
-                    minPress, maxPress + 1
-                );
-
-                aim.Description =
-                    $"Press {GetKeyName(aim.TargetKeys[0])} " +
-                    $"{aim.RequiredCount} times";
-
+                aim.RequiredCount = Random.Range(minPress, maxPress + 1);
+                aim.Description = $"Press {GetKeyName(aim.TargetKeys[0])} {aim.RequiredCount} times";
                 break;
-            }
 
             case AimType.AllKeys:
-            {
-                aim.TargetKeys.AddRange(
-                    availableKeys.Take(keyCount)
-                );
-
+                aim.TargetKeys.AddRange(availableKeys.Take(keyCount));
                 aim.RequiredCount = aim.TargetKeys.Count;
-
-                aim.Description =
-                    $"Press all keys: {GetKeyList(aim.TargetKeys)}";
-
+                aim.Description = $"Press all keys: {GetKeyList(aim.TargetKeys)}";
                 break;
-            }
 
             case AimType.Sequence:
-            {
-                aim.TargetKeys.AddRange(
-                    availableKeys.Take(keyCount)
-                );
-
+                aim.TargetKeys.AddRange(availableKeys.Take(keyCount));
                 aim.RequiredCount = aim.TargetKeys.Count;
-
-                aim.Description =
-                    $"Press in order: {GetKeyList(aim.TargetKeys, " -> ")}";
-
+                aim.Description = $"Press in order: {GetKeyList(aim.TargetKeys, " -> ")}";
                 break;
-            }
+
+            case AimType.Hold:
+                aim.TargetKeys.Add(availableKeys[0]);
+
+                float minHold = Mathf.Max(0.1f, settings.MinHoldTime);
+                float maxHold = Mathf.Max(minHold, settings.MaxHoldTime);
+
+                aim.RequiredDuration = Random.Range(minHold, maxHold);
+                aim.RequiredCount = 1;
+                aim.Description = $"Hold {GetKeyName(aim.TargetKeys[0])} for {aim.RequiredDuration:F1}s";
+                break;
 
             default:
-            {
-                Debug.LogWarning(
-                    $"[AimGenerator] Unsupported aim: {aim.Type}",
-                    this
-                );
+                Debug.LogWarning($"[AimGenerator] Unsupported aim: {aim.Type}", this);
                 return null;
-            }
         }
 
         if (logGeneration)
         {
             Debug.Log(
-                $"[AimGenerator] Generated\n" +
-                $"Type: {aim.Type}\n" +
-                $"Keys: {GetKeyList(aim.TargetKeys)}\n" +
-                $"Required: {aim.RequiredCount}\n" +
-                $"Description: {aim.Description}",
+                $"[AimGenerator] Generated {aim.Type}: {aim.Description}",
                 this
             );
         }
@@ -142,9 +100,6 @@ public class AimConditionGenerator : MonoBehaviour
         string separator = ", "
     )
     {
-        return string.Join(
-            separator,
-            keys.Select(GetKeyName)
-        );
+        return string.Join(separator, keys.Select(GetKeyName));
     }
 }
