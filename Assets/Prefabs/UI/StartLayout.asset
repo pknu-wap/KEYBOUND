@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a716c74097d3ad241a585fe0bb60e25f, type: 3}
+  m_Name: StartLayout
+  m_EditorClassIdentifier: Assembly-CSharp::Keybound.UI.UILayout
+  entries:
+  - prefab: {fileID: 5883100578588468870, guid: 91813a624ba0871478966e27975a1aa4, type: 3}
+    anchorMin: {x: 0, y: 0}
+    anchorMax: {x: 1, y: 1}
+    pivot: {x: 0.5, y: 0.5}
+    position: {x: 0, y: 0}
+    size: {x: 0, y: 0}
+    order: 0

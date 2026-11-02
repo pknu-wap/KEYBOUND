@@ -1,33 +1,83 @@
-﻿using UnityEngine;
+using System;
+using System.Collections.Generic;
+using Keybound.Keyboard;
+using Keybound.Player;
+using UnityEngine;
+using UnityEngine.InputSystem;
 
-public class GameFlowTestManager : MonoBehaviour
+public enum GameState { Playing, Paused, GameOver }
+
+[DefaultExecutionOrder(-100)]
+public sealed class GameFlowManager : MonoBehaviour
 {
-    // 테스트할 스테이지
-    [SerializeField]
-    private int selectedStage;
+    [SerializeField] private TimeManager timeManager;
+    [SerializeField] private Behaviour[] pauseTargets;
+    private readonly Dictionary<Behaviour, bool> previousEnabled = new Dictionary<Behaviour, bool>();
+    private float previousTimeScale = 1f;
+    public GameState State { get; private set; } = GameState.Playing;
+    public float? SurvivalSeconds { get; private set; }
+    public event Action<GameState> StateChanged;
+    public event Action EscapePressed;
 
-    // 테스트할 목표
-    [SerializeField]
-    private int selectedAim;
-
-
-    // 테스트 시작
-    public void StartTest()
+    private void Awake()
     {
-        // TODO: 스테이지 및 목표 선택 후 테스트 시작
+        if (timeManager == null) timeManager = FindAnyObjectByType<TimeManager>();
+        if (pauseTargets == null || pauseTargets.Length == 0)
+        {
+            var targets = new List<Behaviour>();
+            targets.AddRange(FindObjectsByType<KeyboardMapManager>(FindObjectsSortMode.None));
+            targets.AddRange(FindObjectsByType<PlayerKeyboardPosition>(FindObjectsSortMode.None));
+            pauseTargets = targets.ToArray();
+        }
     }
-
-
-    // 클리어 판정 테스트
-    public void TestClear()
+    private void OnEnable() { if (timeManager != null) timeManager.OnTimeOver += HandleTimeExpired; }
+    private void OnDisable()
     {
-        // TODO: 클리어 처리 구현
+        if (timeManager != null) timeManager.OnTimeOver -= HandleTimeExpired;
+        RestoreGameplay();
     }
-
-
-    // 실패 판정 테스트
-    public void TestFail()
+    private void Update()
     {
-        // TODO: 실패 처리 구현
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            EscapePressed?.Invoke();
     }
+    public void Pause() { if (State == GameState.Playing) ChangeState(GameState.Paused); }
+    public void Resume() { if (State == GameState.Paused) ChangeState(GameState.Playing); }
+    public void HandleTimeExpired() { if (State != GameState.GameOver) ChangeState(GameState.GameOver); }
+    // Supply actual survival data from its owner; remaining countdown time is not survival time.
+    public void SetSurvivalTime(float seconds)
+    {
+        if (float.IsNaN(seconds) || float.IsInfinity(seconds)) return;
+        SurvivalSeconds = Mathf.Max(0, seconds);
+        if (State == GameState.GameOver) StateChanged?.Invoke(State);
+    }
+    private void ChangeState(GameState next)
+    {
+        if (State == next) return;
+        if (State == GameState.Playing)
+        {
+            previousTimeScale = Time.timeScale;
+            previousEnabled.Clear();
+            foreach (var target in pauseTargets)
+            {
+                if (target == null || target == this) continue;
+                previousEnabled[target] = target.enabled;
+                target.enabled = false;
+            }
+        }
+        if (next == GameState.Playing) RestoreGameplay();
+        State = next;
+        if (next != GameState.Playing) Time.timeScale = 0f;
+        StateChanged?.Invoke(State);
+    }
+    private void RestoreGameplay()
+    {
+        foreach (var pair in previousEnabled) if (pair.Key != null) pair.Key.enabled = pair.Value;
+        previousEnabled.Clear();
+        if (State != GameState.Playing) Time.timeScale = previousTimeScale;
+    }
+#if UNITY_EDITOR
+    [ContextMenu("Test/Game Over (Editor only)")]
+    private void TestGameOver() { if (Application.isPlaying) HandleTimeExpired(); }
+#endif
 }
