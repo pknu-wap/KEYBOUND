@@ -17,6 +17,8 @@ public static class UIFlowSetup
     public static void Build()
     {
         if (AssetDatabase.LoadAssetAtPath<UILayout>(Folder + "/GameLayout.asset") != null) throw new InvalidOperationException("UI setup already exists; edit the generated assets directly.");
+        if (!System.IO.File.Exists("Assets/Scenes/Test/TimeScene.unity"))
+            throw new InvalidOperationException("Legacy setup sources are unavailable. Edit the existing generated scenes and prefabs directly.");
         font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         System.IO.Directory.CreateDirectory(Folder);
         AssetDatabase.Refresh();
@@ -29,8 +31,8 @@ public static class UIFlowSetup
         // Replace the old title UI with the approved basic functional UI.
         foreach (var root in start.GetRootGameObjects())
             if (root.GetComponent<Canvas>() != null) UnityEngine.Object.DestroyImmediate(root);
-        var startUI = UnityEngine.Object.FindAnyObjectByType<UIManager>();
-        if (startUI == null) startUI = new GameObject("UIManager").AddComponent<UIManager>();
+        var startUI = UnityEngine.Object.FindAnyObjectByType<SceneUIManager>();
+        if (startUI == null) startUI = new GameObject("SceneUIManager").AddComponent<SceneUIManager>();
         var startScenes = UnityEngine.Object.FindAnyObjectByType<GameSceneManager>();
         Configure(startUI, CanvasRoot(), startLayout, startScenes, null);
         EnsureEvents();
@@ -44,12 +46,12 @@ public static class UIFlowSetup
         EditorSceneManager.CloseScene(sample, true);
         var timerScene = EditorSceneManager.OpenScene("Assets/Scenes/Test/TimeScene.unity", OpenSceneMode.Additive);
         foreach (var root in timerScene.GetRootGameObjects())
-            if (root.GetComponent<TimeManager>() != null || root.GetComponent<TimeUI>() != null)
+            if (root.GetComponent<TimeManager>() != null || root.GetComponent<CountdownUI>() != null)
                 SceneManager.MoveGameObjectToScene(root, game);
         EditorSceneManager.CloseScene(timerScene, true);
         SceneManager.SetActiveScene(game);
         // Keep the existing countdown out of the center of the keyboard, without changing its internal layout.
-        var timeUI = UnityEngine.Object.FindAnyObjectByType<TimeUI>();
+        var timeUI = UnityEngine.Object.FindAnyObjectByType<CountdownUI>();
         if (timeUI != null)
         {
             var group = Rect("TimeDisplay", timeUI.transform, Vector2.zero, new Vector2(480,60));
@@ -64,7 +66,7 @@ public static class UIFlowSetup
         var flowData = new SerializedObject(flow);
         flowData.FindProperty("timeManager").objectReferenceValue = UnityEngine.Object.FindAnyObjectByType<TimeManager>();
         flowData.ApplyModifiedPropertiesWithoutUndo();
-        var ui = new GameObject("UIManager").AddComponent<UIManager>();
+        var ui = new GameObject("SceneUIManager").AddComponent<SceneUIManager>();
         Configure(ui, CanvasRoot(), AssetDatabase.LoadAssetAtPath<UILayout>(Folder + "/GameLayout.asset"), sceneManager, flow);
         EnsureEvents();
         EditorSceneManager.SaveScene(game);
@@ -75,7 +77,7 @@ public static class UIFlowSetup
         AssetDatabase.SaveAssets();
         Debug.Log("KEYBOUND_UI_SETUP_OK");
     }
-    private static void Configure(UIManager ui, RectTransform root, UILayout layout, GameSceneManager scenes, GameFlowManager flow)
+    private static void Configure(SceneUIManager ui, RectTransform root, UILayout layout, GameSceneManager scenes, GameFlowManager flow)
     {
         var data = new SerializedObject(ui);
         data.FindProperty("uiRoot").objectReferenceValue = root;

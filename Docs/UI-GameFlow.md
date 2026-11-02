@@ -65,3 +65,24 @@
 - 오디오 실제 청취, Mixer 그룹 연결, 빌드에서의 전체화면/창 전환 및 재실행 복원은 미검증.
 - 보호 대상 Keyboard/Player/Time 스크립트, KeyboardKey Prefab, SampleScene, TimeScene에 Git diff 없음.
 - 작업 브랜치: feature/ui-game-flow. 커밋/푸시 미실시.
+
+## 최신 main 병합 후 연결 변경
+- UI 관리 파일은 main의 이동을 유지하여 Assets/Scripts/z/SceneUIManager.cs 사용. 이번 UI 구현을 유지하고 Scene 및 Editor 도구 참조를 SceneUIManager에 맞춤.
+- Scene 이동 관리도 Assets/Scripts/z/GameSceneManager.cs 위치 유지. 이번 구현의 시간 배율 복원 기능 유지.
+- GameFlowManager와 GameScene은 이번 UI 구현을 유지하고 GameFlowManager 메타데이터 및 GameScene GUID도 복원하여 참조 단절 방지.
+- main의 최신 TimeManager(RemainingTime/ElapsedTime/OnRemainingTimeUpdated)를 그대로 사용. 시간 계산은 추가하거나 수정하지 않음.
+- 삭제된 기존 TimeUI 대신 CountdownUI 표시 어댑터를 추가. 기존 GameScene의 TMP 텍스트와 Slider를 그대로 재사용.
+- GameFlowManager는 StageManager가 없는 현재 GameScene에서만 공개 StartTimer API로 타이머를 시작. StageManager가 있는 Scene에서는 기존 시작 흐름을 유지.
+- GameOver 시 기존 TimeManager.ElapsedTime을 결과에 표시. SetSurvivalTime 외부 입력 진입점도 유지.
+- main의 최신 이동·충돌·키보드·시간·Stage/Aim·GameHUD 파일은 수정 없이 보존. main의 TestScene도 유지.
+- UIFlowSetup은 이전 소스 Scene을 사용하던 최초 생성 도구이므로 소스가 없는 최신 구조에서는 명시적으로 중단. 현재 Prefab과 Scene은 이미 생성되어 있어 실행에 필요하지 않음.
+- 기존 25개 검사 기록은 최초 구현 검증 기록이며, 병합본 검증 결과는 아래 별도로 기록.
+
+### 병합본 검증 결과
+- Unity 6000.6.1f1 배치 실행, 컴파일 오류 없이 종료 코드 0.
+- 최초 25개 검사와 최신 TimeManager.ElapsedTime 연결 검사를 포함한 26개 통합 검사 통과. KEYBOUND_INTEGRATION_OK 확인.
+- 상세 기록: UI-Flow-Merge-Validation.txt.
+- 배치 검증은 EnteredPlayMode 이후 실행하며 검증용 임시 InputSettings로 키 이벤트를 전달. 배치용 Play 옵션과 임시 입력 설정 및 음량 값은 검증 종료 시 복원.
+- 타이머 만료는 실제 OnTimeOver 이벤트를 기다려 검사. 시간 시스템 내부 변경이나 수동 게임오버 대체 호출 없이 확인.
+- 초기화 과정에서 UnityEditor.Search 검색 인덱스 내부 예외가 관찰되었으나 프로젝트 스크립트 컴파일과 런타임 통합 검사는 통과함.
+- 병합본의 화면 배치 재촬영/실제 청취/빌드 화면 전환 검증은 추가하지 않음. 기존 제한사항 유지.

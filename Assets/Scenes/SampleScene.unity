@@ -736,7 +736,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Keybound.Player.PlayerKeyboardPosition
   keyboardMapManager: {fileID: 1648942543}
   startingKey: 31
-  movementInputMode: 0
+  movementInputMode: 2
   enableDebugLogs: 1
 --- !u!114 &1276033145
 MonoBehaviour:
@@ -788,6 +788,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e2078b07d804b25b00e79231a105e60, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Keybound.Player.PlayerCollision
+  enableDebugLogs: 1
 --- !u!50 &1276033148
 Rigidbody2D:
   serializedVersion: 5

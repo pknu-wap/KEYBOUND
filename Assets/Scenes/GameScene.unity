@@ -843,9 +843,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 811246647}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8688319efb4aa9f499f59e6b7b828c94, type: 3}
+  m_Script: {fileID: 11500000, guid: 2be102af10c94700a0277454abfc0199, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::TimeUI
+  m_EditorClassIdentifier: Assembly-CSharp::Keybound.UI.CountdownUI
   timeManager: {fileID: 1807373829}
   timeText: {fileID: 748260307}
   timeSlider: {fileID: 120100265}
@@ -1627,8 +1627,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0ff392bbfd7beba4a9781cedf316d590, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TimeManager
-  maxTime: 60
-  timeDecreaseSpeed: 1
+  initialTime: 60
+  maxRemainingTime: 120
 --- !u!1 &2130357255
 GameObject:
   m_ObjectHideFlags: 0
@@ -1732,7 +1732,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 96528c4a8924ffe45a5122fa6b4aebc5, type: 3}
   m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::UIManager
+  m_EditorClassIdentifier: Assembly-CSharp::SceneUIManager
   gameSceneManager: {fileID: 266895135}
   gameFlowManager: {fileID: 313466176}
   uiRoot: {fileID: 1367422857}

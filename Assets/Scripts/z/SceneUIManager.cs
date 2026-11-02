@@ -3,7 +3,7 @@ using Keybound.UI;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class UIManager : MonoBehaviour
+public class SceneUIManager : MonoBehaviour
 {
     [SerializeField] private GameSceneManager gameSceneManager;
     [SerializeField] private GameFlowManager gameFlowManager;

@@ -30,6 +30,12 @@ public sealed class GameFlowManager : MonoBehaviour
             pauseTargets = targets.ToArray();
         }
     }
+    private void Start()
+    {
+        // StageManager owns timer startup when present; this UI-only scene uses the public timer API.
+        if (timeManager != null && FindAnyObjectByType<StageManager>() == null)
+            timeManager.StartTimer();
+    }
     private void OnEnable() { if (timeManager != null) timeManager.OnTimeOver += HandleTimeExpired; }
     private void OnDisable()
     {
@@ -43,7 +49,12 @@ public sealed class GameFlowManager : MonoBehaviour
     }
     public void Pause() { if (State == GameState.Playing) ChangeState(GameState.Paused); }
     public void Resume() { if (State == GameState.Paused) ChangeState(GameState.Playing); }
-    public void HandleTimeExpired() { if (State != GameState.GameOver) ChangeState(GameState.GameOver); }
+    public void HandleTimeExpired()
+    {
+        if (State == GameState.GameOver) return;
+        if (timeManager != null) SurvivalSeconds = timeManager.ElapsedTime;
+        ChangeState(GameState.GameOver);
+    }
     // Supply actual survival data from its owner; remaining countdown time is not survival time.
     public void SetSurvivalTime(float seconds)
     {
