@@ -8,7 +8,8 @@ public enum AimType
     PressCount,
     AllKeys,
     Sequence,
-    Hold
+    Hold,
+    RapidPress
         // Future:
     // Simultaneous,
     // Typing,
@@ -21,6 +22,12 @@ public class AimGenerationSettings
 {
     public AimType AimType;
     public bool Enabled = true;
+    [Header("Aim time limit")]
+    public bool UseTimeLimit = false;
+    [Min(0.1f)] public float BaseTimeLimitSeconds = 15f;
+    [Header("Stage result multipliers")]
+    [Min(0f)] public float RewardMultiplier = 1f;
+    [Min(0f)] public float PenaltyMultiplier = 1f;
     [Min(1)] public int MinKeyCount = 1;
     [Min(1)] public int MaxKeyCount = 3;
     [Min(1)] public int MinPressCount = 3;
@@ -37,4 +44,8 @@ public class AimData
     public int RequiredCount;
     public float RequiredDuration;
     public string Description = "";
+    public bool UseTimeLimit;
+    public float BaseTimeLimitSeconds;
+    public float RewardMultiplier = 1f;
+    public float PenaltyMultiplier = 1f;
 }

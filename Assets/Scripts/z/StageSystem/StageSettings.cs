@@ -24,6 +24,16 @@ public class AimRewardRule
 }
 
 [Serializable]
+public class StageDifficultyRange
+{
+    [Min(1)] public int StartStage = 1;
+    [Min(1)] public int EndStage = 5;
+    [Min(0.1f)] public float TimeMultiplier = 1f;
+    [Min(0f)] public float RewardMultiplier = 1f;
+    [Min(0f)] public float FailurePenaltySeconds = 3f;
+}
+
+[Serializable]
 public class StageSettings
 {
     [Header("Reward switches (both can be enabled)")]
@@ -45,6 +55,40 @@ public class StageSettings
 
     public List<StageTimeRange> TimeRanges =
         new List<StageTimeRange>();
+
+    [Header("Aim time scaling and penalty")]
+    [Min(0.1f)] public float DefaultTimeMultiplier = 1f;
+    public List<StageDifficultyRange> DifficultyRanges = new List<StageDifficultyRange>();
+    [Min(0f)] public float BaseFailurePenaltySeconds = 3f;
+    [Min(0f)] public float DefaultRewardMultiplier = 1f;
+
+    public StageDifficultyRange GetDifficulty(int stage)
+    {
+        foreach (var range in DifficultyRanges)
+            if (range != null && stage >= range.StartStage && stage <= range.EndStage)
+                return range;
+        return null;
+    }
+
+    public float GetTimeMultiplier(int stage)
+    {
+        var range = GetDifficulty(stage);
+        return range == null ? Mathf.Max(0.1f, DefaultTimeMultiplier) : Mathf.Max(0.1f, range.TimeMultiplier);
+    }
+
+    public float GetReward(AimData aim, int stage)
+    {
+        var range = GetDifficulty(stage);
+        float factor = range == null ? DefaultRewardMultiplier : range.RewardMultiplier;
+        return GetAimReward(aim) * Mathf.Max(0f, factor) * (aim == null ? 1f : Mathf.Max(0f, aim.RewardMultiplier));
+    }
+
+    public float GetPenalty(AimData aim, int stage)
+    {
+        var range = GetDifficulty(stage);
+        float amount = range == null ? BaseFailurePenaltySeconds : range.FailurePenaltySeconds;
+        return Mathf.Max(0f, amount) * (aim == null ? 1f : Mathf.Max(0f, aim.PenaltyMultiplier));
+    }
 
     [Header("Mini games")]
     public bool EnableMiniGames = true;

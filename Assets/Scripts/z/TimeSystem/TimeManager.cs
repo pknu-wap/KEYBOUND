@@ -112,6 +112,19 @@ public class TimeManager : MonoBehaviour
         NotifyTimeChanged();
     }
 
+    public void RemoveTime(float seconds)
+    {
+        if (seconds <= 0f || RemainingTime <= 0f) return;
+        RemainingTime = Mathf.Max(0f, RemainingTime - seconds);
+        OnRemainingTimeUpdated?.Invoke(RemainingTime);
+        NotifyTimeChanged();
+        if (RemainingTime <= 0f)
+        {
+            IsRunning = false;
+            OnTimeOver?.Invoke();
+        }
+    }
+
     private void NotifyTimeChanged()
     {
         int remainingSecond =

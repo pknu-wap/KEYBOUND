@@ -34,10 +34,18 @@ public class AimConditionGenerator : MonoBehaviour
             availableKeys[j] = temp;
         }
 
-        AimData aim = new AimData { Type = settings.AimType };
+        AimData aim = new AimData
+        {
+            Type = settings.AimType,
+            UseTimeLimit = settings.UseTimeLimit || settings.AimType == AimType.RapidPress,
+            BaseTimeLimitSeconds = Mathf.Max(0.1f, settings.BaseTimeLimitSeconds),
+            RewardMultiplier = Mathf.Max(0f, settings.RewardMultiplier),
+            PenaltyMultiplier = Mathf.Max(0f, settings.PenaltyMultiplier)
+        };
 
         switch (aim.Type)
         {
+            case AimType.RapidPress:
             case AimType.PressCount:
                 aim.TargetKeys.Add(availableKeys[0]);
 
@@ -45,7 +53,7 @@ public class AimConditionGenerator : MonoBehaviour
                 int maxPress = Mathf.Max(minPress, settings.MaxPressCount);
 
                 aim.RequiredCount = Random.Range(minPress, maxPress + 1);
-                aim.Description = $"Press {GetKeyName(aim.TargetKeys[0])} {aim.RequiredCount} times";
+                aim.Description = $"{(aim.Type == AimType.RapidPress ? "Rapid press" : "Press")} {GetKeyName(aim.TargetKeys[0])} {aim.RequiredCount} times";
                 break;
 
             case AimType.AllKeys:

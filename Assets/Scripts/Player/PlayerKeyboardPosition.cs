@@ -11,14 +11,13 @@ namespace Keybound.Player
     {
         private enum MovementInputMode
         {
-            AdjacentKey,
+            DirectKey,
             Wasd,
-            PressedKey,
         }
 
         [SerializeField] private KeyboardMapManager keyboardMapManager;
         [SerializeField] private KeyboardMapKey startingKey = KeyboardMapKey.S;
-        [SerializeField] private MovementInputMode movementInputMode = MovementInputMode.AdjacentKey;
+        [SerializeField] private MovementInputMode movementInputMode = MovementInputMode.DirectKey;
         [SerializeField] private bool enableDebugLogs = true;
 
         private RectTransform playerRectTransform;
@@ -87,18 +86,13 @@ namespace Keybound.Player
 
         private void HandleKeyPressed(KeyboardKey pressedKey)
         {
-            switch (movementInputMode)
+            if (movementInputMode == MovementInputMode.Wasd)
             {
-                case MovementInputMode.Wasd:
-                    TryMoveByWasd(pressedKey.Data.InputKey);
-                    break;
-                case MovementInputMode.PressedKey:
-                    TryMoveToPressedKey(pressedKey);
-                    break;
-                default:
-                    TryMoveTo(pressedKey);
-                    break;
+                TryMoveByWasd(pressedKey.Data.InputKey);
+                return;
             }
+
+            TryMoveTo(pressedKey);
         }
 
         private void TryMoveByWasd(Key inputKey)
@@ -121,25 +115,9 @@ namespace Keybound.Player
             TryMoveTo(targetKey);
         }
 
-        private void TryMoveToPressedKey(KeyboardKey pressedKey)
-        {
-            if (CurrentKey == null || pressedKey == null)
-            {
-                return;
-            }
-
-            string currentKeyName = CurrentKey.Data.Name;
-            string targetKeyName = pressedKey.Data.Name;
-
-            SetCurrentKey(pressedKey);
-            LogDebug(
-                $"[누르는 키 이동] {currentKeyName} -> {targetKeyName}: 성공 " +
-                $"(현재 위치: {CurrentKey.Data.Name})");
-        }
-
         private void TryMoveTo(KeyboardKey targetKey)
         {
-            if (CurrentKey == null || targetKey == null)
+            if (CurrentKey == null)
             {
                 return;
             }

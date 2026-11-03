@@ -252,6 +252,7 @@ public class KeyboardAimHighlighter : MonoBehaviour
 
         switch (aimProcessor.CurrentAim.Type)
         {
+            case AimType.RapidPress:
             case AimType.PressCount:
                 flashingKey = key;
                 flashEndTime =
@@ -300,6 +301,7 @@ public class KeyboardAimHighlighter : MonoBehaviour
 
         switch (displayedAim.Type)
         {
+            case AimType.RapidPress:
             case AimType.PressCount:
             {
                 Key target = displayedAim.TargetKeys[0];

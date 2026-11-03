@@ -29,6 +29,7 @@ public class AimConditionProcessor : MonoBehaviour
     public int CurrentProgress { get; private set; }
     public int RequiredProgress { get; private set; }
     public bool IsAimActive { get; private set; }
+    public bool IsPaused { get; private set; }
 
     public float CurrentHoldTime { get; private set; }
     public float RequiredHoldTime { get; private set; }
@@ -98,7 +99,7 @@ public class AimConditionProcessor : MonoBehaviour
 
     private void Update()
     {
-        if (!IsAimActive ||
+        if (!IsAimActive || IsPaused ||
             CurrentAim == null ||
             CurrentAim.Type != AimType.Hold)
         {
@@ -140,6 +141,7 @@ public class AimConditionProcessor : MonoBehaviour
         holdStarted = false;
         nextHoldLogTime = 0f;
 
+        IsPaused = false;
         IsAimActive = true;
 
         if (logProgress)
@@ -179,6 +181,7 @@ public class AimConditionProcessor : MonoBehaviour
         StopAllCoroutines();
 
         IsAimActive = false;
+        IsPaused = false;
         CurrentAim = null;
 
         CurrentProgress = 0;
@@ -194,9 +197,19 @@ public class AimConditionProcessor : MonoBehaviour
         OnHoldProgressChanged?.Invoke(0f);
     }
 
+    public void PauseAim()
+    {
+        if (IsAimActive) IsPaused = true;
+    }
+
+    public void ResumeAim()
+    {
+        IsPaused = false;
+    }
+
     private void HandleKeyPressed(Key key)
     {
-        if (!IsAimActive || CurrentAim == null)
+        if (!IsAimActive || IsPaused || CurrentAim == null)
         {
             return;
         }
@@ -218,7 +231,7 @@ public class AimConditionProcessor : MonoBehaviour
     {
         yield return new WaitForEndOfFrame();
 
-        if (!IsAimActive ||
+        if (!IsAimActive || IsPaused ||
             CurrentAim == null ||
             CurrentAim != aimAtInput)
         {
@@ -240,6 +253,7 @@ public class AimConditionProcessor : MonoBehaviour
 
         switch (CurrentAim.Type)
         {
+            case AimType.RapidPress:
             case AimType.PressCount:
                 ProcessPressCount(key);
                 break;

@@ -25,6 +25,12 @@ public class GameHUD : MonoBehaviour
     [SerializeField] private TMP_Text aimProgressText;
     [SerializeField] private Slider aimProgressSlider;
 
+    [Header("Additional Aim/Stage UI (optional)")]
+    [SerializeField] private TMP_Text aimLimitText;
+    [SerializeField] private Slider aimLimitSlider;
+    [SerializeField] private TMP_Text penaltyText;
+    [SerializeField] private TMP_Text stageModeText;
+
     [Header("Debug")]
     [SerializeField] private bool logHudEvents = true;
 
@@ -94,6 +100,9 @@ public class GameHUD : MonoBehaviour
             stageManager.OnStageStarted += HandleStageStarted;
             stageManager.OnStageRewardChanged += HandleRewardChanged;
             stageManager.OnGameOver += HandleGameOver;
+            stageManager.OnAimTimeChanged += HandleAimTimeChanged;
+            stageManager.OnStagePenalty += HandlePenalty;
+            stageManager.OnStageModeChanged += HandleStageMode;
         }
 
         if (timeManager != null)
@@ -124,6 +133,9 @@ public class GameHUD : MonoBehaviour
             stageManager.OnStageStarted -= HandleStageStarted;
             stageManager.OnStageRewardChanged -= HandleRewardChanged;
             stageManager.OnGameOver -= HandleGameOver;
+            stageManager.OnAimTimeChanged -= HandleAimTimeChanged;
+            stageManager.OnStagePenalty -= HandlePenalty;
+            stageManager.OnStageModeChanged -= HandleStageMode;
         }
 
         if (timeManager != null)
@@ -157,6 +169,8 @@ public class GameHUD : MonoBehaviour
         {
             HandleStageStarted(stageManager.CurrentStage);
             HandleRewardChanged(stageManager.ClearRewardTime);
+            HandleAimTimeChanged(stageManager.AimTimeRemaining, stageManager.AimTimeTotal);
+            HandleStageMode(stageManager.CurrentStageType);
         }
 
         if (timeManager != null)
@@ -394,6 +408,9 @@ public class GameHUD : MonoBehaviour
     {
         switch (type)
         {
+            case AimType.RapidPress:
+                return "Rapid Press";
+
             case AimType.PressCount:
                 return "Press Count";
 
@@ -406,6 +423,27 @@ public class GameHUD : MonoBehaviour
             default:
                 return type.ToString();
         }
+    }
+
+    private void HandleAimTimeChanged(float remaining, float total)
+    {
+        SetText(aimLimitText, total > 0f ? $"{remaining:F1}s" : "--");
+        if (aimLimitSlider != null)
+        {
+            aimLimitSlider.minValue = 0f;
+            aimLimitSlider.maxValue = 1f;
+            aimLimitSlider.SetValueWithoutNotify(total > 0f ? Mathf.Clamp01(remaining / total) : 0f);
+        }
+    }
+
+    private void HandlePenalty(float seconds)
+    {
+        SetText(penaltyText, $"-{seconds:0.#}s");
+    }
+
+    private void HandleStageMode(StageType mode)
+    {
+        SetText(stageModeText, mode == StageType.MiniGame ? "MINI GAME" : "AIM");
     }
 
     // ========================================
