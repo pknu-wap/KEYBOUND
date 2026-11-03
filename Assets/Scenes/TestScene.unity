@@ -599,25 +599,33 @@ MonoBehaviour:
     MinKeyCount: 5
     MaxKeyCount: 10
     MinPressCount: 5
-    MaxPressCount: 15
+    MaxPressCount: 20
     MinHoldTime: 0
     MaxHoldTime: 0
   - AimType: 1
     Enabled: 1
     MinKeyCount: 3
-    MaxKeyCount: 5
+    MaxKeyCount: 10
     MinPressCount: 0
     MaxPressCount: 0
     MinHoldTime: 0
     MaxHoldTime: 0
   - AimType: 2
     Enabled: 1
-    MinKeyCount: 3
+    MinKeyCount: 2
     MaxKeyCount: 5
     MinPressCount: 0
     MaxPressCount: 0
     MinHoldTime: 0
     MaxHoldTime: 0
+  - AimType: 3
+    Enabled: 1
+    MinKeyCount: 2
+    MaxKeyCount: 5
+    MinPressCount: 0
+    MaxPressCount: 0
+    MinHoldTime: 2
+    MaxHoldTime: 4.5
 --- !u!4 &381686748
 Transform:
   m_ObjectHideFlags: 0
@@ -1242,6 +1250,8 @@ MonoBehaviour:
   inputSourceComponent: {fileID: 2016831182}
   playerPosition: {fileID: 1041733116}
   logProgress: 1
+  logHold: 1
+  holdLogInterval: 0.25
 --- !u!1 &634746354
 GameObject:
   m_ObjectHideFlags: 0
@@ -3524,6 +3534,10 @@ MonoBehaviour:
   warningDotColor: {r: 1, g: 0, b: 0, a: 1}
   warningDotSize: 12
   warningDotOffset: {x: -7, y: -7}
+  holdBarBackground: {r: 0, g: 0, b: 0, a: 0.5}
+  holdBarFillColor: {r: 0, g: 1, b: 0, a: 1}
+  holdBarHeight: 10
+  holdBarPadding: 6
   logHighlight: 1
 --- !u!1 &2016831180
 GameObject:
