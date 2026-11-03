@@ -8,8 +8,6 @@ namespace Keybound.Player
     [RequireComponent(typeof(Rigidbody2D))]
     public sealed class PlayerCollision : MonoBehaviour
     {
-        [SerializeField] private bool enableDebugLogs = true;
-
         public event Action<Collider2D> CollisionDetected;
 
         private void Awake()
@@ -25,11 +23,7 @@ namespace Keybound.Player
         private void OnTriggerEnter2D(Collider2D other)
         {
             CollisionDetected?.Invoke(other);
-
-            if (enableDebugLogs)
-            {
-                Debug.Log($"[플레이어 충돌] {other.name} 감지", this);
-            }
+            Debug.Log($"[플레이어 충돌] {other.name} 감지", this);
         }
 
         private void ConfigurePhysics()
