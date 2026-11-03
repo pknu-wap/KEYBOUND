@@ -1,0 +1,26 @@
+KEYBOUND_CHECK_PASS: StartScene loaded
+KEYBOUND_CHECK_PASS: Start menu reference available
+KEYBOUND_CHECK_PASS: Start menu instantiated
+KEYBOUND_CHECK_PASS: START loads GameScene
+KEYBOUND_CHECK_PASS: Playing input enabled
+KEYBOUND_CHECK_PASS: Existing keyboard and player initialized
+KEYBOUND_CHECK_PASS: Existing timer and UI connected
+KEYBOUND_CHECK_PASS: Existing keyboard input moves player
+KEYBOUND_CHECK_PASS: Pause stops gameplay input
+KEYBOUND_CHECK_PASS: Timer and movement frozen across frames
+KEYBOUND_CHECK_PASS: Settings opens while paused
+KEYBOUND_CHECK_PASS: Independent volume settings persisted
+KEYBOUND_CHECK_PASS: ESC closes settings without resuming
+KEYBOUND_CHECK_PASS: ESC resumes and restores components
+KEYBOUND_CHECK_PASS: Existing OnTimeOver triggers game over
+KEYBOUND_CHECK_PASS: GameOver popup visible
+KEYBOUND_CHECK_PASS: External survival data displayed
+KEYBOUND_CHECK_PASS: Repeated game over does not duplicate UI
+KEYBOUND_CHECK_PASS: ESC cannot resume GameOver
+KEYBOUND_CHECK_PASS: MAIN MENU restores timescale and StartScene
+KEYBOUND_CHECK_PASS: Volumes survive Scene transition
+KEYBOUND_CHECK_PASS: New run initializes after game over
+KEYBOUND_CHECK_PASS: Settings BACK keeps pause
+KEYBOUND_CHECK_PASS: RESUME button works
+KEYBOUND_CHECK_PASS: Pause MAIN MENU works
+KEYBOUND_INTEGRATION_OK
