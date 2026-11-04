@@ -1,6 +1,25 @@
-﻿using System;
+﻿
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+
+[Serializable]
+public class MiniGameStageEntry
+{
+    [Min(1)] public int StageNumber = 5;
+    public MiniGameData Data;
+}
+
+[Serializable]
+public class AimTimeRule
+{
+    public AimType Type;
+    public bool UseTimeLimit = true;
+
+    [Min(0.1f)]
+    public float SecondsPerUnit = 3f;
+}
 
 public class StageManager : MonoBehaviour
 {
@@ -9,68 +28,122 @@ public class StageManager : MonoBehaviour
     [SerializeField] private AimConditionProcessor processor;
     [SerializeField] private MiniGameManager miniGameManager;
 
-    [Header("Settings")]
-    [SerializeField, Min(1)] private int startingStage = 1;
-    [SerializeField] private StageSettings settings = new StageSettings();
-    [SerializeField] private bool logEvents = true;
+    [Header("Stages")]
+    [SerializeField, Min(1)]
+    private int startingStage = 1;
+
+    [SerializeField]
+    private List<MiniGameStageEntry> miniGameSchedule =
+        new List<MiniGameStageEntry>();
+
+    [Header("Aim")]
+    [SerializeField, Min(0)]
+    private float successReward = 10f;
+
+    [SerializeField, Min(0)]
+    private float failurePenalty = 3f;
+
+    [SerializeField, Min(0.1f)]
+    private float defaultSecondsPerUnit = 3f;
+
+    [SerializeField]
+    private bool defaultUseTimeLimit = true;
+
+    [SerializeField]
+    private List<AimTimeRule> timeRules =
+        new List<AimTimeRule>();
 
     public int CurrentStage { get; private set; }
     public bool IsGameRunning { get; private set; }
     public bool IsPaused { get; private set; }
+
     public StageType CurrentStageType { get; private set; }
+        = StageType.Aim;
+
     public float AimTimeRemaining { get; private set; }
     public float AimTimeTotal { get; private set; }
-    public float ClearRewardTime => settings.FixedRewardSeconds;
-    public bool PauseMainTimerDuringMiniGame => settings.PauseMainTimerDuringMiniGame;
+
+    // UI에서 현재 Aim 보상/패널티 설정값 확인
+    public float ClearRewardTime => successReward;
+    public float FailurePenaltyTime => failurePenalty;
+
+    public bool PauseMainTimerDuringMiniGame => false;
 
     public event Action<int> OnStageStarted;
     public event Action<int> OnStageCleared;
+
     public event Action<float> OnStageRewardChanged;
     public event Action<float> OnStageReward;
     public event Action<float> OnStagePenalty;
+
     public event Action<float, float> OnAimTimeChanged;
     public event Action<StageType> OnStageModeChanged;
     public event Action<StageResult> OnStageFinished;
     public event Action<bool> OnMiniGameTimePauseRequested;
     public event Action OnGameOver;
 
-    private Coroutine transition;
     private bool transitioning;
-    private bool miniTimerPauseActive;
+    private Coroutine transition;
 
     private void OnEnable()
     {
-        if (processor != null) processor.OnAimCompleted += HandleAimCompleted;
+        if (processor != null)
+            processor.OnAimCompleted += AimCompleted;
+
         if (miniGameManager != null)
         {
-            miniGameManager.OnMiniGameCompleted += HandleMiniGameCompleted;
-            miniGameManager.OnMiniGameFailed += HandleMiniGameFailed;
+            miniGameManager.OnMiniGameCompleted += MiniCompleted;
+            miniGameManager.OnMiniGameFailed += MiniFailed;
+            miniGameManager.OnCollisionPenalty += CollisionPenalty;
         }
     }
 
     private void OnDisable()
     {
-        if (processor != null) processor.OnAimCompleted -= HandleAimCompleted;
+        if (processor != null)
+            processor.OnAimCompleted -= AimCompleted;
+
         if (miniGameManager != null)
         {
-            miniGameManager.OnMiniGameCompleted -= HandleMiniGameCompleted;
-            miniGameManager.OnMiniGameFailed -= HandleMiniGameFailed;
+            miniGameManager.OnMiniGameCompleted -= MiniCompleted;
+            miniGameManager.OnMiniGameFailed -= MiniFailed;
+            miniGameManager.OnCollisionPenalty -= CollisionPenalty;
         }
-        if (transition != null) { StopCoroutine(transition); transition = null; }
+
+        if (transition != null)
+        {
+            StopCoroutine(transition);
+            transition = null;
+        }
     }
 
     private void Update()
     {
-        if (!IsGameRunning || IsPaused || transitioning || CurrentStageType != StageType.Aim || AimTimeTotal <= 0f)
+        if (!IsGameRunning ||
+            IsPaused ||
+            transitioning ||
+            AimTimeTotal <= 0f)
             return;
-        AimTimeRemaining = Mathf.Max(0f, AimTimeRemaining - Time.deltaTime);
-        OnAimTimeChanged?.Invoke(AimTimeRemaining, AimTimeTotal);
+
+        AimTimeRemaining = Mathf.Max(
+            0f,
+            AimTimeRemaining - Time.deltaTime
+        );
+
+        OnAimTimeChanged?.Invoke(
+            AimTimeRemaining,
+            AimTimeTotal
+        );
+
         if (AimTimeRemaining <= 0f)
         {
-            if (logEvents) Debug.Log($"[Stage] AIM TIMEOUT stage={CurrentStage}", this);
-            AimData failed = processor != null ? processor.CurrentAim : null;
-            if (processor != null) processor.StopAim();
-            FinishStage(StageResultType.Timeout, failed);
+            var aim = processor != null
+                ? processor.CurrentAim
+                : null;
+
+            processor?.StopAim();
+
+            FinishAim(StageResultType.Timeout, aim);
         }
     }
 
@@ -78,146 +151,277 @@ public class StageManager : MonoBehaviour
     {
         if (aimManager == null || processor == null)
         {
-            Debug.LogError("[Stage] AimManager/Processor reference missing", this);
+            Debug.LogError(
+                "StageManager: Aim references missing",
+                this
+            );
             return;
         }
+
         StopStages();
+
         CurrentStage = Mathf.Max(1, startingStage);
         IsGameRunning = true;
-        StartCurrentStage();
+
+        StartStage();
     }
 
-    // Compatibility for older test scenes; only starts stages, never starts the survival timer.
-    public void StartGame() => StartStages();
+    public void StartGame()
+    {
+        StartStages();
+    }
 
     public void StopStages()
     {
-        if (transition != null) { StopCoroutine(transition); transition = null; }
-        if (miniGameManager != null) miniGameManager.CancelMiniGame();
-        ReleaseMiniTimerPause();
-        if (processor != null) processor.StopAim();
+        if (transition != null)
+        {
+            StopCoroutine(transition);
+            transition = null;
+        }
+
+        miniGameManager?.CancelMiniGame();
+        processor?.StopAim();
+
         IsGameRunning = false;
         IsPaused = false;
         transitioning = false;
+
         AimTimeRemaining = 0f;
         AimTimeTotal = 0f;
+
         OnAimTimeChanged?.Invoke(0f, 0f);
     }
 
     public void PauseStages()
     {
-        if (!IsGameRunning || IsPaused) return;
+        if (!IsGameRunning || IsPaused)
+            return;
+
         IsPaused = true;
-        if (processor != null) processor.PauseAim();
+
+        processor?.PauseAim();
+        miniGameManager?.PauseMiniGame();
     }
 
     public void ResumeStages()
     {
-        if (!IsGameRunning || !IsPaused) return;
+        if (!IsGameRunning || !IsPaused)
+            return;
+
         IsPaused = false;
-        if (processor != null) processor.ResumeAim();
+
+        processor?.ResumeAim();
+        miniGameManager?.ResumeMiniGame();
     }
 
-    private void StartCurrentStage()
+    private void StartStage()
     {
-        if (!IsGameRunning) return;
+        if (!IsGameRunning)
+            return;
+
         transitioning = false;
-        AimTimeRemaining = AimTimeTotal = 0f;
-        CurrentStageType = settings.IsMiniGameStage(CurrentStage) ? StageType.MiniGame : StageType.Aim;
-        OnStageModeChanged?.Invoke(CurrentStageType);
-        if (CurrentStageType == StageType.MiniGame)
+        CurrentStageType = StageType.Aim;
+
+        OnStageModeChanged?.Invoke(StageType.Aim);
+
+        // 지정된 스테이지에서 미니게임 실행
+        foreach (var entry in miniGameSchedule)
         {
-            if (miniGameManager == null || !miniGameManager.StartMiniGame(CurrentStage))
+            if (entry == null ||
+                entry.StageNumber != CurrentStage ||
+                entry.Data == null)
+                continue;
+
+            if (miniGameManager == null)
             {
-                Debug.LogError("[Stage] MiniGameManager missing or unable to start", this);
-                StopStages(); OnGameOver?.Invoke(); return;
+                Debug.LogError(
+                    "MiniGameManager missing",
+                    this
+                );
             }
-            if (settings.PauseMainTimerDuringMiniGame)
+            else
             {
-                miniTimerPauseActive = true;
-                OnMiniGameTimePauseRequested?.Invoke(true);
+                miniGameManager.StartMiniGame(
+                    CurrentStage,
+                    entry.Data
+                );
             }
-            OnAimTimeChanged?.Invoke(0f, 0f);
+
+            break;
+        }
+
+        // Aim 생성
+        if (!aimManager.StartRandomAim())
+        {
+            StopStages();
+            OnGameOver?.Invoke();
+            return;
+        }
+
+        var aim = processor.CurrentAim;
+
+        // Aim 목표량 계산
+        float units = aim != null &&
+                      aim.Type == AimType.Hold
+            ? Mathf.Max(0.1f, aim.RequiredDuration)
+            : Mathf.Max(
+                1f,
+                aim != null ? aim.RequiredCount : 1f
+            );
+
+        if (aim != null &&
+            (aim.Type == AimType.AllKeys ||
+             aim.Type == AimType.Sequence))
+        {
+            units = Mathf.Max(
+                1f,
+                aim.TargetKeys != null
+                    ? aim.TargetKeys.Count
+                    : 1
+            );
+        }
+
+        // 기본 제한시간 설정
+        float multiplier = defaultSecondsPerUnit;
+        bool useTimeLimit = defaultUseTimeLimit;
+
+        // Aim 종류별 설정 적용
+        if (aim != null)
+        {
+            foreach (var rule in timeRules)
+            {
+                if (rule == null || rule.Type != aim.Type)
+                    continue;
+
+                useTimeLimit = rule.UseTimeLimit;
+                multiplier = rule.SecondsPerUnit;
+                break;
+            }
+        }
+
+        // 제한시간이 꺼져 있으면 0으로 설정
+        if (useTimeLimit)
+        {
+            AimTimeTotal = Mathf.Max(
+                0.1f,
+                units * multiplier
+            );
+
+            AimTimeRemaining = AimTimeTotal;
         }
         else
         {
-            if (!aimManager.StartRandomAim())
-            {
-                Debug.LogError("[Stage] Failed to start aim", this);
-                StopStages(); OnGameOver?.Invoke(); return;
-            }
-            var aim = processor.CurrentAim;
-            if (aim != null && (aim.UseTimeLimit || settings.UseStageTimeLimit))
-            {
-                float baseSeconds = aim.UseTimeLimit ? aim.BaseTimeLimitSeconds : settings.GetStageLimit(CurrentStage);
-                AimTimeTotal = Mathf.Max(0.1f, baseSeconds * settings.GetTimeMultiplier(CurrentStage));
-                AimTimeRemaining = AimTimeTotal;
-            }
-            OnAimTimeChanged?.Invoke(AimTimeRemaining, AimTimeTotal);
-            OnStageRewardChanged?.Invoke(settings.GetReward(aim, CurrentStage));
+            AimTimeTotal = 0f;
+            AimTimeRemaining = 0f;
         }
+
+        OnAimTimeChanged?.Invoke(
+            AimTimeRemaining,
+            AimTimeTotal
+        );
+
+        OnStageRewardChanged?.Invoke(successReward);
         OnStageStarted?.Invoke(CurrentStage);
-        if (logEvents) Debug.Log($"[Stage] START {CurrentStage} ({CurrentStageType}) limit={AimTimeTotal:F1}s", this);
     }
 
-    private void HandleAimCompleted(AimData aim)
+    private void AimCompleted(AimData aim)
     {
-        if (!IsGameRunning || IsPaused || transitioning || CurrentStageType != StageType.Aim) return;
-        FinishStage(StageResultType.Success, aim);
+        if (!IsGameRunning || IsPaused || transitioning)
+            return;
+
+        FinishAim(StageResultType.Success, aim);
     }
 
-    private void HandleMiniGameCompleted(int stage)
+    private void FinishAim(
+        StageResultType result,
+        AimData aim
+    )
     {
-        if (IsGameRunning && !transitioning && CurrentStageType == StageType.MiniGame && stage == CurrentStage)
-            FinishStage(StageResultType.Success, null);
-    }
+        if (!IsGameRunning || transitioning)
+            return;
 
-    private void HandleMiniGameFailed(int stage)
-    {
-        if (IsGameRunning && !transitioning && CurrentStageType == StageType.MiniGame && stage == CurrentStage)
-            FinishStage(StageResultType.MiniGameFailure, null);
-    }
-
-    private void FinishStage(StageResultType result, AimData aim)
-    {
-        if (!IsGameRunning || transitioning) return;
         transitioning = true;
-        if (processor != null && CurrentStageType == StageType.Aim) processor.StopAim();
-        ReleaseMiniTimerPause();
+
+        processor?.StopAim();
+
         AimTimeRemaining = 0f;
         AimTimeTotal = 0f;
+
         OnAimTimeChanged?.Invoke(0f, 0f);
-        float reward = 0f, penalty = 0f;
+
+        float reward =
+            result == StageResultType.Success
+                ? successReward
+                : 0f;
+
+        float penalty =
+            result == StageResultType.Success
+                ? 0f
+                : failurePenalty;
+
         if (result == StageResultType.Success)
-        {
-            reward = CurrentStageType == StageType.MiniGame ? settings.MiniGameClearRewardSeconds : settings.GetReward(aim, CurrentStage);
             OnStageCleared?.Invoke(CurrentStage);
-            if (reward > 0f) OnStageReward?.Invoke(reward);
-        }
-        else
-        {
-            // Mini-game penalties are placeholders until mini-game design is finalized.
-            penalty = CurrentStageType == StageType.MiniGame ? 0f : settings.GetPenalty(aim, CurrentStage);
-            if (penalty > 0f) OnStagePenalty?.Invoke(penalty);
-        }
-        OnStageFinished?.Invoke(new StageResult(CurrentStage, CurrentStageType, result, reward, penalty));
-        if (logEvents) Debug.Log($"[Stage] END {CurrentStage} result={result} reward={reward:F1} penalty={penalty:F1}", this);
-        if (IsGameRunning) transition = StartCoroutine(NextStageRoutine());
+
+        if (reward > 0f)
+            OnStageReward?.Invoke(reward);
+
+        if (penalty > 0f)
+            OnStagePenalty?.Invoke(penalty);
+
+        OnStageFinished?.Invoke(
+            new StageResult(
+                CurrentStage,
+                StageType.Aim,
+                result,
+                reward,
+                penalty
+            )
+        );
+
+        transition = StartCoroutine(NextStage());
     }
 
-    private IEnumerator NextStageRoutine()
+    private IEnumerator NextStage()
     {
         yield return null;
+
         transition = null;
-        if (!IsGameRunning) yield break;
+
+        if (!IsGameRunning)
+            yield break;
+
         CurrentStage++;
-        StartCurrentStage();
+
+        StartStage();
     }
 
-    private void ReleaseMiniTimerPause()
+    private void MiniCompleted(int stage)
     {
-        if (!miniTimerPauseActive) return;
-        miniTimerPauseActive = false;
-        OnMiniGameTimePauseRequested?.Invoke(false);
+        if (!IsGameRunning || miniGameManager == null)
+            return;
+
+        float reward = miniGameManager.LastSuccessReward;
+
+        if (reward > 0f)
+            OnStageReward?.Invoke(reward);
+    }
+
+    private void MiniFailed(int stage)
+    {
+        if (!IsGameRunning || miniGameManager == null)
+            return;
+
+        float penalty = miniGameManager.LastFailurePenalty;
+
+        if (penalty > 0f)
+            OnStagePenalty?.Invoke(penalty);
+    }
+
+    private void CollisionPenalty(float seconds)
+    {
+        if (!IsGameRunning || seconds <= 0f)
+            return;
+
+        OnStagePenalty?.Invoke(seconds);
     }
 }

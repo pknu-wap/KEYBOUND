@@ -36,9 +36,8 @@ public class GameHUD : MonoBehaviour
 
     private void Awake()
     {
-        // The HUD only displays data.
-        // It does not start the game or generate aims.
         ValidateReferences();
+        ClearUI();
     }
 
     private void OnEnable()
@@ -48,8 +47,6 @@ public class GameHUD : MonoBehaviour
 
     private void Start()
     {
-        // StageManager may already have started the first aim.
-        // Read the current manager state without resetting it.
         RefreshAll();
     }
 
@@ -101,7 +98,6 @@ public class GameHUD : MonoBehaviour
             stageManager.OnStageRewardChanged += HandleRewardChanged;
             stageManager.OnGameOver += HandleGameOver;
             stageManager.OnAimTimeChanged += HandleAimTimeChanged;
-            stageManager.OnStagePenalty += HandlePenalty;
             stageManager.OnStageModeChanged += HandleStageMode;
         }
 
@@ -134,7 +130,6 @@ public class GameHUD : MonoBehaviour
             stageManager.OnStageRewardChanged -= HandleRewardChanged;
             stageManager.OnGameOver -= HandleGameOver;
             stageManager.OnAimTimeChanged -= HandleAimTimeChanged;
-            stageManager.OnStagePenalty -= HandlePenalty;
             stageManager.OnStageModeChanged -= HandleStageMode;
         }
 
@@ -160,16 +155,54 @@ public class GameHUD : MonoBehaviour
     }
 
     // ========================================
-    // Initial State
+    // Initial UI
     // ========================================
+
+    private void ClearUI()
+    {
+        SetText(stageText, "STAGE 1");
+        SetText(stageModeText, "AIM");
+
+        SetText(rewardText, "+0s");
+        SetText(penaltyText, "-0s");
+
+        SetText(remainingTimeText, "00:00");
+        SetText(elapsedTimeText, "00:00");
+
+        SetText(aimTypeText, "No Aim");
+        SetText(aimDescriptionText, "Waiting for aim...");
+        SetText(aimProgressText, "0 / 0");
+        SetText(aimLimitText, "--");
+
+        if (timeSlider != null)
+        {
+            timeSlider.SetValueWithoutNotify(0f);
+        }
+
+        if (aimProgressSlider != null)
+        {
+            aimProgressSlider.SetValueWithoutNotify(0f);
+        }
+
+        if (aimLimitSlider != null)
+        {
+            aimLimitSlider.SetValueWithoutNotify(0f);
+        }
+    }
 
     private void RefreshAll()
     {
         if (stageManager != null)
         {
             HandleStageStarted(stageManager.CurrentStage);
-            HandleRewardChanged(stageManager.ClearRewardTime);
-            HandleAimTimeChanged(stageManager.AimTimeRemaining, stageManager.AimTimeTotal);
+
+            RefreshStageSettings();
+
+            HandleAimTimeChanged(
+                stageManager.AimTimeRemaining,
+                stageManager.AimTimeTotal
+            );
+
             HandleStageMode(stageManager.CurrentStageType);
         }
 
@@ -199,52 +232,6 @@ public class GameHUD : MonoBehaviour
         }
     }
 
-    private void RefreshAim()
-    {
-        if (aimProcessor == null)
-        {
-            ShowNoAim();
-            return;
-        }
-
-        AimData aim = aimProcessor.CurrentAim;
-
-        if (aim == null)
-        {
-            ShowNoAim();
-
-            if (logHudEvents)
-            {
-                Debug.LogWarning(
-                    "[GameHUD] CurrentAim is null.",
-                    this
-                );
-            }
-
-            return;
-        }
-
-        // Show the aim even if it is temporarily inactive.
-        HandleAimStarted(aim);
-
-        HandleAimProgressChanged(
-            aimProcessor.CurrentProgress,
-            aimProcessor.RequiredProgress
-        );
-    }
-
-    private void ShowNoAim()
-    {
-        SetText(aimTypeText, "No Aim");
-
-        SetText(
-            aimDescriptionText,
-            "Waiting for aim..."
-        );
-
-        HandleAimProgressChanged(0, 0);
-    }
-
     // ========================================
     // Stage UI
     // ========================================
@@ -256,6 +243,9 @@ public class GameHUD : MonoBehaviour
             $"STAGE {stage}"
         );
 
+        RefreshStageSettings();
+        RefreshAim();
+
         if (logHudEvents)
         {
             Debug.Log(
@@ -263,19 +253,43 @@ public class GameHUD : MonoBehaviour
                 this
             );
         }
-
-        // Synchronize with the current aim.
-        // This also covers cases where the aim-start event
-        // occurred before the HUD was ready.
-        RefreshAim();
     }
 
-    private void HandleRewardChanged(float reward)
+    private void RefreshStageSettings()
     {
+        if (stageManager == null)
+        {
+            SetText(rewardText, "+0s");
+            SetText(penaltyText, "-0s");
+            return;
+        }
+
+        float reward = stageManager.ClearRewardTime;
+        float penalty = stageManager.FailurePenaltyTime;
+
         SetText(
             rewardText,
             $"+{reward:0.#}s"
         );
+
+        SetText(
+            penaltyText,
+            $"-{penalty:0.#}s"
+        );
+    }
+
+    private void HandleRewardChanged(float reward)
+    {
+        // Display the current stage configuration,
+        // not the last reward received.
+        RefreshStageSettings();
+    }
+
+    private void HandleStageMode(StageType mode)
+    {
+        // Aim and mini-games can run simultaneously.
+        // The main stage objective is Aim.
+        SetText(stageModeText, "AIM");
     }
 
     private void HandleGameOver()
@@ -289,6 +303,8 @@ public class GameHUD : MonoBehaviour
             aimDescriptionText,
             "Time is up!"
         );
+
+        // Keep the current stage reward and penalty visible.
 
         if (logHudEvents)
         {
@@ -340,6 +356,45 @@ public class GameHUD : MonoBehaviour
     // ========================================
     // Aim UI
     // ========================================
+
+    private void RefreshAim()
+    {
+        if (aimProcessor == null)
+        {
+            ShowNoAim();
+            return;
+        }
+
+        AimData aim = aimProcessor.CurrentAim;
+
+        if (aim == null)
+        {
+            ShowNoAim();
+            return;
+        }
+
+        HandleAimStarted(aim);
+
+        HandleAimProgressChanged(
+            aimProcessor.CurrentProgress,
+            aimProcessor.RequiredProgress
+        );
+    }
+
+    private void ShowNoAim()
+    {
+        SetText(
+            aimTypeText,
+            "No Aim"
+        );
+
+        SetText(
+            aimDescriptionText,
+            "Waiting for aim..."
+        );
+
+        HandleAimProgressChanged(0, 0);
+    }
 
     private void HandleAimStarted(AimData aim)
     {
@@ -393,9 +448,31 @@ public class GameHUD : MonoBehaviour
         if (logHudEvents)
         {
             Debug.Log(
-                $"[GameHUD] Aim progress: " +
-                $"{current}/{required}",
+                $"[GameHUD] Aim progress: {current}/{required}",
                 this
+            );
+        }
+    }
+
+    private void HandleAimTimeChanged(
+        float remaining,
+        float total
+    )
+    {
+        SetText(
+            aimLimitText,
+            total > 0f ? $"{remaining:F1}s" : "--"
+        );
+
+        if (aimLimitSlider != null)
+        {
+            aimLimitSlider.minValue = 0f;
+            aimLimitSlider.maxValue = 1f;
+
+            aimLimitSlider.SetValueWithoutNotify(
+                total > 0f
+                    ? Mathf.Clamp01(remaining / total)
+                    : 0f
             );
         }
     }
@@ -425,27 +502,6 @@ public class GameHUD : MonoBehaviour
         }
     }
 
-    private void HandleAimTimeChanged(float remaining, float total)
-    {
-        SetText(aimLimitText, total > 0f ? $"{remaining:F1}s" : "--");
-        if (aimLimitSlider != null)
-        {
-            aimLimitSlider.minValue = 0f;
-            aimLimitSlider.maxValue = 1f;
-            aimLimitSlider.SetValueWithoutNotify(total > 0f ? Mathf.Clamp01(remaining / total) : 0f);
-        }
-    }
-
-    private void HandlePenalty(float seconds)
-    {
-        SetText(penaltyText, $"-{seconds:0.#}s");
-    }
-
-    private void HandleStageMode(StageType mode)
-    {
-        SetText(stageModeText, mode == StageType.MiniGame ? "MINI GAME" : "AIM");
-    }
-
     // ========================================
     // Utilities
     // ========================================
@@ -456,7 +512,9 @@ public class GameHUD : MonoBehaviour
     )
     {
         if (target != null)
+        {
             target.text = value;
+        }
     }
 
     private static string FormatTime(float seconds)
