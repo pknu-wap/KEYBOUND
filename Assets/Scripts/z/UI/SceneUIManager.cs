@@ -65,7 +65,7 @@ public class SceneUIManager : MonoBehaviour
             case UIViewKind.StartMenu:
                 v.primaryButton.onClick.AddListener(OnClickStart); v.quitButton.onClick.AddListener(OnClickQuit); break;
             case UIViewKind.PauseMenu:
-                v.primaryButton.onClick.AddListener(() => gameFlowManager.Resume());
+                v.primaryButton.onClick.AddListener(ResumeFromPauseMenu);
                 v.settingsButton.onClick.AddListener(OpenSettings); v.menuButton.onClick.AddListener(OnClickGoToStart); break;
             case UIViewKind.Settings:
                 v.primaryButton.onClick.AddListener(CloseSettings);
@@ -83,9 +83,27 @@ public class SceneUIManager : MonoBehaviour
     {
         if (gameFlowManager == null || gameFlowManager.State == GameState.GameOver) return;
         if (SettingsOpen) CloseSettings();
-        else if (gameFlowManager.State == GameState.Paused) gameFlowManager.Resume();
+        else if (gameFlowManager.State == GameState.Paused) ResumeFromPauseMenu();
         else gameFlowManager.Pause();
     }
+    private void ResumeFromPauseMenu()
+    {
+        if (gameFlowManager.State != GameState.Paused || SettingsOpen)
+            return;
+
+        var pauseMenu = GetView(UIViewKind.PauseMenu);
+        var escapeKey = GetView(UIViewKind.Gameplay)?.primaryButton?.transform as RectTransform;
+        if (escapeKey != null && pauseMenu != null && pauseMenu.isActiveAndEnabled &&
+            pauseMenu.TryGetComponent(out PausePopupEntrance entrance))
+        {
+            entrance.PlayTo(escapeKey.TransformPoint(escapeKey.rect.center), gameFlowManager.Resume);
+        }
+        else
+        {
+            gameFlowManager.Resume();
+        }
+    }
+
     public void OpenSettings()
     {
         if (gameFlowManager == null || gameFlowManager.State != GameState.Paused) return;
@@ -98,10 +116,22 @@ public class SceneUIManager : MonoBehaviour
     }
     private void DisplayState(GameState state)
     {
+        var gameplay = GetView(UIViewKind.Gameplay);
+        RectTransform escapeKey = state == GameState.Paused && gameplay != null && gameplay.gameObject.activeSelf
+            ? gameplay.primaryButton?.transform as RectTransform
+            : null;
+        Vector3 origin = escapeKey != null ? escapeKey.TransformPoint(escapeKey.rect.center) : Vector3.zero;
+
         SettingsOpen = false;
         Show(UIViewKind.Settings, false);
         Show(UIViewKind.Gameplay, state == GameState.Playing);
         Show(UIViewKind.PauseMenu, state == GameState.Paused);
+        if (escapeKey != null)
+        {
+            var pauseMenu = GetView(UIViewKind.PauseMenu);
+            if (pauseMenu != null && pauseMenu.TryGetComponent(out PausePopupEntrance entrance))
+                entrance.PlayFrom(origin);
+        }
         var result = GetView(UIViewKind.GameOver);
         if (result != null) result.resultText.text = gameFlowManager.SurvivalSeconds.HasValue
             ? "Survival time: " + gameFlowManager.SurvivalSeconds.Value.ToString("F1") + " s"
