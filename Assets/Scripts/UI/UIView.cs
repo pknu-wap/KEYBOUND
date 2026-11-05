@@ -15,5 +15,6 @@ namespace Keybound.UI
         public Slider sfxSlider;
         public Toggle fullscreenToggle;
         public Text resultText;
+        public Text resultStageText;
     }
 }

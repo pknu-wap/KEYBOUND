@@ -143,11 +143,36 @@ public class SceneUIManager : MonoBehaviour
             if (pauseMenu != null && pauseMenu.TryGetComponent(out PausePopupEntrance entrance))
                 entrance.PlayFrom(origin);
         }
-        var result = GetView(UIViewKind.GameOver);
-        if (result != null) result.resultText.text = gameFlowManager.SurvivalSeconds.HasValue
-            ? "Survival time: " + gameFlowManager.SurvivalSeconds.Value.ToString("F1") + " s"
-            : "Survival time: --";
+        if (state == GameState.GameOver)
+            DisplayGameOverResult();
         Show(UIViewKind.GameOver, state == GameState.GameOver);
+    }
+
+    private void DisplayGameOverResult()
+    {
+        var result = GetView(UIViewKind.GameOver);
+        if (result == null)
+            return;
+
+        if (result.resultText != null)
+        {
+            if (gameFlowManager.SurvivalSeconds is float survival)
+            {
+                int seconds = Mathf.Max(0, Mathf.FloorToInt(survival));
+                result.resultText.text = $"{seconds / 60:00}:{seconds % 60:00}";
+            }
+            else
+            {
+                result.resultText.text = "--:--";
+            }
+        }
+
+        if (result.resultStageText != null)
+        {
+            result.resultStageText.text = gameFlowManager.FinalStage is int stage
+                ? $"STAGE {stage:00}"
+                : "STAGE --";
+        }
     }
     private void Show(UIViewKind kind, bool visible)
     {

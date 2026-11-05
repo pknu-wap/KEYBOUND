@@ -19,6 +19,7 @@ public static class UIFlowValidation
     private static int step;
     private static float pausedTime;
     private static double expirationDeadline;
+    private static double resumeDeadline;
     private static bool capturedVolumes;
     private static KeyboardKey previousKey;
     private static InputSettings originalInputSettings;
@@ -136,8 +137,10 @@ public static class UIFlowValidation
                     Check(!ui.SettingsOpen && flow.State == GameState.Paused,"ESC closes settings without resuming");
                     InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState()); break;
                 case 5:
+                    resumeDeadline = EditorApplication.timeSinceStartup + 2.0;
                     InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(Key.Escape)); break;
                 case 6:
+                    if (flow.State == GameState.Paused && EditorApplication.timeSinceStartup < resumeDeadline) return;
                     Check(flow.State == GameState.Playing && Time.timeScale == 1 && player.enabled && map.enabled,"ESC resumes and restores components");
                     InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState());
                     timer.StopTimer();
@@ -153,7 +156,12 @@ public static class UIFlowValidation
                     Check(flow.SurvivalSeconds.HasValue && Mathf.Approximately(flow.SurvivalSeconds.Value, timer.ElapsedTime), "GameOver reads survival time from current TimeManager");
                     flow.HandleTimeExpired(); flow.HandleTimeExpired();
                     flow.SetSurvivalTime(12.5f);
-                    Check(ui.GetView(UIViewKind.GameOver).resultText.text.Contains("12.5"),"External survival data displayed");
+                    var result = ui.GetView(UIViewKind.GameOver);
+                    Check(result.resultText.text == "00:12", "External survival data displayed as minutes and seconds");
+                    var stages = UnityEngine.Object.FindAnyObjectByType<StageManager>();
+                    Check(flow.FinalStage == stages.CurrentStage &&
+                          result.resultStageText.text == $"STAGE {stages.CurrentStage:00}",
+                          "GameOver displays the final reached stage");
                     Check(UnityEngine.Object.FindObjectsByType<UIView>(FindObjectsInactive.Include,FindObjectsSortMode.None).Length == 4,"Repeated game over does not duplicate UI");
                     InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(Key.Escape)); break;
                 case 8:
@@ -169,9 +177,13 @@ public static class UIFlowValidation
                     ui.HandleEscape(); ui.OpenSettings(); ui.GetView(UIViewKind.Settings).primaryButton.onClick.Invoke();
                     Check(!ui.SettingsOpen && flow.State == GameState.Paused,"Settings BACK keeps pause");
                     ui.GetView(UIViewKind.PauseMenu).primaryButton.onClick.Invoke();
+                    resumeDeadline = EditorApplication.timeSinceStartup + 2.0;
+                    break;
+                case 11:
+                    if (flow.State == GameState.Paused && EditorApplication.timeSinceStartup < resumeDeadline) return;
                     Check(flow.State == GameState.Playing && Time.timeScale == 1,"RESUME button works");
                     ui.HandleEscape(); ui.GetView(UIViewKind.PauseMenu).menuButton.onClick.Invoke(); break;
-                case 11:
+                case 12:
                     Check(SceneManager.GetActiveScene().name == "StartScene" && Time.timeScale == 1,"Pause MAIN MENU works");
                     GameSettings.SetVolume(SoundChannel.BGM,SessionState.GetFloat("KEYBOUND.Validation.Bgm",1));
                     GameSettings.SetVolume(SoundChannel.SFX,SessionState.GetFloat("KEYBOUND.Validation.Sfx",1));
