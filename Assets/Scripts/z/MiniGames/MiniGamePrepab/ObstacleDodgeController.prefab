@@ -46,4 +46,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ObstacleDodgeController
   map: {fileID: 0}
   player: {fileID: 0}
-  markerScale: 0.8
+  markerScale: 0.75
+  warningSeconds: 1
+  warningColor: {r: 0.902, g: 0.318, b: 0, a: 0.37254903}
+  obstacleColor: {r: 0.9, g: 0.2, b: 0.2, a: 0.972549}
+  maxCollisions: 5

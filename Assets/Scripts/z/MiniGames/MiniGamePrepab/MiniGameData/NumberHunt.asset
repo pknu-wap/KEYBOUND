@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2ef1e6c77aebbce408af8eebed97dbf1, type: 3}
-  m_Name: ObstacleDodgeController
+  m_Name: NumberHunt
   m_EditorClassIdentifier: Assembly-CSharp::MiniGameData
-  Id: obstacle-dodge
-  DisplayName: Obstacle Dodge
-  SuccessRewardSeconds: 10
-  FailurePenaltySeconds: 5
-  ControllerPrefab: {fileID: 2606372161363790538, guid: d4a44a536009c654ba9eccd2556c7c73, type: 3}
-  Settings: {fileID: 11400000, guid: 048aa43c32f7719459fea1b9c91b9482, type: 2}
+  Id: NumberHunt
+  DisplayName: NumberHunt
+  SuccessRewardSeconds: 40
+  FailurePenaltySeconds: 30
+  ControllerPrefab: {fileID: 8486277040986856470, guid: 941f113dacfca27469fd68eae2d22082, type: 3}
+  Settings: {fileID: 11400000, guid: aca8733cecc0fd34a8a83959090bbc62, type: 2}
