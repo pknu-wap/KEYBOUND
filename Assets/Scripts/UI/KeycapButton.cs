@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace Keybound.UI
@@ -34,6 +35,21 @@ namespace Keybound.UI
         {
             base.DoStateTransition(state, instant);
             SetPressed(state == SelectionState.Pressed);
+        }
+
+        public override void OnPointerUp(PointerEventData eventData)
+        {
+            base.OnPointerUp(eventData);
+
+            var events = EventSystem.current;
+            if (eventData.button != PointerEventData.InputButton.Left ||
+                events == null || events.currentSelectedGameObject != gameObject)
+                return;
+
+            var releaseTarget = ExecuteEvents.GetEventHandler<IPointerClickHandler>(
+                eventData.pointerCurrentRaycast.gameObject);
+            if (!eventData.eligibleForClick || releaseTarget != gameObject)
+                events.SetSelectedGameObject(null, eventData);
         }
 
         protected override void OnDisable()

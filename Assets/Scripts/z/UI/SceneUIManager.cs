@@ -63,7 +63,9 @@ public class SceneUIManager : MonoBehaviour
         switch (v.kind)
         {
             case UIViewKind.StartMenu:
-                v.primaryButton.onClick.AddListener(OnClickStart); v.quitButton.onClick.AddListener(OnClickQuit); break;
+                v.primaryButton.onClick.AddListener(OnClickStart);
+                v.settingsButton?.onClick.AddListener(OpenSettings);
+                v.quitButton.onClick.AddListener(OnClickQuit); break;
             case UIViewKind.PauseMenu:
                 v.primaryButton.onClick.AddListener(ResumeFromPauseMenu);
                 v.settingsButton.onClick.AddListener(OpenSettings); v.menuButton.onClick.AddListener(OnClickGoToStart); break;
@@ -106,13 +108,22 @@ public class SceneUIManager : MonoBehaviour
 
     public void OpenSettings()
     {
-        if (gameFlowManager == null || gameFlowManager.State != GameState.Paused) return;
-        SettingsOpen = true; Show(UIViewKind.PauseMenu, false); Show(UIViewKind.Settings, true);
+        if (GetView(UIViewKind.Settings) == null ||
+            (gameFlowManager != null && gameFlowManager.State != GameState.Paused))
+            return;
+
+        SettingsOpen = true;
+        Show(UIViewKind.PauseMenu, false);
+        Show(UIViewKind.Settings, true);
     }
     public void CloseSettings()
     {
-        SettingsOpen = false; Show(UIViewKind.Settings, false);
-        Show(UIViewKind.PauseMenu, gameFlowManager != null && gameFlowManager.State == GameState.Paused);
+        SettingsOpen = false;
+        Show(UIViewKind.Settings, false);
+        if (gameFlowManager == null)
+            Show(UIViewKind.StartMenu, true);
+        else
+            Show(UIViewKind.PauseMenu, gameFlowManager.State == GameState.Paused);
     }
     private void DisplayState(GameState state)
     {
@@ -148,8 +159,8 @@ public class SceneUIManager : MonoBehaviour
             if (button != null) EventSystem.current.SetSelectedGameObject(button.gameObject);
         }
     }
-    public void OnClickStart() { gameSceneManager.StartGame(); }
+    public void OnClickStart() { if (!SettingsOpen) gameSceneManager.StartGame(); }
     public void OnClickGoToStart() { gameSceneManager.GoToStartScene(); }
-    public void OnClickQuit() { gameSceneManager.QuitGame(); }
+    public void OnClickQuit() { if (!SettingsOpen) gameSceneManager.QuitGame(); }
     public void OnClickRestart() { /* Legacy callback intentionally has no restart action. */ }
 }
