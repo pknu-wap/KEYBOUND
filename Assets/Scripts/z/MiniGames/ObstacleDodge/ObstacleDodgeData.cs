@@ -16,15 +16,13 @@ public class ObstacleDodgeData : ScriptableObject
     public List<ObstacleWave> Waves =
         new List<ObstacleWave>();
 
-    // ADDED: Generate a 60-second hard demo.
+    // EXISTING: Generate the original 60-second demo.
     [ContextMenu("Generate Hard 60 Second Demo")]
     public void GenerateDemoPattern()
     {
         CollisionPenaltySeconds = 3f;
-
         Waves = new List<ObstacleWave>();
 
-        // Wave 1: Unpredictable positions.
         AddWave("Wave 1 - Unpredictable",
             CreatePattern(1f, 1.5f, Key.Q, Key.T, Key.H, Key.N),
             CreatePattern(3.5f, 1.5f, Key.E, Key.A, Key.J, Key.V),
@@ -32,7 +30,6 @@ public class ObstacleDodgeData : ScriptableObject
             CreatePattern(8.5f, 1.5f, Key.Y, Key.S, Key.G, Key.C)
         );
 
-        // Wave 2: Rapid attacks.
         AddWave("Wave 2 - Rapid",
             CreatePattern(1f, 1.5f, Key.Q, Key.F, Key.K, Key.X),
             CreatePattern(2.8f, 1.5f, Key.W, Key.T, Key.H, Key.V),
@@ -41,7 +38,6 @@ public class ObstacleDodgeData : ScriptableObject
             CreatePattern(8.5f, 1.5f, Key.Y, Key.D, Key.B, Key.C)
         );
 
-        // Wave 3: Mixed attacks.
         AddWave("Wave 3 - Mixed",
             CreatePattern(1f, 1.2f, Key.Q, Key.D, Key.H, Key.M),
             CreatePattern(2.2f, 1.2f, Key.W, Key.A, Key.J, Key.B),
@@ -52,7 +48,6 @@ public class ObstacleDodgeData : ScriptableObject
             CreatePattern(8.8f, 1.2f, Key.Q, Key.W, Key.B, Key.M)
         );
 
-        // Wave 4: Cross-map pressure.
         AddWave("Wave 4 - Cross Pressure",
             CreatePattern(1f, 1.4f, Key.Q, Key.G, Key.N, Key.P),
             CreatePattern(2.7f, 1.4f, Key.W, Key.F, Key.M, Key.O),
@@ -61,7 +56,6 @@ public class ObstacleDodgeData : ScriptableObject
             CreatePattern(8.6f, 1.4f, Key.T, Key.D, Key.C, Key.Y)
         );
 
-        // Wave 5: Fast alternating attacks.
         AddWave("Wave 5 - Alternating",
             CreatePattern(1f, 1.2f, Key.Q, Key.E, Key.G, Key.B),
             CreatePattern(2.4f, 1.2f, Key.W, Key.R, Key.H, Key.N),
@@ -71,7 +65,6 @@ public class ObstacleDodgeData : ScriptableObject
             CreatePattern(8.8f, 1.2f, Key.Q, Key.G, Key.B, Key.P)
         );
 
-        // Wave 6: Final chaos.
         AddWave("Wave 6 - Final Chaos",
             CreatePattern(1f, 1.1f, Key.Q, Key.D, Key.H, Key.M),
             CreatePattern(2.2f, 1.1f, Key.W, Key.A, Key.J, Key.B),
@@ -82,29 +75,132 @@ public class ObstacleDodgeData : ScriptableObject
             CreatePattern(8.9f, 1.1f, Key.Q, Key.W, Key.B, Key.M)
         );
 
-#if UNITY_EDITOR
-        UnityEditor.EditorUtility.SetDirty(this);
-        UnityEditor.AssetDatabase.SaveAssets();
-#endif
+        SaveGeneratedData();
 
         Debug.Log(
             "[ObstacleDodgeData] Hard 60-second demo generated."
         );
     }
 
-    // ADDED: Add a wave with multiple patterns.
+    // ADDED: Generate the new 40-second Divide pattern.
+    [ContextMenu("Generate 40 Second Divide Pattern")]
+    public void GenerateDividePattern()
+    {
+        CollisionPenaltySeconds = 3f;
+        Waves = new List<ObstacleWave>();
+
+        // Wave 1: Basic divide with alternating openings.
+        AddWave("Wave 1 - Basic Divide",
+            CreatePattern(1f, 2f,
+                Key.Digit3, Key.E, Key.D,
+                Key.Digit7, Key.U, Key.J),
+
+            CreatePattern(3.5f, 2f,
+                Key.Digit3, Key.E, Key.C,
+                Key.Digit7, Key.J, Key.M),
+
+            CreatePattern(6f, 2f,
+                Key.Digit3, Key.D, Key.C,
+                Key.Digit7, Key.U, Key.M),
+
+            CreatePattern(8.5f, 1.5f,
+                Key.E, Key.D, Key.C,
+                Key.U, Key.J, Key.M)
+        );
+
+        // Wave 2: Gates switch between rows.
+        AddWave("Wave 2 - Switching Gates",
+            CreatePattern(1f, 1.8f,
+                Key.Digit3, Key.E, Key.C,
+                Key.Digit7, Key.U, Key.J),
+
+            CreatePattern(3.2f, 1.8f,
+                Key.Digit3, Key.D, Key.C,
+                Key.Digit7, Key.J, Key.M),
+
+            CreatePattern(5.4f, 1.8f,
+                Key.E, Key.D, Key.C,
+                Key.Digit7, Key.U, Key.M),
+
+            CreatePattern(7.6f, 2.4f,
+                Key.Digit3, Key.E, Key.D,
+                Key.U, Key.J, Key.M)
+        );
+
+        // Wave 3: Narrow passages.
+        AddWave("Wave 3 - Narrow Passage",
+            CreatePattern(1f, 2f,
+                Key.Digit3, Key.E, Key.D, Key.C,
+                Key.Digit7, Key.U, Key.J),
+
+            CreatePattern(3.5f, 2f,
+                Key.Digit3, Key.E, Key.D,
+                Key.Digit7, Key.U, Key.J, Key.M),
+
+            CreatePattern(6f, 2f,
+                Key.Digit3, Key.E, Key.C,
+                Key.Digit7, Key.U, Key.J, Key.M),
+
+            CreatePattern(8.5f, 1.5f,
+                Key.Digit3, Key.E, Key.D, Key.C,
+                Key.Digit7, Key.J, Key.M)
+        );
+
+        // Wave 4: Rapid gate changes.
+        AddWave("Wave 4 - Rapid Gates",
+            CreatePattern(0.8f, 1.2f,
+                Key.Digit3, Key.E, Key.D,
+                Key.Digit7, Key.U, Key.M),
+
+            CreatePattern(2.3f, 1.2f,
+                Key.Digit3, Key.D, Key.C,
+                Key.Digit7, Key.J, Key.M),
+
+            CreatePattern(3.8f, 1.2f,
+                Key.E, Key.D, Key.C,
+                Key.Digit7, Key.U, Key.J),
+
+            CreatePattern(5.3f, 1.2f,
+                Key.Digit3, Key.E, Key.C,
+                Key.U, Key.J, Key.M),
+
+            CreatePattern(6.8f, 1.2f,
+                Key.Digit3, Key.E, Key.D,
+                Key.Digit7, Key.J, Key.M),
+
+            CreatePattern(8.3f, 1.7f,
+                Key.Digit3, Key.D, Key.C,
+                Key.Digit7, Key.U, Key.M)
+        );
+
+        SaveGeneratedData();
+
+        Debug.Log(
+            "[ObstacleDodgeData] 40-second Divide pattern generated."
+        );
+    }
+
+    // Save changes to the selected ScriptableObject asset.
+    private void SaveGeneratedData()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorUtility.SetDirty(this);
+        UnityEditor.AssetDatabase.SaveAssets();
+#endif
+    }
+
     private void AddWave(
         string waveName,
         params ObstaclePattern[] patterns)
     {
         ObstacleWave wave = new ObstacleWave();
+
         wave.Name = waveName;
         wave.Patterns = new List<ObstaclePattern>(patterns);
 
         Waves.Add(wave);
     }
 
-    // Creates a pattern with selected keys.
     private ObstaclePattern CreatePattern(
         float startDelay,
         float lifetime,

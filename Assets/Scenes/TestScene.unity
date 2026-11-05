@@ -557,10 +557,12 @@ MonoBehaviour:
   miniGameManager: {fileID: 116485354}
   startingStage: 1
   miniGameSchedule:
-  - StageNumber: 10
-    Data: {fileID: 11400000, guid: e1a46334cf5b421468ad8454be12ebf0, type: 2}
   - StageNumber: 3
     Data: {fileID: 11400000, guid: 9f4c6ab3a6291e34c86c25268ca820dc, type: 2}
+  - StageNumber: 10
+    Data: {fileID: 11400000, guid: e1a46334cf5b421468ad8454be12ebf0, type: 2}
+  - StageNumber: 25
+    Data: {fileID: 11400000, guid: fd83b94f9f301b1479b2babc851b3cdc, type: 2}
   successReward: 5.5
   failurePenalty: 5
   defaultSecondsPerUnit: 3
@@ -3765,7 +3767,7 @@ MonoBehaviour:
   successRewardText: {fileID: 2069590113}
   failurePenaltyText: {fileID: 659136530}
   statusText: {fileID: 1804360226}
-  miniGameStages: 030000000a000000i
+  miniGameStages: 030000000a00000019000000i
 --- !u!1 &1399340420
 GameObject:
   m_ObjectHideFlags: 0

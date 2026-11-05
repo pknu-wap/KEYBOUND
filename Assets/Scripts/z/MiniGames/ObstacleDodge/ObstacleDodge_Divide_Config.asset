@@ -1,0 +1,78 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac7546f85d962364398217546997b4d1, type: 3}
+  m_Name: ObstacleDodge_Divide_Config
+  m_EditorClassIdentifier: Assembly-CSharp::ObstacleDodgeData
+  CollisionPenaltySeconds: 3
+  Waves:
+  - Name: Wave 1 - Basic Divide
+    Patterns:
+    - StartDelaySeconds: 1
+      LifetimeSeconds: 2
+      Keys: 2b00000013000000120000002f0000002300000018000000i
+    - StartDelaySeconds: 3.5
+      LifetimeSeconds: 2
+      Keys: 2b00000013000000110000002f000000180000001b000000i
+    - StartDelaySeconds: 6
+      LifetimeSeconds: 2
+      Keys: 2b00000012000000110000002f000000230000001b000000i
+    - StartDelaySeconds: 8.5
+      LifetimeSeconds: 1.5
+      Keys: 13000000120000001100000023000000180000001b000000i
+  - Name: Wave 2 - Switching Gates
+    Patterns:
+    - StartDelaySeconds: 1
+      LifetimeSeconds: 1.8
+      Keys: 2b00000013000000110000002f0000002300000018000000i
+    - StartDelaySeconds: 3.2
+      LifetimeSeconds: 1.8
+      Keys: 2b00000012000000110000002f000000180000001b000000i
+    - StartDelaySeconds: 5.4
+      LifetimeSeconds: 1.8
+      Keys: 1300000012000000110000002f000000230000001b000000i
+    - StartDelaySeconds: 7.6
+      LifetimeSeconds: 2.4
+      Keys: 2b000000130000001200000023000000180000001b000000i
+  - Name: Wave 3 - Narrow Passage
+    Patterns:
+    - StartDelaySeconds: 1
+      LifetimeSeconds: 2
+      Keys: 2b0000001300000012000000110000002f0000002300000018000000i
+    - StartDelaySeconds: 3.5
+      LifetimeSeconds: 2
+      Keys: 2b00000013000000120000002f00000023000000180000001b000000i
+    - StartDelaySeconds: 6
+      LifetimeSeconds: 2
+      Keys: 2b00000013000000110000002f00000023000000180000001b000000i
+    - StartDelaySeconds: 8.5
+      LifetimeSeconds: 1.5
+      Keys: 2b0000001300000012000000110000002f000000180000001b000000i
+  - Name: Wave 4 - Rapid Gates
+    Patterns:
+    - StartDelaySeconds: 0.8
+      LifetimeSeconds: 1.2
+      Keys: 2b00000013000000120000002f000000230000001b000000i
+    - StartDelaySeconds: 2.3
+      LifetimeSeconds: 1.2
+      Keys: 2b00000012000000110000002f000000180000001b000000i
+    - StartDelaySeconds: 3.8
+      LifetimeSeconds: 1.2
+      Keys: 1300000012000000110000002f0000002300000018000000i
+    - StartDelaySeconds: 5.3
+      LifetimeSeconds: 1.2
+      Keys: 2b000000130000001100000023000000180000001b000000i
+    - StartDelaySeconds: 6.8
+      LifetimeSeconds: 1.2
+      Keys: 2b00000013000000120000002f000000180000001b000000i
+    - StartDelaySeconds: 8.3
+      LifetimeSeconds: 1.7
+      Keys: 2b00000012000000110000002f000000230000001b000000i

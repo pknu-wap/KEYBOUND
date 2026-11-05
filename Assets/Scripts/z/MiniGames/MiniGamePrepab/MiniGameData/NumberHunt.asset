@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MiniGameData
   Id: NumberHunt
   DisplayName: NumberHunt
-  SuccessRewardSeconds: 40
-  FailurePenaltySeconds: 30
+  SuccessRewardSeconds: 30
+  FailurePenaltySeconds: 20
   ControllerPrefab: {fileID: 8486277040986856470, guid: 941f113dacfca27469fd68eae2d22082, type: 3}
   Settings: {fileID: 11400000, guid: aca8733cecc0fd34a8a83959090bbc62, type: 2}
