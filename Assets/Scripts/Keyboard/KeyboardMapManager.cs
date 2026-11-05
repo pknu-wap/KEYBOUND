@@ -97,6 +97,7 @@ namespace Keybound.Keyboard
                     image.sprite = keyFace;
                     image.color = Color.white;
                     image.gameObject.AddComponent<MirrorKeyFace>();
+                    keyboardKey.AlignLabelTopLeft(new Vector2(11f, 8f), 26f);
                 }
 
                 RectTransform keyRectTransform = (RectTransform)keyboardKey.transform;

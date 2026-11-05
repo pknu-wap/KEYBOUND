@@ -29,6 +29,16 @@ namespace Keybound.Keyboard
             keyNameText.text = data.Name;
         }
 
+        internal void AlignLabelTopLeft(Vector2 inset, float fontSize)
+        {
+            if (keyNameText == null)
+                return;
+
+            keyNameText.alignment = TextAlignmentOptions.TopLeft;
+            keyNameText.fontSize = fontSize;
+            keyNameText.margin = new Vector4(inset.x, inset.y, 0f, 0f);
+        }
+
         private void Reset()
         {
             keyNameText = GetComponentInChildren<TMP_Text>();
