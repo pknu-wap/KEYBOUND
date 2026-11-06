@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 using UnityEngine.InputSystem.UI;
+using UnityEngine.UI;
 using InputKeyboard = UnityEngine.InputSystem.Keyboard;
 
 namespace Keybound.UI
@@ -13,6 +15,9 @@ namespace Keybound.UI
         private InputActionAsset navigation;
         private InputActionReference submit;
         private InputActionReference cancel;
+        private KeyControl heldKey;
+        private Button heldButton;
+        private bool pressedInSettings;
 
         private void Awake()
         {
@@ -32,26 +37,84 @@ namespace Keybound.UI
         private void Update()
         {
             var keyboard = InputKeyboard.current;
+            if (heldKey != null)
+            {
+                if (heldKey.device != keyboard || pressedInSettings != menu.SettingsOpen || !CanPress(heldButton))
+                {
+                    ClearShortcut();
+                }
+                else if (!heldKey.isPressed)
+                {
+                    var button = heldButton;
+                    ClearShortcut();
+                    button.onClick.Invoke();
+                    return;
+                }
+                else
+                {
+                    return;
+                }
+            }
+
             if (keyboard == null)
                 return;
 
-            if (keyboard.escapeKey.wasPressedThisFrame)
+            if (menu.SettingsOpen)
             {
-                if (menu.SettingsOpen)
-                    menu.CloseSettings();
-                else
-                    menu.OnClickQuit();
+                if (keyboard.escapeKey.wasPressedThisFrame)
+                    PressShortcut(keyboard.escapeKey, menu.GetView(UIViewKind.Settings)?.primaryButton);
                 return;
             }
 
-            if (menu.SettingsOpen)
+            var startMenu = menu.GetView(UIViewKind.StartMenu);
+            if (keyboard.escapeKey.wasPressedThisFrame)
+                PressShortcut(keyboard.escapeKey, startMenu?.quitButton);
+            else if (keyboard.tabKey.wasPressedThisFrame)
+                PressShortcut(keyboard.tabKey, startMenu?.settingsButton);
+            else if (keyboard.enterKey.wasPressedThisFrame)
+                PressShortcut(keyboard.enterKey, startMenu?.primaryButton);
+            else if (keyboard.numpadEnterKey.wasPressedThisFrame)
+                PressShortcut(keyboard.numpadEnterKey, startMenu?.primaryButton);
+        }
+
+        private void PressShortcut(KeyControl key, Button button)
+        {
+            if (!CanPress(button))
                 return;
 
-            if (keyboard.tabKey.wasPressedThisFrame)
-                menu.OpenSettings();
-            else if (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame)
-                menu.OnClickStart();
+            heldKey = key;
+            heldButton = button;
+            pressedInSettings = menu.SettingsOpen;
+            button.onClick.AddListener(ClearShortcut);
+            if (button is KeycapButton keycap)
+                keycap.SetShortcutPressed(true);
         }
+
+        private void ClearShortcut()
+        {
+            if (heldButton != null)
+            {
+                heldButton.onClick.RemoveListener(ClearShortcut);
+                if (heldButton is KeycapButton keycap)
+                    keycap.SetShortcutPressed(false);
+            }
+
+            heldButton = null;
+            heldKey = null;
+        }
+
+        private static bool CanPress(Button button)
+        {
+            return button != null && button.isActiveAndEnabled && button.IsInteractable();
+        }
+
+        private void OnApplicationFocus(bool focused)
+        {
+            if (!focused)
+                ClearShortcut();
+        }
+
+        private void OnDisable() => ClearShortcut();
 
         private void OnDestroy()
         {

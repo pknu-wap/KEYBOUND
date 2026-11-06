@@ -20,6 +20,10 @@ public static class UIFlowValidation
     private static float pausedTime;
     private static double expirationDeadline;
     private static double resumeDeadline;
+    private static double escapeHoldDeadline;
+    private static float escapeRestY;
+    private static float resultMenuRestY;
+    private static float resumeRestY;
     private static bool capturedVolumes;
     private static KeyboardKey previousKey;
     private static InputSettings originalInputSettings;
@@ -91,7 +95,9 @@ public static class UIFlowValidation
             var timer = UnityEngine.Object.FindAnyObjectByType<TimeManager>();
             var map = UnityEngine.Object.FindAnyObjectByType<KeyboardMapManager>();
             var player = UnityEngine.Object.FindAnyObjectByType<PlayerKeyboardPosition>();
-            if (step == 7 && flow != null && flow.State != GameState.GameOver && EditorApplication.timeSinceStartup < expirationDeadline) return;
+            if (step == 10 && flow != null && flow.State != GameState.GameOver && EditorApplication.timeSinceStartup < expirationDeadline) return;
+            if ((step == 18 || step == 20) && SceneManager.GetActiveScene().name == "GameScene" &&
+                EditorApplication.timeSinceStartup < escapeHoldDeadline) return;
             switch(step)
             {
                 case 0:
@@ -123,9 +129,16 @@ public static class UIFlowValidation
                     InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(Key.S)); break;
                 case 3:
                     Check(Mathf.Approximately(timer.RemainingTime,pausedTime) && player.CurrentKey == previousKey,"Timer and movement frozen across frames");
-                    InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState());
-                    ui.GetView(UIViewKind.PauseMenu).settingsButton.onClick.Invoke();
-                    Check(ui.SettingsOpen && flow.State == GameState.Paused,"Settings opens while paused");
+                    InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(Key.Tab)); break;
+                case 4:
+                    var settingsButton = ui.GetView(UIViewKind.PauseMenu).settingsButton;
+                    Check(settingsButton != null && settingsButton.isActiveAndEnabled &&
+                        settingsButton.GetComponentInChildren<UnityEngine.UI.Text>().text == "SETTINGS",
+                        "Pause menu shows the SETTINGS button without a TAB label");
+                    Check(!ui.SettingsOpen && flow.State == GameState.Paused, "TAB down keeps the pause menu open");
+                    InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState()); break;
+                case 5:
+                    Check(ui.SettingsOpen && flow.State == GameState.Paused, "TAB release opens settings");
                     var settings = ui.GetView(UIViewKind.Settings);
                     SessionState.SetFloat("KEYBOUND.Validation.Bgm",GameSettings.Bgm);
                     SessionState.SetFloat("KEYBOUND.Validation.Sfx",GameSettings.Sfx);
@@ -133,14 +146,31 @@ public static class UIFlowValidation
                     settings.bgmSlider.value = .37f; settings.sfxSlider.value = .62f;
                     Check(Mathf.Approximately(GameSettings.Bgm,.37f) && Mathf.Approximately(GameSettings.Sfx,.62f),"Independent volume settings persisted");
                     InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(Key.Escape)); break;
-                case 4:
-                    Check(!ui.SettingsOpen && flow.State == GameState.Paused,"ESC closes settings without resuming");
-                    InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState()); break;
-                case 5:
-                    resumeDeadline = EditorApplication.timeSinceStartup + 2.0;
-                    InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(Key.Escape)); break;
                 case 6:
+                    Check(ui.SettingsOpen && flow.State == GameState.Paused, "ESC down keeps settings open");
+                    InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState()); break;
+                case 7:
+                    Check(!ui.SettingsOpen && flow.State == GameState.Paused, "ESC release closes settings without resuming");
+                    resumeRestY = ((RectTransform)ui.GetView(UIViewKind.PauseMenu).primaryButton.transform).anchoredPosition.y;
+                    InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(Key.Escape)); break;
+                case 8:
+                    var pause = ui.GetView(UIViewKind.PauseMenu);
+                    Check(flow.State == GameState.Paused &&
+                        Mathf.Approximately(((RectTransform)pause.primaryButton.transform).anchoredPosition.y, resumeRestY),
+                        "ESC down keeps the game paused without depressing RESUME");
+                    var gauge = pause.escapeHoldGauge;
+                    var gaugeMask = (RectTransform)gauge.parent;
+                    var menuRect = (RectTransform)pause.menuButton.transform;
+                    Check(gaugeMask.parent == menuRect && gaugeMask.GetComponent<UnityEngine.UI.Mask>() != null &&
+                        gaugeMask.offsetMin.x >= 5 && gaugeMask.offsetMin.y >= 6 &&
+                        gaugeMask.offsetMax.x <= -5 && gaugeMask.offsetMax.y <= -6 &&
+                        Mathf.Approximately(gauge.rect.height, gaugeMask.rect.height) &&
+                        gauge.anchorMax.x > 0 && gauge.anchorMax.x < 1, "Holding ESC fills inside the MAIN MENU border");
+                    resumeDeadline = EditorApplication.timeSinceStartup + 2.0;
+                    InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState()); break;
+                case 9:
                     if (flow.State == GameState.Paused && EditorApplication.timeSinceStartup < resumeDeadline) return;
+                    Check(ui.GetView(UIViewKind.PauseMenu).escapeHoldGauge.anchorMax.x == 0, "ESC release clears the MAIN MENU gauge");
                     Check(flow.State == GameState.Playing && Time.timeScale == 1 && player.enabled && map.enabled,"ESC resumes and restores components");
                     InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState());
                     timer.StopTimer();
@@ -150,7 +180,7 @@ public static class UIFlowValidation
                     timer.StartTimer();
                     expirationDeadline = EditorApplication.timeSinceStartup + 5;
                     break;
-                case 7:
+                case 10:
                     Check(flow.State == GameState.GameOver && Time.timeScale == 0,"Existing OnTimeOver triggers game over");
                     Check(ui.GetView(UIViewKind.GameOver).gameObject.activeSelf,"GameOver popup visible");
                     Check(flow.SurvivalSeconds.HasValue && Mathf.Approximately(flow.SurvivalSeconds.Value, timer.ElapsedTime), "GameOver reads survival time from current TimeManager");
@@ -164,27 +194,70 @@ public static class UIFlowValidation
                           "GameOver displays the final reached stage");
                     Check(UnityEngine.Object.FindObjectsByType<UIView>(FindObjectsInactive.Include,FindObjectsSortMode.None).Length == 4,"Repeated game over does not duplicate UI");
                     InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(Key.Escape)); break;
-                case 8:
+                case 11:
                     Check(flow.State == GameState.GameOver && !map.enabled && !player.enabled,"ESC cannot resume GameOver");
-                    InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState());
-                    ui.GetView(UIViewKind.GameOver).menuButton.onClick.Invoke(); break;
-                case 9:
-                    Check(SceneManager.GetActiveScene().name == "StartScene" && Time.timeScale == 1,"MAIN MENU restores timescale and StartScene");
+                    resultMenuRestY = ((RectTransform)ui.GetView(UIViewKind.GameOver).menuButton.transform).anchoredPosition.y;
+                    UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
+                    InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(Key.Enter)); break;
+                case 12:
+                    var resultMenu = (RectTransform)ui.GetView(UIViewKind.GameOver).menuButton.transform;
+                    Check(flow.State == GameState.GameOver && resultMenu.anchoredPosition.y < resultMenuRestY,
+                        "Enter depresses MAIN with no selected button");
+                    InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState()); break;
+                case 13:
+                    Check(SceneManager.GetActiveScene().name == "StartScene" && Time.timeScale == 1,"Enter release on the result restores timescale and StartScene");
                     Check(Mathf.Approximately(GameSettings.Bgm,.37f) && Mathf.Approximately(GameSettings.Sfx,.62f),"Volumes survive Scene transition");
                     ui.GetView(UIViewKind.StartMenu).primaryButton.onClick.Invoke(); break;
-                case 10:
+                case 14:
                     Check(flow.State == GameState.Playing && player.enabled && timer.RemainingTime > 0,"New run initializes after game over");
-                    ui.HandleEscape(); ui.OpenSettings(); ui.GetView(UIViewKind.Settings).primaryButton.onClick.Invoke();
+                    ui.HandleEscape();
+                    ui.GetView(UIViewKind.PauseMenu).settingsButton.onClick.Invoke();
+                    Check(ui.SettingsOpen, "Clicking the SETTINGS button opens settings");
+                    ui.GetView(UIViewKind.Settings).primaryButton.onClick.Invoke();
                     Check(!ui.SettingsOpen && flow.State == GameState.Paused,"Settings BACK keeps pause");
                     ui.GetView(UIViewKind.PauseMenu).primaryButton.onClick.Invoke();
                     resumeDeadline = EditorApplication.timeSinceStartup + 2.0;
                     break;
-                case 11:
+                case 15:
                     if (flow.State == GameState.Paused && EditorApplication.timeSinceStartup < resumeDeadline) return;
                     Check(flow.State == GameState.Playing && Time.timeScale == 1,"RESUME button works");
                     ui.HandleEscape(); ui.GetView(UIViewKind.PauseMenu).menuButton.onClick.Invoke(); break;
-                case 12:
+                case 16:
                     Check(SceneManager.GetActiveScene().name == "StartScene" && Time.timeScale == 1,"Pause MAIN MENU works");
+                    ui.GetView(UIViewKind.StartMenu).primaryButton.onClick.Invoke(); break;
+                case 17:
+                    escapeRestY = ((RectTransform)ui.GetView(UIViewKind.Gameplay).primaryButton.transform).anchoredPosition.y;
+                    escapeHoldDeadline = EditorApplication.timeSinceStartup + 1.25;
+                    InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(Key.Escape)); break;
+                case 18:
+                    Check(SceneManager.GetActiveScene().name == "GameScene" && flow.State == GameState.Playing,
+                        "Holding ESC during gameplay does not return to StartScene or open pause");
+                    var escapeRect = (RectTransform)ui.GetView(UIViewKind.Gameplay).primaryButton.transform;
+                    Check(escapeRect.anchoredPosition.y < escapeRestY, "ESC keeps the HUD key depressed while held");
+                    InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState()); break;
+                case 19:
+                    escapeRect = (RectTransform)ui.GetView(UIViewKind.Gameplay).primaryButton.transform;
+                    Check(flow.State == GameState.Paused && Mathf.Approximately(escapeRect.anchoredPosition.y, escapeRestY),
+                        "ESC release restores the HUD key and opens pause");
+                    escapeHoldDeadline = EditorApplication.timeSinceStartup + 3.0;
+                    InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(Key.Escape)); break;
+                case 20:
+                    Check(SceneManager.GetActiveScene().name == "StartScene" && Time.timeScale == 1,
+                        "Holding ESC while paused returns to StartScene before release");
+                    InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState());
+                    ui.GetView(UIViewKind.StartMenu).primaryButton.onClick.Invoke(); break;
+                case 21:
+                    flow.HandleTimeExpired();
+                    resultMenuRestY = ((RectTransform)ui.GetView(UIViewKind.GameOver).menuButton.transform).anchoredPosition.y;
+                    InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(Key.NumpadEnter)); break;
+                case 22:
+                    resultMenu = (RectTransform)ui.GetView(UIViewKind.GameOver).menuButton.transform;
+                    Check(flow.State == GameState.GameOver && resultMenu.anchoredPosition.y < resultMenuRestY,
+                        "Numpad Enter depresses MAIN without leaving the result");
+                    InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState()); break;
+                case 23:
+                    Check(SceneManager.GetActiveScene().name == "StartScene" && Time.timeScale == 1,
+                        "Numpad Enter release on the result returns to StartScene");
                     GameSettings.SetVolume(SoundChannel.BGM,SessionState.GetFloat("KEYBOUND.Validation.Bgm",1));
                     GameSettings.SetVolume(SoundChannel.SFX,SessionState.GetFloat("KEYBOUND.Validation.Sfx",1));
                     SessionState.SetBool(Active,false);

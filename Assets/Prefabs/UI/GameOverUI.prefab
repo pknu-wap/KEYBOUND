@@ -538,6 +538,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+  submitOnRelease: 1
 --- !u!1 &1900700010
 GameObject:
   m_ObjectHideFlags: 0

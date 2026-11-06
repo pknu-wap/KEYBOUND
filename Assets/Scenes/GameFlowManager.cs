@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using Keybound.Keyboard;
 using Keybound.Player;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public enum GameState { Playing, Paused, GameOver }
 
@@ -27,7 +26,6 @@ public sealed class GameFlowManager : MonoBehaviour
     public int? FinalStage { get; private set; }
 
     public event Action<GameState> StateChanged;
-    public event Action EscapePressed;
 
     private void Awake()
     {
@@ -86,15 +84,6 @@ public sealed class GameFlowManager : MonoBehaviour
         }
 
         RestoreGameplay();
-    }
-
-    private void Update()
-    {
-        if (Keyboard.current != null &&
-            Keyboard.current.escapeKey.wasPressedThisFrame)
-        {
-            EscapePressed?.Invoke();
-        }
     }
 
     public void StartGame()

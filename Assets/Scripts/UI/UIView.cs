@@ -10,6 +10,7 @@ namespace Keybound.UI
         public Button primaryButton;
         public Button settingsButton;
         public Button menuButton;
+        public RectTransform escapeHoldGauge;
         public Button quitButton;
         public Slider bgmSlider;
         public Slider sfxSlider;

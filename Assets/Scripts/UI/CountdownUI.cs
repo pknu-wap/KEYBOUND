@@ -11,6 +11,7 @@ namespace Keybound.UI
         [SerializeField] private Slider timeSlider;
         [SerializeField] private StageManager stageManager;
         [SerializeField] private TMP_Text stageText;
+        [SerializeField] private bool showStageNumberOnly;
         [SerializeField] private TMP_Text survivalText;
 
         private int displayedTenths = -1;
@@ -80,8 +81,11 @@ namespace Keybound.UI
 
         private void DisplayStage(int stage)
         {
-            if (stageText != null)
-                stageText.text = stage > 0 ? $"STAGE {stage:00}" : "STAGE --";
+            if (stageText == null)
+                return;
+
+            string stageNumber = stage > 0 ? $"{stage:00}" : "--";
+            stageText.text = showStageNumberOnly ? stageNumber : $"STAGE {stageNumber}";
         }
     }
 }

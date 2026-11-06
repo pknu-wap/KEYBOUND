@@ -2,14 +2,24 @@ using System.Collections.Generic;
 using Keybound.UI;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.Controls;
+using UnityEngine.UI;
+using InputKeyboard = UnityEngine.InputSystem.Keyboard;
 
 public class SceneUIManager : MonoBehaviour
 {
+    private const double EscapeHoldSeconds = 0.75;
+
     [SerializeField] private GameSceneManager gameSceneManager;
     [SerializeField] private GameFlowManager gameFlowManager;
     [SerializeField] private RectTransform uiRoot;
     [SerializeField] private UILayout layout;
     private readonly Dictionary<UIViewKind, UIView> views = new Dictionary<UIViewKind, UIView>();
+    private KeyControl heldMenuKey;
+    private KeycapButton heldMenuButton;
+    private RectTransform heldEscapeGauge;
+    private double escapePressedAt;
+
     public bool SettingsOpen { get; private set; }
     public UIView GetView(UIViewKind kind) => views.TryGetValue(kind, out var view) ? view : null;
     private void Awake()
@@ -42,10 +52,7 @@ public class SceneUIManager : MonoBehaviour
     private void OnEnable()
     {
         if (gameFlowManager != null)
-        {
             gameFlowManager.StateChanged += DisplayState;
-            gameFlowManager.EscapePressed += HandleEscape;
-        }
     }
     private void Start()
     {
@@ -54,9 +61,101 @@ public class SceneUIManager : MonoBehaviour
     }
     private void OnDisable()
     {
-        if (gameFlowManager == null) return;
-        gameFlowManager.StateChanged -= DisplayState;
-        gameFlowManager.EscapePressed -= HandleEscape;
+        ClearMenuPress();
+        if (gameFlowManager != null)
+            gameFlowManager.StateChanged -= DisplayState;
+    }
+
+    private void OnApplicationFocus(bool focused)
+    {
+        if (!focused)
+            ClearMenuPress();
+    }
+
+    private void Update()
+    {
+        if (gameFlowManager == null || gameFlowManager.State == GameState.GameOver)
+            return;
+
+        var keyboard = InputKeyboard.current;
+        if (heldMenuKey == null)
+        {
+            if (keyboard == null)
+                return;
+
+            if (keyboard.escapeKey.wasPressedThisFrame)
+                BeginEscapePress(keyboard.escapeKey);
+            else if (keyboard.tabKey.wasPressedThisFrame && gameFlowManager.State == GameState.Paused && !SettingsOpen)
+                BeginMenuPress(keyboard.tabKey, GetView(UIViewKind.PauseMenu)?.settingsButton);
+            return;
+        }
+
+        if (heldMenuKey.device != keyboard)
+        {
+            ClearMenuPress();
+            return;
+        }
+
+        bool escape = heldMenuKey == keyboard.escapeKey;
+        if (!heldMenuKey.isPressed)
+        {
+            ClearMenuPress();
+            if (escape)
+                HandleEscape();
+            else
+                OpenSettings();
+            return;
+        }
+
+        if (heldEscapeGauge == null)
+            return;
+
+        float progress = Mathf.Clamp01((float)((Time.unscaledTimeAsDouble - escapePressedAt) / EscapeHoldSeconds));
+        heldEscapeGauge.anchorMax = new Vector2(progress, 1f);
+
+        if (progress >= 1f)
+        {
+            heldMenuKey = null;
+            OnClickGoToStart();
+        }
+    }
+
+    private void BeginEscapePress(KeyControl escape)
+    {
+        if (SettingsOpen)
+        {
+            BeginMenuPress(escape, GetView(UIViewKind.Settings)?.primaryButton);
+        }
+        else if (gameFlowManager.State == GameState.Paused)
+        {
+            heldEscapeGauge = GetView(UIViewKind.PauseMenu)?.escapeHoldGauge;
+            escapePressedAt = Time.unscaledTimeAsDouble;
+            BeginMenuPress(escape, null);
+        }
+        else
+        {
+            BeginMenuPress(escape, GetView(UIViewKind.Gameplay)?.primaryButton);
+        }
+    }
+
+    private void BeginMenuPress(KeyControl key, Button button)
+    {
+        heldMenuKey = key;
+        heldMenuButton = button as KeycapButton;
+        if (heldMenuButton != null)
+            heldMenuButton.SetShortcutPressed(true);
+    }
+
+    private void ClearMenuPress()
+    {
+        if (heldMenuButton != null)
+            heldMenuButton.SetShortcutPressed(false);
+        if (heldEscapeGauge != null)
+            heldEscapeGauge.anchorMax = Vector2.up;
+
+        heldMenuButton = null;
+        heldMenuKey = null;
+        heldEscapeGauge = null;
     }
     private void Bind(UIView v)
     {
@@ -93,6 +192,7 @@ public class SceneUIManager : MonoBehaviour
         if (gameFlowManager.State != GameState.Paused || SettingsOpen)
             return;
 
+        ClearMenuPress();
         var pauseMenu = GetView(UIViewKind.PauseMenu);
         var escapeKey = GetView(UIViewKind.Gameplay)?.primaryButton?.transform as RectTransform;
         if (escapeKey != null && pauseMenu != null && pauseMenu.isActiveAndEnabled &&
@@ -112,12 +212,14 @@ public class SceneUIManager : MonoBehaviour
             (gameFlowManager != null && gameFlowManager.State != GameState.Paused))
             return;
 
+        ClearMenuPress();
         SettingsOpen = true;
         Show(UIViewKind.PauseMenu, false);
         Show(UIViewKind.Settings, true);
     }
     public void CloseSettings()
     {
+        ClearMenuPress();
         SettingsOpen = false;
         Show(UIViewKind.Settings, false);
         if (gameFlowManager == null)
@@ -127,6 +229,7 @@ public class SceneUIManager : MonoBehaviour
     }
     private void DisplayState(GameState state)
     {
+        ClearMenuPress();
         var gameplay = GetView(UIViewKind.Gameplay);
         RectTransform escapeKey = state == GameState.Paused && gameplay != null && gameplay.gameObject.activeSelf
             ? gameplay.primaryButton?.transform as RectTransform

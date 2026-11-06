@@ -38,7 +38,7 @@ namespace Keybound.UI
                 string key = AimConditionGenerator.GetKeyName(aim.TargetKeys[0]);
                 instruction = instruction.Replace(
                     $" {key} ",
-                    $" <mark=#F4F4F4><color=#141414> {key} </color></mark> ");
+                    $" <mark=#FFFFFF42><color=#FFFFFF> {key} </color></mark> ");
             }
 
             description.text = aim.Type != AimType.Hold && required > 0
