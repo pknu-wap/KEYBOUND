@@ -141,6 +141,9 @@ public sealed class GameFlowManager : MonoBehaviour
         }
 
         StateChanged?.Invoke(State);
+
+        // ADDED: Play BGM after gameplay starts successfully.
+        AudioManager.Instance?.PlayBGM();
     }
 
     public void Pause()
@@ -182,6 +185,9 @@ public sealed class GameFlowManager : MonoBehaviour
         started = false;
 
         ChangeState(GameState.GameOver);
+
+        // ADDED: Stop BGM when the game ends.
+        AudioManager.Instance?.StopBGM();
     }
 
     private void HandleStageReward(float seconds)
