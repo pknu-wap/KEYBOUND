@@ -1,4 +1,5 @@
-﻿
+
+using Keybound.UI;
 using UnityEngine;
 
 public class AudioManager : MonoBehaviour
@@ -41,7 +42,6 @@ public class AudioManager : MonoBehaviour
         {
             bgmSource.loop = true;
             bgmSource.playOnAwake = false;
-            bgmSource.volume = bgmVolume;
         }
 
         // ADDED: Configure dedicated movement source.
@@ -49,7 +49,6 @@ public class AudioManager : MonoBehaviour
         {
             moveSource.loop = false;
             moveSource.playOnAwake = false;
-            moveSource.volume = sfxVolume;
             moveSource.clip = moveClip;
         }
 
@@ -58,8 +57,42 @@ public class AudioManager : MonoBehaviour
         {
             sfxSource.loop = false;
             sfxSource.playOnAwake = false;
-            sfxSource.volume = sfxVolume;
         }
+    }
+
+    private void OnEnable()
+    {
+        if (Instance != this)
+            return;
+
+        GameSettings.VolumeChanged += ApplyVolume;
+        ApplyVolume();
+    }
+
+    private void OnDisable()
+    {
+        GameSettings.VolumeChanged -= ApplyVolume;
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
+    }
+
+    private void ApplyVolume()
+    {
+        float bgm = bgmVolume * GameSettings.Bgm;
+        float sfx = sfxVolume * GameSettings.Sfx;
+
+        if (bgmSource != null)
+            bgmSource.volume = bgm;
+
+        if (moveSource != null)
+            moveSource.volume = sfx;
+
+        if (sfxSource != null)
+            sfxSource.volume = sfx;
     }
 
     // Start background music.
