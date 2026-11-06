@@ -1,4 +1,4 @@
-﻿
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,11 +9,16 @@ using Keybound.Player;
 
 public class ObstacleDodgeController : MiniGameBase
 {
+    private const string CenterMarkerName = "Center Marker";
+    private const float CenterMarkerSize = 28f;
+
     [Header("References")]
     [SerializeField] private KeyboardMapManager map;
     [SerializeField] private PlayerKeyboardPosition player;
 
     [Header("Visual")]
+    [SerializeField] private Sprite centerMarkerSprite;
+
     [SerializeField, Range(0.1f, 1f)]
     private float markerScale = 0.8f;
 
@@ -260,6 +265,10 @@ public class ObstacleDodgeController : MiniGameBase
 
                 if (image != null)
                     image.color = obstacleColor;
+
+                var center = go.transform.Find(CenterMarkerName);
+                if (center != null)
+                    center.GetComponent<Image>().color = obstacleColor;
             }
         }
         else
@@ -286,31 +295,23 @@ public class ObstacleDodgeController : MiniGameBase
         KeyboardKey tile,
         Color color)
     {
-        var go = new GameObject(
-            "Obstacle_" + key,
-            typeof(RectTransform),
-            typeof(Image)
-        );
+        var marker = tile.CreateMiniGameMarker("Obstacle_" + key, color, markerScale);
+        if (centerMarkerSprite == null)
+            return marker;
 
-        go.transform.SetParent(tile.transform, false);
+        var center = new GameObject(CenterMarkerName, typeof(RectTransform), typeof(Image));
+        var rect = (RectTransform)center.transform;
+        rect.SetParent(marker.transform, false);
+        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.sizeDelta = Vector2.one * CenterMarkerSize;
 
-        var rect = (RectTransform)go.transform;
-
-        rect.anchorMin = Vector2.zero;
-        rect.anchorMax = Vector2.one;
-
-        rect.offsetMin = Vector2.zero;
-        rect.offsetMax = Vector2.zero;
-
-        rect.localScale =
-            Vector3.one * markerScale;
-
-        var image = go.GetComponent<Image>();
-
+        var image = center.GetComponent<Image>();
+        image.sprite = centerMarkerSprite;
         image.color = color;
+        image.preserveAspect = true;
         image.raycastTarget = false;
-
-        return go;
+        return marker;
     }
 
     private void Remove(Key key)

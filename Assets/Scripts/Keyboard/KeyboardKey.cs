@@ -1,6 +1,7 @@
 using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Keybound.Keyboard
 {
@@ -37,6 +38,35 @@ namespace Keybound.Keyboard
             keyNameText.alignment = TextAlignmentOptions.TopLeft;
             keyNameText.fontSize = fontSize;
             keyNameText.margin = new Vector4(inset.x, inset.y, 0f, 0f);
+        }
+
+        internal GameObject CreateMiniGameMarker(string markerName, Color color, float scale)
+        {
+            var marker = new GameObject(markerName, typeof(RectTransform), typeof(Image));
+            var rect = (RectTransform)marker.transform;
+            rect.SetParent(transform, false);
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            var image = marker.GetComponent<Image>();
+            image.color = color;
+            image.raycastTarget = false;
+
+            var keyFace = TryGetComponent<MirrorKeyFace>(out _) ? GetComponent<Image>().sprite : null;
+            if (keyFace != null)
+            {
+                image.sprite = keyFace;
+                marker.AddComponent<MirrorKeyFace>();
+                rect.SetAsFirstSibling();
+            }
+            else
+            {
+                rect.localScale = Vector3.one * scale;
+            }
+
+            return marker;
         }
 
         private void Reset()

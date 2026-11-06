@@ -1,4 +1,4 @@
-﻿
+
 using System.Collections.Generic;
 using Keybound.Keyboard;
 using TMPro;
@@ -15,6 +15,7 @@ public class KeyboardAimHighlighter : MonoBehaviour
     [Header("Colors")]
     [SerializeField] private Color targetColor = Color.yellow;
     [SerializeField] private Color completedColor = Color.green;
+    [SerializeField] private Color highlightedTextColor = Color.black;
 
     [Header("Press Count Effect")]
     [SerializeField, Min(0f)]
@@ -418,9 +419,9 @@ public class KeyboardAimHighlighter : MonoBehaviour
                     key,
                     out TMP_Text text) &&
                 text != null &&
-                text.color != Color.black)
+                text.color != highlightedTextColor)
             {
-                text.color = Color.black;
+                text.color = highlightedTextColor;
             }
         }
 
@@ -477,6 +478,7 @@ public class KeyboardAimHighlighter : MonoBehaviour
                 dot != null)
             {
                 dot.SetActive(true);
+                KeepAboveMiniGameMarkers(dot.transform);
             }
         }
 
@@ -624,6 +626,7 @@ public class KeyboardAimHighlighter : MonoBehaviour
         }
 
         holdBarObject.SetActive(true);
+        KeepAboveMiniGameMarkers(holdBarObject.transform);
 
         float progress = aimProcessor != null
             ? aimProcessor.HoldProgress
@@ -706,6 +709,12 @@ public class KeyboardAimHighlighter : MonoBehaviour
     {
         // Built-in white sprite used for UI fill.
         return GetCircleSprite();
+    }
+
+    private static void KeepAboveMiniGameMarkers(Transform overlay)
+    {
+        if (overlay.GetSiblingIndex() != overlay.parent.childCount - 1)
+            overlay.SetAsLastSibling();
     }
 
     private void HideHoldBar()

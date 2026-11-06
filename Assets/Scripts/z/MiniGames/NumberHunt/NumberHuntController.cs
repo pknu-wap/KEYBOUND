@@ -1,9 +1,8 @@
-﻿
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.UI;
 using TMPro;
 using Keybound.Keyboard;
 using Keybound.Player;
@@ -186,32 +185,11 @@ public class NumberHuntController : MiniGameBase
             maximum + 1
         );
 
-        // ADDED: Create block UI.
-        GameObject marker = new GameObject(
+        GameObject marker = tile.CreateMiniGameMarker(
             "NumberBlock_" + selectedKey,
-            typeof(RectTransform),
-            typeof(Image)
+            config.BlockColor,
+            config.MarkerScale
         );
-
-        marker.transform.SetParent(
-            tile.transform,
-            false
-        );
-
-        RectTransform rect =
-            marker.GetComponent<RectTransform>();
-
-        rect.anchorMin = Vector2.zero;
-        rect.anchorMax = Vector2.one;
-        rect.offsetMin = Vector2.zero;
-        rect.offsetMax = Vector2.zero;
-
-        rect.localScale =
-            Vector3.one * config.MarkerScale;
-
-        Image image = marker.GetComponent<Image>();
-        image.color = config.BlockColor;
-        image.raycastTarget = false;
 
         // ADDED: Create number label.
         GameObject label = new GameObject(
@@ -238,6 +216,7 @@ public class NumberHuntController : MiniGameBase
 
         numberText.text = number.ToString();
         numberText.fontSize = 32;
+        numberText.fontStyle = FontStyles.Bold;
         numberText.alignment =
             TextAlignmentOptions.Center;
 
