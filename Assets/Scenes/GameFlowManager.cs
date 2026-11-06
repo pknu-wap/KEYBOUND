@@ -1,10 +1,9 @@
-﻿
+
 using System;
 using System.Collections.Generic;
 using Keybound.Keyboard;
 using Keybound.Player;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public enum GameState { Playing, Paused, GameOver }
 
@@ -24,9 +23,9 @@ public sealed class GameFlowManager : MonoBehaviour
 
     public GameState State { get; private set; } = GameState.Playing;
     public float? SurvivalSeconds { get; private set; }
+    public int? FinalStage { get; private set; }
 
     public event Action<GameState> StateChanged;
-    public event Action EscapePressed;
 
     private void Awake()
     {
@@ -87,15 +86,6 @@ public sealed class GameFlowManager : MonoBehaviour
         RestoreGameplay();
     }
 
-    private void Update()
-    {
-        if (Keyboard.current != null &&
-            Keyboard.current.escapeKey.wasPressedThisFrame)
-        {
-            EscapePressed?.Invoke();
-        }
-    }
-
     public void StartGame()
     {
         if (started && State != GameState.GameOver)
@@ -115,6 +105,7 @@ public sealed class GameFlowManager : MonoBehaviour
 
         miniGameTimePaused = false;
         SurvivalSeconds = null;
+        FinalStage = null;
         State = GameState.Playing;
         started = true;
 
@@ -174,6 +165,8 @@ public sealed class GameFlowManager : MonoBehaviour
 
         if (timeManager != null)
             SurvivalSeconds = timeManager.ElapsedTime;
+        if (stageManager != null && stageManager.CurrentStage > 0)
+            FinalStage = stageManager.CurrentStage;
 
         stageManager?.StopStages();
         timeManager?.StopTimer();

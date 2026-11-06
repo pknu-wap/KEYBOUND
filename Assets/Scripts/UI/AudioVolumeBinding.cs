@@ -8,8 +8,8 @@ namespace Keybound.UI
     public static class GameSettings
     {
         private const string Prefix = "KEYBOUND.";
-        public static float Bgm => Mathf.Clamp01(PlayerPrefs.GetFloat(Prefix + "BGM", 1));
-        public static float Sfx => Mathf.Clamp01(PlayerPrefs.GetFloat(Prefix + "SFX", 1));
+        public static float Bgm => Mathf.Clamp01(PlayerPrefs.GetFloat(Prefix + "BGM", 0.5f));
+        public static float Sfx => Mathf.Clamp01(PlayerPrefs.GetFloat(Prefix + "SFX", 0.5f));
         public static bool Fullscreen => PlayerPrefs.GetInt(Prefix + "Fullscreen", Screen.fullScreen ? 1 : 0) != 0;
         public static event Action VolumeChanged;
         public static void SetVolume(SoundChannel channel, float value)

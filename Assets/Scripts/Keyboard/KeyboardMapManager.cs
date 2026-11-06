@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 using InputKeyboard = UnityEngine.InputSystem.Keyboard;
 
 namespace Keybound.Keyboard
@@ -15,6 +16,8 @@ namespace Keybound.Keyboard
         [SerializeField] private Vector2 keySpacing = new Vector2(10f, 10f);
         [SerializeField] private float lowerRowOffset = 20f;
         [SerializeField] private Vector2 mapPadding = new Vector2(20f, 20f);
+        [SerializeField] private bool fitToParent = true;
+        [SerializeField] private Sprite keyFace;
 
         private readonly Dictionary<Key, KeyboardKey> keysByInput =
             new Dictionary<Key, KeyboardKey>();
@@ -24,7 +27,10 @@ namespace Keybound.Keyboard
         private void Awake()
         {
             GenerateKeyboard();
-            FitMapToParent();
+            if (fitToParent)
+            {
+                FitMapToParent();
+            }
         }
 
         private void Update()
@@ -86,6 +92,13 @@ namespace Keybound.Keyboard
                 KeyboardKey keyboardKey = Instantiate(keyboardKeyPrefab, transform, false);
                 keyboardKey.name = $"Key_{keyData.Name}";
                 keyboardKey.SetData(keyData);
+                if (keyFace != null && keyboardKey.TryGetComponent(out Image image))
+                {
+                    image.sprite = keyFace;
+                    image.color = Color.white;
+                    image.gameObject.AddComponent<MirrorKeyFace>();
+                    keyboardKey.AlignLabelTopLeft(new Vector2(11f, 8f), 26f);
+                }
 
                 RectTransform keyRectTransform = (RectTransform)keyboardKey.transform;
                 keyRectTransform.anchorMin = new Vector2(0.5f, 0.5f);
