@@ -360,7 +360,12 @@ public class StageManager : MonoBehaviour
                 : failurePenalty;
 
         if (result == StageResultType.Success)
+        {
             OnStageCleared?.Invoke(CurrentStage);
+
+            // ADDED: Play sound when an Aim stage is cleared.
+            AudioManager.Instance?.PlayClearSFX();
+        }
 
         if (reward > 0f)
             OnStageReward?.Invoke(reward);
