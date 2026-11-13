@@ -18,7 +18,7 @@ MonoBehaviour:
   PenaltyMultiplier: 1
   MinKeyCount: 1
   MaxKeyCount: 3
-  MinPressCount: 3
-  MaxPressCount: 5
+  MinPressCount: 5
+  MaxPressCount: 20
   MinHoldTime: 1.5
   MaxHoldTime: 3

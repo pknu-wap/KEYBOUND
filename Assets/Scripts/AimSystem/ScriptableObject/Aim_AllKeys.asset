@@ -12,13 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25c341956a0d4a047b5f5156bc981ec1, type: 3}
   m_Name: Aim_AllKeys
   m_EditorClassIdentifier: Assembly-CSharp::AimGenerationSettings
-  AimType: 0
+  AimType: 1
   Enabled: 1
   RewardMultiplier: 1
   PenaltyMultiplier: 1
-  MinKeyCount: 1
-  MaxKeyCount: 3
-  MinPressCount: 3
-  MaxPressCount: 5
+  MinKeyCount: 5
+  MaxKeyCount: 15
+  MinPressCount: 5
+  MaxPressCount: 10
   MinHoldTime: 1.5
   MaxHoldTime: 3
