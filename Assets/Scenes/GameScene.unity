@@ -658,6 +658,18 @@ MonoBehaviour:
   - Type: 4
     UseTimeLimit: 1
     SecondsPerUnit: 0.5
+  - Type: 1
+    UseTimeLimit: 0
+    SecondsPerUnit: 0.5
+  - Type: 2
+    UseTimeLimit: 0
+    SecondsPerUnit: 0.5
+  - Type: 3
+    UseTimeLimit: 0
+    SecondsPerUnit: 0.5
+  - Type: 0
+    UseTimeLimit: 0
+    SecondsPerUnit: 0.5
 --- !u!4 &349645085
 Transform:
   m_ObjectHideFlags: 0
@@ -705,56 +717,11 @@ MonoBehaviour:
   generator: {fileID: 1534853960}
   processor: {fileID: 632371430}
   aimSettings:
-  - AimType: 0
-    Enabled: 1
-    RewardMultiplier: 1
-    PenaltyMultiplier: 1
-    MinKeyCount: 5
-    MaxKeyCount: 10
-    MinPressCount: 5
-    MaxPressCount: 20
-    MinHoldTime: 0
-    MaxHoldTime: 0
-  - AimType: 1
-    Enabled: 1
-    RewardMultiplier: 1
-    PenaltyMultiplier: 1
-    MinKeyCount: 3
-    MaxKeyCount: 10
-    MinPressCount: 0
-    MaxPressCount: 0
-    MinHoldTime: 0
-    MaxHoldTime: 0
-  - AimType: 2
-    Enabled: 1
-    RewardMultiplier: 1
-    PenaltyMultiplier: 1
-    MinKeyCount: 2
-    MaxKeyCount: 5
-    MinPressCount: 0
-    MaxPressCount: 0
-    MinHoldTime: 0
-    MaxHoldTime: 0
-  - AimType: 3
-    Enabled: 1
-    RewardMultiplier: 1
-    PenaltyMultiplier: 1
-    MinKeyCount: 2
-    MaxKeyCount: 5
-    MinPressCount: 0
-    MaxPressCount: 0
-    MinHoldTime: 2
-    MaxHoldTime: 4.5
-  - AimType: 4
-    Enabled: 1
-    RewardMultiplier: 1
-    PenaltyMultiplier: 1
-    MinKeyCount: 2
-    MaxKeyCount: 5
-    MinPressCount: 10
-    MaxPressCount: 20
-    MinHoldTime: 2
-    MaxHoldTime: 4.5
+  - {fileID: 11400000, guid: 9e7d0333e26c0ce44907f13c31c21502, type: 2}
+  - {fileID: 11400000, guid: a7f4bb53391e59d4f9773b9e0134649b, type: 2}
+  - {fileID: 11400000, guid: faa90e0e1ea85b94a9329f367bc96340, type: 2}
+  - {fileID: 11400000, guid: 0a21f7c150f75a944aba2272c555a9c7, type: 2}
+  - {fileID: 11400000, guid: c0e0f942607086e4b805885a637c95ab, type: 2}
 --- !u!4 &381686748
 Transform:
   m_ObjectHideFlags: 0
@@ -1299,7 +1266,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bc06ba32b6832cd4592e705f8637b4d1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AimConditionProcessor
-  inputSourceComponent: {fileID: 2016831182}
+  keyboardMapManager: {fileID: 1648942543}
   playerPosition: {fileID: 1276033144}
   logProgress: 0
   logHold: 0
@@ -4359,51 +4326,6 @@ MonoBehaviour:
   holdBarHeight: 10
   holdBarPadding: 20
   logHighlight: 0
---- !u!1 &2016831180
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2016831181}
-  - component: {fileID: 2016831182}
-  m_Layer: 0
-  m_Name: TemporaryAimInputSource
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2016831181
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2016831180}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 57.927216, y: 37.896057, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2016831182
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2016831180}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c5c2b77b0125e4244800e1499757db5d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TemporaryAimInputSource
-  logInput: 0
 --- !u!1 &2069590111
 GameObject:
   m_ObjectHideFlags: 0
@@ -4776,4 +4698,3 @@ SceneRoots:
   - {fileID: 381686748}
   - {fileID: 632371429}
   - {fileID: 1534853961}
-  - {fileID: 2016831181}
