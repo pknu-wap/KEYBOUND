@@ -3,13 +3,15 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Keybound.Player;
+using Keybound.Keyboard;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class AimConditionProcessor : MonoBehaviour
 {
-    [Header("Input Source")]
-    [SerializeField] private MonoBehaviour inputSourceComponent;
+    // KeyboardMapManager의 입력 이벤트를 직접 사용
+    [Header("Keyboard Map")]
+    [SerializeField] private KeyboardMapManager keyboardMapManager;
 
     [Header("Player Position")]
     [SerializeField] private PlayerKeyboardPosition playerPosition;
@@ -17,10 +19,9 @@ public class AimConditionProcessor : MonoBehaviour
     [Header("Debug")]
     [SerializeField] private bool logProgress = true;
     [SerializeField] private bool logHold = true;
+
     [SerializeField, Min(0.05f)]
     private float holdLogInterval = 0.25f;
-
-    private IAimInputSource inputSource;
 
     private readonly HashSet<Key> pressedKeys =
         new HashSet<Key>();
@@ -43,10 +44,10 @@ public class AimConditionProcessor : MonoBehaviour
     public event Action<int, int> OnAimProgressChanged;
     public event Action<AimData> OnAimCompleted;
 
-    // Fired only when a target key is accepted.
+    // 목표 키 입력이 인정되었을 때 발생
     public event Action<Key> OnTargetKeyAccepted;
 
-    // Normalized hold progress: 0 to 1.
+    // Hold 진행률 (0~1)
     public event Action<float> OnHoldProgressChanged;
 
     private float nextHoldLogTime;
@@ -54,12 +55,10 @@ public class AimConditionProcessor : MonoBehaviour
 
     private void Awake()
     {
-        inputSource = inputSourceComponent as IAimInputSource;
-
-        if (inputSource == null)
+        if (keyboardMapManager == null)
         {
             Debug.LogError(
-                "[AimProcessor] Input source is missing or invalid.",
+                "[AimProcessor] Keyboard map is not assigned.",
                 this
             );
         }
@@ -75,22 +74,19 @@ public class AimConditionProcessor : MonoBehaviour
 
     private void OnEnable()
     {
-        if (inputSource == null)
+        // KeyboardMapManager 입력 이벤트 구독
+        if (keyboardMapManager != null)
         {
-            inputSource = inputSourceComponent as IAimInputSource;
-        }
-
-        if (inputSource != null)
-        {
-            inputSource.OnKeyPressed += HandleKeyPressed;
+            keyboardMapManager.KeyPressed += HandleKeyPressed;
         }
     }
 
     private void OnDisable()
     {
-        if (inputSource != null)
+        // 이벤트 구독 해제
+        if (keyboardMapManager != null)
         {
-            inputSource.OnKeyPressed -= HandleKeyPressed;
+            keyboardMapManager.KeyPressed -= HandleKeyPressed;
         }
 
         StopAllCoroutines();
@@ -156,6 +152,7 @@ public class AimConditionProcessor : MonoBehaviour
         }
 
         OnAimStarted?.Invoke(aim);
+
         OnAimProgressChanged?.Invoke(
             CurrentProgress,
             RequiredProgress
@@ -199,7 +196,10 @@ public class AimConditionProcessor : MonoBehaviour
 
     public void PauseAim()
     {
-        if (IsAimActive) IsPaused = true;
+        if (IsAimActive)
+        {
+            IsPaused = true;
+        }
     }
 
     public void ResumeAim()
@@ -207,19 +207,28 @@ public class AimConditionProcessor : MonoBehaviour
         IsPaused = false;
     }
 
-    private void HandleKeyPressed(Key key)
+    // KeyboardMapManager에서 전달받은 키 입력 처리
+    private void HandleKeyPressed(KeyboardKey pressedKey)
     {
+        if (pressedKey == null || pressedKey.Data == null)
+        {
+            return;
+        }
+
+        Key key = pressedKey.Data.InputKey;
+
         if (!IsAimActive || IsPaused || CurrentAim == null)
         {
             return;
         }
 
-        // Hold is measured continuously in Update().
+        // Hold는 Update에서 지속 입력을 검사
         if (CurrentAim.Type == AimType.Hold)
         {
             return;
         }
 
+        // 플레이어 이동 이후 위치를 확인
         StartCoroutine(
             ProcessKeyAfterMovement(key, CurrentAim)
         );
@@ -238,6 +247,7 @@ public class AimConditionProcessor : MonoBehaviour
             yield break;
         }
 
+        // 플레이어가 입력한 키 위치에 있는지 확인
         if (!IsPlayerOnKey(key))
         {
             if (logProgress)
