@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Collections.Generic;
 using UnityEngine.InputSystem;
@@ -9,7 +9,9 @@ public enum AimType
     AllKeys,
     Sequence,
     Hold,
-    RapidPress
+    RapidPress,
+    Typing, // ADDED
+    Calculation // ADDED
 }
 
 [Serializable]
@@ -23,6 +25,10 @@ public class AimData
     public float RequiredDuration;
 
     public string Description = "";
+
+    // ADDED: Display text and exact answer for text-based aims.
+    public string QuestionText = "";
+    public string TargetText = "";
 
     // 기존 코드와의 호환성을 위해 유지
     public bool UseTimeLimit;

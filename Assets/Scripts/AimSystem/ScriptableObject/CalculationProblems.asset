@@ -1,0 +1,75 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e2f1f6c202d5c547b300c6738a588a4, type: 3}
+  m_Name: CalculationProblems
+  m_EditorClassIdentifier: Assembly-CSharp::CalculationAimDatabase
+  problems:
+  - Numbers: 0200000003000000i
+    Operators: 00000000i
+  - Numbers: 0400000005000000i
+    Operators: 00000000i
+  - Numbers: 0700000003000000i
+    Operators: 01000000i
+  - Numbers: 0900000007000000i
+    Operators: 01000000i
+  - Numbers: 0600000002000000i
+    Operators: 00000000i
+  - Numbers: 0800000007000000i
+    Operators: 01000000i
+  - Numbers: 0300000004000000i
+    Operators: 00000000i
+  - Numbers: 0900000003000000i
+    Operators: 01000000i
+  - Numbers: 0500000002000000i
+    Operators: 01000000i
+  - Numbers: 0400000004000000i
+    Operators: 01000000i
+  - Numbers: 0c00000007000000i
+    Operators: 00000000i
+  - Numbers: 0f00000003000000i
+    Operators: 01000000i
+  - Numbers: 0800000009000000i
+    Operators: 00000000i
+  - Numbers: 0e00000006000000i
+    Operators: 00000000i
+  - Numbers: 1200000005000000i
+    Operators: 01000000i
+  - Numbers: 0900000007000000i
+    Operators: 00000000i
+  - Numbers: 0b00000007000000i
+    Operators: 00000000i
+  - Numbers: 1400000006000000i
+    Operators: 01000000i
+  - Numbers: 0800000007000000i
+    Operators: 00000000i
+  - Numbers: 0d00000008000000i
+    Operators: 00000000i
+  - Numbers: 110000000800000003000000i
+    Operators: 0000000000000000i
+  - Numbers: 190000000900000006000000i
+    Operators: 0100000000000000i
+  - Numbers: 0c0000000f00000008000000i
+    Operators: 0000000001000000i
+  - Numbers: 1e0000000c00000007000000i
+    Operators: 0100000000000000i
+  - Numbers: 120000000900000005000000i
+    Operators: 0000000001000000i
+  - Numbers: 2a0000001100000008000000i
+    Operators: 0100000000000000i
+  - Numbers: 0f0000000c00000009000000i
+    Operators: 0000000000000000i
+  - Numbers: 320000001700000008000000i
+    Operators: 0100000001000000i
+  - Numbers: 1b0000000e00000006000000i
+    Operators: 0000000001000000i
+  - Numbers: 260000001000000009000000i
+    Operators: 0100000000000000i
