@@ -21,6 +21,11 @@ public static class UIFlowValidation
     private static double expirationDeadline;
     private static double resumeDeadline;
     private static double escapeHoldDeadline;
+    private static double countdownDeadline;
+    private static int lastCountdownNumber;
+    private static int heldKeyStep;
+    private static GameObject startSelection;
+    private static AimData previousOverlapMission;
     private static float escapeRestY;
     private static float resultMenuRestY;
     private static float resumeRestY;
@@ -47,6 +52,8 @@ public static class UIFlowValidation
     {
         if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
         frames = 0; lastFrame = -1;
+        lastCountdownNumber = 0;
+        heldKeyStep = 0;
         SessionState.SetBool(Active + ".Ready", false);
         if (Application.isBatchMode)
         {
@@ -54,7 +61,7 @@ public static class UIFlowValidation
             EditorSettings.enterPlayModeOptionsEnabled = false;
         }
         SessionState.SetBool(Active,true);
-        SessionState.SetInt("KEYBOUND.Validation.Step",0);
+        SessionState.SetInt("KEYBOUND.Validation.Step",-3);
         EditorSceneManager.OpenScene("Assets/Scenes/StartScene.unity");
         EditorApplication.isPlaying = true;
     }
@@ -95,12 +102,27 @@ public static class UIFlowValidation
             var timer = UnityEngine.Object.FindAnyObjectByType<TimeManager>();
             var map = UnityEngine.Object.FindAnyObjectByType<KeyboardMapManager>();
             var player = UnityEngine.Object.FindAnyObjectByType<PlayerKeyboardPosition>();
+            if ((step == 1 || step == 14 || step == 17 || step == 21) && flow != null &&
+                flow.State == GameState.Starting && EditorApplication.timeSinceStartup < countdownDeadline)
+            {
+                if (step == 1 && flow.StartCountdownSeconds != lastCountdownNumber)
+                {
+                    int expected = lastCountdownNumber == 0 ? 3 : lastCountdownNumber - 1;
+                    var countdown = GameObject.Find("Game Start Countdown").GetComponent<TMPro.TMP_Text>();
+                    Check(flow.StartCountdownSeconds == expected && countdown.text == expected.ToString() &&
+                        countdown.enabled, $"Start countdown displays {expected}");
+                    Check(!map.enabled && !timer.IsRunning && Time.timeScale == 0f,
+                        "Countdown gates keyboard movement and the game clock");
+                    lastCountdownNumber = expected;
+                }
+                return;
+            }
             if (step == 10 && flow != null && flow.State != GameState.GameOver && EditorApplication.timeSinceStartup < expirationDeadline) return;
             if ((step == 18 || step == 20) && SceneManager.GetActiveScene().name == "GameScene" &&
                 EditorApplication.timeSinceStartup < escapeHoldDeadline) return;
             switch(step)
             {
-                case 0:
+                case -3:
                     Check(SceneManager.GetActiveScene().name == "StartScene", "StartScene loaded");
                     Check(ui != null && ui.GetView(UIViewKind.StartMenu) != null, "Start menu reference available");
                     if (Application.isBatchMode)
@@ -113,15 +135,97 @@ public static class UIFlowValidation
                     }
                     if (Keyboard.current == null) InputSystem.AddDevice<Keyboard>();
                     Check(ui.GetView(UIViewKind.StartMenu).gameObject.activeSelf,"Start menu instantiated");
-                    ui.GetView(UIViewKind.StartMenu).primaryButton.onClick.Invoke(); break;
+                    startSelection = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
+                    Check(startSelection != null, "Start menu has selected button");
+                    InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(Key.DownArrow)); break;
+                case -2:
+                    Check(UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject == startSelection,
+                        "Down Arrow keeps menu selection");
+                    InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(Key.UpArrow)); break;
+                case -1:
+                    Check(UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject == startSelection,
+                        "Up Arrow keeps menu selection");
+                    InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(Key.Enter)); break;
+                case 0:
+                    Check(SceneManager.GetActiveScene().name == "StartScene", "Enter waits for release");
+                    InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState());
+                    countdownDeadline = EditorApplication.timeSinceStartup + 8.0;
+                    break;
                 case 1:
-                    Check(SceneManager.GetActiveScene().name == "GameScene", "START loads GameScene");
+                    Check(SceneManager.GetActiveScene().name == "GameScene", "Enter loads GameScene");
+                    Check(lastCountdownNumber == 1, "All three countdown numbers displayed");
                     Check(flow.State == GameState.Playing && map.enabled && player.enabled, "Playing input enabled");
                     Check(player.CurrentKey != null && map.TryGetKey(Key.A,out _),"Existing keyboard and player initialized");
                     Check(timer.RemainingTime > 0 && UnityEngine.Object.FindAnyObjectByType<CountdownUI>() != null,"Existing timer and UI connected");
+                    Check(System.Text.RegularExpressions.Regex.IsMatch(
+                        GameObject.Find("TimeText").GetComponent<TMPro.TMP_Text>().text, @"^\d{2}:\d{2}\.\d{2}$"),
+                        "Time displays minutes, seconds and hundredths");
+                    CheckTextMissions();
                     InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(Key.A)); break;
                 case 2:
-                    Check(player.CurrentKey.Data.InputKey == Key.A,"Existing keyboard input moves player");
+                    if (heldKeyStep == 0)
+                    {
+                        Check(player.CurrentKey.Data.InputKey == Key.A, "Existing keyboard input moves player");
+                        InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(Key.A, Key.S));
+                        heldKeyStep++;
+                        return;
+                    }
+                    if (heldKeyStep == 1)
+                    {
+                        Check(player.CurrentKey.Data.InputKey == Key.S, "Most recently pressed adjacent key wins");
+                        InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(Key.A, Key.S, Key.P));
+                        heldKeyStep++;
+                        return;
+                    }
+                    if (heldKeyStep == 2)
+                    {
+                        Check(player.CurrentKey.Data.InputKey == Key.S, "Newest held key cannot bypass adjacency");
+                        InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(Key.A));
+                        heldKeyStep++;
+                        return;
+                    }
+                    var warning = GameObject.Find("Low Time Warning").GetComponent<CanvasGroup>();
+                    var miniGame = UnityEngine.Object.FindAnyObjectByType<MiniGameManager>();
+                    if (heldKeyStep == 3)
+                    {
+                        Check(player.CurrentKey.Data.InputKey == Key.A, "Release returns to last held adjacent key");
+                        Check(warning.alpha == 0f, "Warning hidden above ten seconds");
+                        timer.RemoveTime(timer.RemainingTime - 10f);
+                        var numberHunt = AssetDatabase.LoadAssetAtPath<MiniGameData>(
+                            AssetDatabase.GUIDToAssetPath("9f4c6ab3a6291e34c86c25268ca820dc"));
+                        Check(miniGame.StartMiniGame(3, numberHunt), "Number Hunt starts");
+                        heldKeyStep++;
+                        return;
+                    }
+                    if (heldKeyStep == 4)
+                    {
+                        Check(warning.alpha > 0f, "Warning visible at ten seconds or less");
+                        var score = GameObject.Find("Mini-game Score or Wave").GetComponent<TMPro.TMP_Text>();
+                        var description = GameObject.Find("Mission Description").GetComponent<TMPro.TMP_Text>();
+                        Check(score.enabled && !description.enabled && score.text == "SCORE 0 / 100" &&
+                            score.transform.parent == description.transform.parent,
+                            "Number Hunt score replaces the normal mission text inside the mission panel");
+                        miniGame.CancelMiniGame();
+                        timer.AddTime(50f);
+                        heldKeyStep++;
+                        return;
+                    }
+                    if (heldKeyStep == 5)
+                    {
+                        Check(warning.alpha == 0f, "Warning clears after recovering time");
+                        Check(GameObject.Find("Mission Description").GetComponent<TMPro.TMP_Text>().enabled,
+                            "Normal mission returns after Number Hunt");
+                        previousOverlapMission = CheckObstacleOverlap(map, miniGame);
+                        heldKeyStep++;
+                        return;
+                    }
+                    map.TryGetKey(Key.D, out var missionKey);
+                    Check(missionKey.transform.Find("Obstacle_D") == null &&
+                        missionKey.GetComponent<UnityEngine.UI.Image>().color != Color.white,
+                        "The mission border stays visible after the obstacle disappears");
+                    UnityEngine.Object.FindAnyObjectByType<AimConditionProcessor>().StartAim(previousOverlapMission);
+                    previousOverlapMission = null;
+                    heldKeyStep = 0;
                     InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState());
                     ui.GetView(UIViewKind.Gameplay).primaryButton.onClick.Invoke();
                     Check(flow.State == GameState.Paused && Time.timeScale == 0 && !map.enabled && !player.enabled,"Pause stops gameplay input");
@@ -207,6 +311,7 @@ public static class UIFlowValidation
                 case 13:
                     Check(SceneManager.GetActiveScene().name == "StartScene" && Time.timeScale == 1,"Enter release on the result restores timescale and StartScene");
                     Check(Mathf.Approximately(GameSettings.Bgm,.37f) && Mathf.Approximately(GameSettings.Sfx,.62f),"Volumes survive Scene transition");
+                    countdownDeadline = EditorApplication.timeSinceStartup + 8.0;
                     ui.GetView(UIViewKind.StartMenu).primaryButton.onClick.Invoke(); break;
                 case 14:
                     Check(flow.State == GameState.Playing && player.enabled && timer.RemainingTime > 0,"New run initializes after game over");
@@ -224,6 +329,7 @@ public static class UIFlowValidation
                     ui.HandleEscape(); ui.GetView(UIViewKind.PauseMenu).menuButton.onClick.Invoke(); break;
                 case 16:
                     Check(SceneManager.GetActiveScene().name == "StartScene" && Time.timeScale == 1,"Pause MAIN MENU works");
+                    countdownDeadline = EditorApplication.timeSinceStartup + 8.0;
                     ui.GetView(UIViewKind.StartMenu).primaryButton.onClick.Invoke(); break;
                 case 17:
                     escapeRestY = ((RectTransform)ui.GetView(UIViewKind.Gameplay).primaryButton.transform).anchoredPosition.y;
@@ -245,6 +351,7 @@ public static class UIFlowValidation
                     Check(SceneManager.GetActiveScene().name == "StartScene" && Time.timeScale == 1,
                         "Holding ESC while paused returns to StartScene before release");
                     InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState());
+                    countdownDeadline = EditorApplication.timeSinceStartup + 8.0;
                     ui.GetView(UIViewKind.StartMenu).primaryButton.onClick.Invoke(); break;
                 case 21:
                     flow.HandleTimeExpired();
@@ -269,5 +376,64 @@ public static class UIFlowValidation
         {
             SessionState.SetBool(Active,false); Debug.LogException(error); Finish(1);
         }
+    }
+
+    private static void CheckTextMissions()
+    {
+        var processor = UnityEngine.Object.FindAnyObjectByType<AimConditionProcessor>();
+        var description = GameObject.Find("Mission Description").GetComponent<TMPro.TMP_Text>();
+        AimData previous = processor.CurrentAim;
+
+        processor.StartAim(new AimData
+        {
+            Type = AimType.Calculation, QuestionText = "8 + 4 = ?", TargetText = "12",
+            RequiredCount = 2, TargetKeys = { Key.Digit1, Key.Digit2 }
+        });
+        Check(description.text.Contains("8 + 4 = ?") && description.text.Contains("__") &&
+            !description.text.Contains("12"), "Mission panel shows the calculation prompt and blank input");
+
+        processor.StartAim(new AimData
+        {
+            Type = AimType.Typing, QuestionText = "TYPE: KEYS", TargetText = "KEYS",
+            RequiredCount = 4, TargetKeys = { Key.K, Key.E, Key.Y, Key.S }
+        });
+        Check(description.text.Contains("TYPE: KEYS") && description.text.Contains("____"),
+            "Mission panel shows the typing prompt and blank input");
+        processor.StartAim(previous);
+    }
+
+    private static AimData CheckObstacleOverlap(KeyboardMapManager map, MiniGameManager manager)
+    {
+        var processor = UnityEngine.Object.FindAnyObjectByType<AimConditionProcessor>();
+        AimData previous = processor.CurrentAim;
+        processor.StopAim();
+        Check(map.TryGetKey(Key.D, out var key), "Overlap test key exists");
+        var keyImage = key.GetComponent<UnityEngine.UI.Image>();
+        Color idleColor = keyImage.color;
+        var mission = new AimData { Type = AimType.PressCount, RequiredCount = 3, TargetKeys = { Key.D } };
+        processor.StartAim(mission);
+        Color missionColor = keyImage.color;
+        Check(missionColor != idleColor, "Mission border is visible before the obstacle");
+
+        var template = AssetDatabase.LoadAssetAtPath<MiniGameData>(
+            AssetDatabase.GUIDToAssetPath("e1a46334cf5b421468ad8454be12ebf0"));
+        var game = UnityEngine.Object.Instantiate(template);
+        var config = ScriptableObject.CreateInstance<ObstacleDodgeData>();
+        config.Waves.Add(new ObstacleWave { Patterns = { new ObstaclePattern { Keys = { Key.D } } } });
+        game.Settings = config;
+        Check(manager.StartMiniGame(10, game), "Obstacle Dodge starts with a pattern on the mission key");
+        var marker = key.transform.Find("Obstacle_D");
+        var label = key.GetComponentInChildren<TMPro.TMP_Text>();
+        Check(marker != null && marker.localScale.x < 1f && marker.GetSiblingIndex() < label.transform.GetSiblingIndex() &&
+            marker.GetComponent<UnityEngine.UI.Image>().color.r > marker.GetComponent<UnityEngine.UI.Image>().color.g &&
+            keyImage.color == missionColor, "Red obstacle fits inside the same key and the label stays above it");
+        processor.StopAim();
+        Check(keyImage.color == idleColor && marker.gameObject.activeInHierarchy,
+            "The obstacle stays visible when the mission ends");
+        processor.StartAim(mission);
+        manager.CancelMiniGame();
+        UnityEngine.Object.Destroy(game);
+        UnityEngine.Object.Destroy(config);
+        return previous;
     }
 }
