@@ -8,6 +8,7 @@ public class MiniGameHUD : MonoBehaviour
     [SerializeField] private MiniGameManager miniGameManager;
 
     [Header("Text References")]
+    [SerializeField] private TMP_Text missionDescription;
     [SerializeField] private TMP_Text miniGameNameText;
     [SerializeField] private TMP_Text waveText;
     [SerializeField] private TMP_Text collisionText;
@@ -84,6 +85,7 @@ public class MiniGameHUD : MonoBehaviour
 
     private void SetHUDVisible(bool visible)
     {
+        SetTextVisible(missionDescription, !visible);
         SetTextVisible(miniGameNameText, visible);
         SetTextVisible(waveText, visible);
         SetTextVisible(collisionText, visible);
