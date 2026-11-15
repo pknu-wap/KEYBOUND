@@ -1,5 +1,4 @@
-﻿
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
@@ -24,6 +23,9 @@ public class GameHUD : MonoBehaviour
     [SerializeField] private TMP_Text aimDescriptionText;
     [SerializeField] private TMP_Text aimProgressText;
     [SerializeField] private Slider aimProgressSlider;
+
+    [Header("Input Feedback (optional)")]
+    [SerializeField] private TMP_Text lastInputText;
 
     [Header("Additional Aim/Stage UI (optional)")]
     [SerializeField] private TMP_Text aimLimitText;
@@ -116,6 +118,7 @@ public class GameHUD : MonoBehaviour
         if (aimProcessor != null)
         {
             aimProcessor.OnAimStarted += HandleAimStarted;
+            aimProcessor.OnTextKeyInput += HandleTextKeyInput;
 
             aimProcessor.OnAimProgressChanged +=
                 HandleAimProgressChanged;
@@ -148,6 +151,7 @@ public class GameHUD : MonoBehaviour
         if (aimProcessor != null)
         {
             aimProcessor.OnAimStarted -= HandleAimStarted;
+            aimProcessor.OnTextKeyInput -= HandleTextKeyInput;
 
             aimProcessor.OnAimProgressChanged -=
                 HandleAimProgressChanged;
@@ -173,6 +177,7 @@ public class GameHUD : MonoBehaviour
         SetText(aimDescriptionText, "Waiting for aim...");
         SetText(aimProgressText, "0 / 0");
         SetText(aimLimitText, "--");
+        SetText(lastInputText, "LAST KEY: --");
 
         if (timeSlider != null)
         {
@@ -280,15 +285,11 @@ public class GameHUD : MonoBehaviour
 
     private void HandleRewardChanged(float reward)
     {
-        // Display the current stage configuration,
-        // not the last reward received.
         RefreshStageSettings();
     }
 
     private void HandleStageMode(StageType mode)
     {
-        // Aim and mini-games can run simultaneously.
-        // The main stage objective is Aim.
         SetText(stageModeText, "AIM");
     }
 
@@ -303,8 +304,6 @@ public class GameHUD : MonoBehaviour
             aimDescriptionText,
             "Time is up!"
         );
-
-        // Keep the current stage reward and penalty visible.
 
         if (logHudEvents)
         {
@@ -398,6 +397,8 @@ public class GameHUD : MonoBehaviour
 
     private void HandleAimStarted(AimData aim)
     {
+        SetText(lastInputText, "LAST KEY: --");
+
         if (aim == null)
             return;
 
@@ -408,8 +409,23 @@ public class GameHUD : MonoBehaviour
 
         SetText(
             aimDescriptionText,
-            aim.Description
+            GetAimDescription(aim)
         );
+
+        // ADDED: 새로운 타이핑/계산 목표 시작 시
+        // 입력해야 하는 글자 수만큼 빈칸 표시
+        if (aim.Type == AimType.Typing ||
+            aim.Type == AimType.Calculation)
+        {
+            int length = !string.IsNullOrEmpty(aim.TargetText)
+                ? aim.TargetText.Length
+                : 0;
+
+            SetText(
+                aimProgressText,
+                new string('ㅡ', length)
+            );
+        }
 
         if (logHudEvents)
         {
@@ -421,15 +437,71 @@ public class GameHUD : MonoBehaviour
         }
     }
 
+    private void HandleTextKeyInput(
+        UnityEngine.InputSystem.Key key,
+        bool accepted
+    )
+    {
+        string keyName = AimConditionGenerator.GetKeyName(key);
+
+        SetText(
+            lastInputText,
+            $"LAST KEY: {keyName}  " +
+            $"({(accepted ? "ACCEPTED" : "PRESSED")})"
+        );
+    }
+
     private void HandleAimProgressChanged(
         int current,
         int required
     )
     {
-        SetText(
-            aimProgressText,
-            $"{current} / {required}"
-        );
+        // ADDED: 목표 설명에는 문제 또는 단어만 표시
+        if (aimProcessor != null &&
+            aimProcessor.CurrentAim != null)
+        {
+            SetText(
+                aimDescriptionText,
+                GetAimDescription(aimProcessor.CurrentAim)
+            );
+        }
+
+        AimData activeAim = aimProcessor != null
+            ? aimProcessor.CurrentAim
+            : null;
+
+        // ADDED: Typing과 Calculation은
+        // 입력된 문자 + 남은 빈칸으로 진행 상황 표시
+        if (activeAim != null &&
+            (activeAim.Type == AimType.Typing ||
+             activeAim.Type == AimType.Calculation))
+        {
+            string submitted = aimProcessor.SubmittedText ?? "";
+
+            int targetLength =
+                !string.IsNullOrEmpty(activeAim.TargetText)
+                    ? activeAim.TargetText.Length
+                    : required;
+
+            int remaining = Mathf.Max(
+                0,
+                targetLength - submitted.Length
+            );
+
+            // 예: ㅡㅡ -> 1ㅡ -> 19
+            SetText(
+                aimProgressText,
+                submitted + new string('ㅡ', remaining)
+            );
+        }
+        else
+        {
+            // 기존 목표 진행도 표시 유지
+            SetText(
+                aimProgressText,
+                $"{current} / {required}"
+            );
+        }
 
         if (aimProgressSlider != null)
         {
@@ -452,6 +524,24 @@ public class GameHUD : MonoBehaviour
                 this
             );
         }
+    }
+
+    // ADDED: 타이핑과 계산문제는
+    // 목표 설명 텍스트에 문제만 표시
+    private string GetAimDescription(AimData aim)
+    {
+        if (aim == null)
+            return "Waiting for aim...";
+
+        if (aim.Type != AimType.Typing &&
+            aim.Type != AimType.Calculation)
+        {
+            return aim.Description;
+        }
+
+        return !string.IsNullOrEmpty(aim.QuestionText)
+            ? aim.QuestionText
+            : aim.Description;
     }
 
     private void HandleAimTimeChanged(

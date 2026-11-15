@@ -1,4 +1,4 @@
-﻿
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,6 +7,9 @@ public class AimManager : MonoBehaviour
     [Header("References")]
     [SerializeField] private AimConditionGenerator generator;
     [SerializeField] private AimConditionProcessor processor;
+    // ADDED: Dedicated generators for new aim types.
+    [SerializeField] private TypingAimGenerator typingGenerator;
+    [SerializeField] private CalculationAimGenerator calculationGenerator;
 
     // ADDED: ScriptableObject 설정 에셋 목록
     [Header("Aim Generation Settings")]
@@ -19,7 +22,7 @@ public class AimManager : MonoBehaviour
 
     public bool StartRandomAim()
     {
-        if (generator == null || processor == null)
+        if (processor == null)
         {
             Debug.LogError(
                 "[AimManager] Generator or Processor missing.",
@@ -53,7 +56,22 @@ public class AimManager : MonoBehaviour
             this
         );
 
-        AimData generatedAim = generator.Generate(selected);
+        // ADDED: Route each aim type to its responsible generator.
+        AimData generatedAim;
+        switch (selected.AimType)
+        {
+            case AimType.Typing:
+                generatedAim = typingGenerator != null ? typingGenerator.Generate(selected) : null;
+                break;
+            case AimType.Calculation:
+                generatedAim = calculationGenerator != null ? calculationGenerator.Generate(selected) : null;
+                break;
+            default:
+                generatedAim = generator != null ? generator.Generate(selected) : null;
+                break;
+        }
+        if (generatedAim == null)
+            Debug.LogError($"[AimManager] Generation failed: {selected.AimType}. Check generator references/settings.", this);
 
         if (generatedAim == null)
         {

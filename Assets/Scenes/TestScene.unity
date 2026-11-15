@@ -931,12 +931,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AimManager
   generator: {fileID: 1534853960}
   processor: {fileID: 632371430}
+  typingGenerator: {fileID: 513539079}
+  calculationGenerator: {fileID: 1589134133}
   aimSettings:
   - {fileID: 11400000, guid: 9e7d0333e26c0ce44907f13c31c21502, type: 2}
   - {fileID: 11400000, guid: a7f4bb53391e59d4f9773b9e0134649b, type: 2}
   - {fileID: 11400000, guid: faa90e0e1ea85b94a9329f367bc96340, type: 2}
   - {fileID: 11400000, guid: 0a21f7c150f75a944aba2272c555a9c7, type: 2}
   - {fileID: 11400000, guid: c0e0f942607086e4b805885a637c95ab, type: 2}
+  - {fileID: 11400000, guid: f8b433b2de6582745a1be2c594319ae0, type: 2}
+  - {fileID: 11400000, guid: 9671e9d50968dc243a18bdd4dcda6905, type: 2}
 --- !u!4 &381686748
 Transform:
   m_ObjectHideFlags: 0
@@ -1243,6 +1247,51 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 485604646}
   m_CullTransparentMesh: 1
+--- !u!1 &513539077
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 513539078}
+  - component: {fileID: 513539079}
+  m_Layer: 0
+  m_Name: TypingAimGenerator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &513539078
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 513539077}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -1302.0151, y: 67.911835, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2096066360}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &513539079
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 513539077}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cce5e0e3fb04ee46b6c5f9d8a000206, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TypingAimGenerator
+  database: {fileID: 11400000, guid: 36a99a471945a6645a92ac4fd800ab55, type: 2}
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -3096,6 +3145,7 @@ MonoBehaviour:
   aimDescriptionText: {fileID: 1458629644}
   aimProgressText: {fileID: 951805971}
   aimProgressSlider: {fileID: 1970051592}
+  lastInputText: {fileID: 0}
   aimLimitText: {fileID: 440934417}
   aimLimitSlider: {fileID: 1334103506}
   penaltyText: {fileID: 824519464}
@@ -4775,6 +4825,52 @@ RectTransform:
   m_AnchoredPosition: {x: -5, y: 0}
   m_SizeDelta: {x: -20, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1589134131
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1589134132}
+  - component: {fileID: 1589134133}
+  m_Layer: 0
+  m_Name: CalculationAimGenerator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1589134132
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1589134131}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -1302.0151, y: 67.911835, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2096066360}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1589134133
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1589134131}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b02f31200b0c654abceec9ecb80f653, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CalculationAimGenerator
+  fixedProblemDatabase: {fileID: 11400000, guid: 355dce82421f11c40bd1b43dad6b6554, type: 2}
+  maxRandomAttempts: 300
 --- !u!1 &1605497085
 GameObject:
   m_ObjectHideFlags: 0
@@ -5121,7 +5217,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0ff392bbfd7beba4a9781cedf316d590, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TimeManager
-  initialTime: 30
+  initialTime: 120
   maxRemainingTime: 120
 --- !u!4 &1657927972
 Transform:
@@ -6048,6 +6144,8 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 381686748}
+  - {fileID: 1589134132}
+  - {fileID: 513539078}
   - {fileID: 1534853961}
   - {fileID: 632371429}
   m_Father: {fileID: 0}

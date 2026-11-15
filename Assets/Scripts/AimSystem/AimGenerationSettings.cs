@@ -1,4 +1,4 @@
-﻿
+
 using UnityEngine;
 
 // ADDED: 목표 생성 설정을 에셋으로 관리
@@ -38,4 +38,16 @@ public class AimGenerationSettings : ScriptableObject
 
     [Min(0f)]
     public float MaxHoldTime = 3f;
+
+    // ADDED: Each aim settings asset can configure calculation generation independently.
+    [Header("Calculation Generation")]
+    public CalculationGenerationMode CalculationMode = CalculationGenerationMode.Both;
+    public int MinNumber = 1;
+    public int MaxNumber = 20;
+    public int MinAnswer = 0;
+    public int MaxAnswer = 99;
+    [Min(1)] public int OperationCount = 1;
+    public bool AllowAddition = true;
+    public bool AllowSubtraction = true;
+    [Range(0f, 1f)] public float FixedProbability = 0.5f;
 }
