@@ -1,11 +1,12 @@
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Keybound.Keyboard;
 using Keybound.Player;
 using UnityEngine;
 
-public enum GameState { Playing, Paused, GameOver }
+public enum GameState { Playing, Paused, GameOver, Starting }
 
 [DefaultExecutionOrder(-100)]
 public sealed class GameFlowManager : MonoBehaviour
@@ -20,12 +21,15 @@ public sealed class GameFlowManager : MonoBehaviour
     private float previousTimeScale = 1f;
     private bool miniGameTimePaused;
     private bool started;
+    private Coroutine startCountdown;
 
     public GameState State { get; private set; } = GameState.Playing;
+    public int StartCountdownSeconds { get; private set; }
     public float? SurvivalSeconds { get; private set; }
     public int? FinalStage { get; private set; }
 
     public event Action<GameState> StateChanged;
+    public event Action<int> StartCountdownChanged;
 
     private void Awake()
     {
@@ -72,6 +76,7 @@ public sealed class GameFlowManager : MonoBehaviour
 
     private void OnDisable()
     {
+        CancelStartCountdown();
         if (timeManager != null)
             timeManager.OnTimeOver -= HandleTimeExpired;
 
@@ -88,7 +93,7 @@ public sealed class GameFlowManager : MonoBehaviour
 
     public void StartGame()
     {
-        if (started && State != GameState.GameOver)
+        if (startCountdown != null || (started && State != GameState.GameOver))
             return;
 
         if (timeManager == null)
@@ -107,6 +112,22 @@ public sealed class GameFlowManager : MonoBehaviour
         SurvivalSeconds = null;
         FinalStage = null;
         State = GameState.Playing;
+        ChangeState(GameState.Starting);
+        startCountdown = StartCoroutine(CountDownToStart());
+    }
+
+    private IEnumerator CountDownToStart()
+    {
+        for (int seconds = 3; seconds > 0; seconds--)
+        {
+            SetStartCountdown(seconds);
+            yield return new WaitForSecondsRealtime(1f);
+        }
+
+        startCountdown = null;
+        SetStartCountdown(0);
+        RestoreGameplay();
+        State = GameState.Playing;
         started = true;
 
         timeManager.StartTimer();
@@ -114,7 +135,7 @@ public sealed class GameFlowManager : MonoBehaviour
         if (!timeManager.IsRunning)
         {
             HandleTimeExpired();
-            return;
+            yield break;
         }
 
         if (stageManager != null)
@@ -127,7 +148,7 @@ public sealed class GameFlowManager : MonoBehaviour
                     "[GameFlow] StageManager failed to start", this);
 
                 HandleTimeExpired();
-                return;
+                yield break;
             }
         }
 
@@ -135,6 +156,22 @@ public sealed class GameFlowManager : MonoBehaviour
 
         // ADDED: Play BGM after gameplay starts successfully.
         AudioManager.Instance?.PlayBGM();
+    }
+
+    private void SetStartCountdown(int seconds)
+    {
+        StartCountdownSeconds = seconds;
+        StartCountdownChanged?.Invoke(seconds);
+    }
+
+    private void CancelStartCountdown()
+    {
+        if (startCountdown == null)
+            return;
+
+        StopCoroutine(startCountdown);
+        startCountdown = null;
+        SetStartCountdown(0);
     }
 
     public void Pause()
@@ -165,6 +202,13 @@ public sealed class GameFlowManager : MonoBehaviour
     {
         if (State == GameState.GameOver)
             return;
+
+        if (State == GameState.Starting)
+        {
+            CancelStartCountdown();
+            RestoreGameplay();
+            State = GameState.Playing;
+        }
 
         if (timeManager != null)
             SurvivalSeconds = timeManager.ElapsedTime;
@@ -234,7 +278,9 @@ public sealed class GameFlowManager : MonoBehaviour
             {
                 foreach (var target in pauseTargets)
                 {
-                    if (target == null || target == this)
+                    // The player places its sprite in Start. The map gates keyboard input.
+                    if (target == null || target == this ||
+                        (next == GameState.Starting && target is PlayerKeyboardPosition))
                         continue;
 
                     previousEnabled[target] = target.enabled;

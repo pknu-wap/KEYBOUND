@@ -1668,6 +1668,7 @@ MonoBehaviour:
   stageText: {fileID: 1900300052}
   showStageNumberOnly: 1
   survivalText: {fileID: 1900300072}
+  gameFlow: {fileID: 313466176}
 --- !u!1 &978699674
 GameObject:
   m_ObjectHideFlags: 0
