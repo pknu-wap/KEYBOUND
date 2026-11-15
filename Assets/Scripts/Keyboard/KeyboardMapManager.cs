@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.UI;
 using InputKeyboard = UnityEngine.InputSystem.Keyboard;
 
@@ -22,7 +24,13 @@ namespace Keybound.Keyboard
         private readonly Dictionary<Key, KeyboardKey> keysByInput =
             new Dictionary<Key, KeyboardKey>();
 
+        private readonly Queue<(InputKeyboard Device, int EventId, KeyboardKey Key, bool Pressed)> keyChanges =
+            new Queue<(InputKeyboard Device, int EventId, KeyboardKey Key, bool Pressed)>();
+        private readonly List<KeyboardKey> heldKeys = new List<KeyboardKey>();
+        private InputKeyboard activeKeyboard;
+
         public event Action<KeyboardKey> KeyPressed;
+        public event Action<KeyboardKey> PreferredHeldKeyChanged;
 
         private void Awake()
         {
@@ -33,28 +41,80 @@ namespace Keybound.Keyboard
             }
         }
 
-        private void Update()
-        {
-            InputKeyboard keyboard = InputKeyboard.current;
+        private void OnEnable() => InputSystem.onEvent += ReadKeyboardEvent;
 
-            if (keyboard == null)
+        private void OnDisable()
+        {
+            InputSystem.onEvent -= ReadKeyboardEvent;
+            ClearHeldKeys();
+        }
+
+        private void OnApplicationFocus(bool hasFocus)
+        {
+            if (!hasFocus)
+                ClearHeldKeys();
+        }
+
+        private void ClearHeldKeys()
+        {
+            keyChanges.Clear();
+            heldKeys.Clear();
+            activeKeyboard = null;
+        }
+
+        private void ReadKeyboardEvent(InputEventPtr inputEvent, InputDevice device)
+        {
+            if (device is not InputKeyboard keyboard ||
+                (inputEvent.type != StateEvent.Type && inputEvent.type != DeltaStateEvent.Type))
             {
                 return;
             }
 
-            foreach (KeyboardKeyData keyData in KeyboardMapData.Keys)
+            foreach (var control in inputEvent.EnumerateChangedControls(keyboard))
             {
-                if (!keyboard[keyData.InputKey].wasPressedThisFrame)
+                if (control is KeyControl key && TryGetKey(key.keyCode, out var mapKey))
                 {
-                    continue;
-                }
-
-                if (TryGetKey(keyData.InputKey, out KeyboardKey keyboardKey))
-                {
-                    KeyPressed?.Invoke(keyboardKey);
+                    keyChanges.Enqueue((keyboard, inputEvent.id, mapKey, key.ReadValueFromEvent(inputEvent) > 0f));
                 }
             }
         }
+
+        private void Update()
+        {
+            InputKeyboard keyboard = InputKeyboard.current;
+            if (activeKeyboard != keyboard)
+            {
+                heldKeys.Clear();
+                activeKeyboard = keyboard;
+            }
+
+            KeyboardKey previous = MostRecentHeldKey;
+            while (keyChanges.Count > 0)
+            {
+                var change = keyChanges.Dequeue();
+                if (change.Device != keyboard)
+                    continue;
+
+                heldKeys.Remove(change.Key);
+                if (change.Pressed)
+                {
+                    heldKeys.Add(change.Key);
+                    KeyPressed?.Invoke(change.Key);
+                }
+
+                // Apply the complete state report before changing the movement target.
+                if (keyChanges.Count > 0 && keyChanges.Peek().EventId == change.EventId)
+                    continue;
+
+                KeyboardKey current = MostRecentHeldKey;
+                if (current != null && current != previous)
+                    PreferredHeldKeyChanged?.Invoke(current);
+                previous = current;
+            }
+        }
+
+        private KeyboardKey MostRecentHeldKey =>
+            heldKeys.Count > 0 ? heldKeys[heldKeys.Count - 1] : null;
 
         public bool TryGetKey(Key inputKey, out KeyboardKey keyboardKey)
         {
