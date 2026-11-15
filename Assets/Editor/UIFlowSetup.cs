@@ -165,6 +165,7 @@ public static class UIFlowSetup
     {
         var r = Rect(title,parent,pos,new Vector2(250,56)); var image = r.gameObject.AddComponent<Image>(); image.color = new Color(.25f,.3f,.4f);
         var b = r.gameObject.AddComponent<Button>(); b.targetGraphic = image;
+        b.navigation = new Navigation { mode = Navigation.Mode.None };
         var label = Label(r,title,Vector2.zero,22); ((RectTransform)label.transform).sizeDelta = new Vector2(240,50); return b;
     }
     private static Slider Slider(Transform parent,Vector2 pos,string name)

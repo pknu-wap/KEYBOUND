@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 // Batch integration check: Unity -batchmode -executeMethod UIFlowValidation.Run (without -quit).
 [InitializeOnLoad]
@@ -135,6 +136,7 @@ public static class UIFlowValidation
                     }
                     if (Keyboard.current == null) InputSystem.AddDevice<Keyboard>();
                     Check(ui.GetView(UIViewKind.StartMenu).gameObject.activeSelf,"Start menu instantiated");
+                    CheckButtonNavigation();
                     startSelection = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
                     Check(startSelection != null, "Start menu has selected button");
                     InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(Key.DownArrow)); break;
@@ -153,6 +155,7 @@ public static class UIFlowValidation
                     break;
                 case 1:
                     Check(SceneManager.GetActiveScene().name == "GameScene", "Enter loads GameScene");
+                    CheckButtonNavigation();
                     Check(lastCountdownNumber == 1, "All three countdown numbers displayed");
                     Check(flow.State == GameState.Playing && map.enabled && player.enabled, "Playing input enabled");
                     Check(player.CurrentKey != null && map.TryGetKey(Key.A,out _),"Existing keyboard and player initialized");
@@ -376,6 +379,14 @@ public static class UIFlowValidation
         {
             SessionState.SetBool(Active,false); Debug.LogException(error); Finish(1);
         }
+    }
+
+    private static void CheckButtonNavigation()
+    {
+        var buttons = UnityEngine.Object.FindObjectsByType<Button>(
+            FindObjectsInactive.Include, FindObjectsSortMode.None);
+        Check(buttons.Length > 0 && Array.TrueForAll(buttons, button => button.navigation.mode == Navigation.Mode.None),
+            "All instantiated menu buttons have Navigation set to None");
     }
 
     private static void CheckTextMissions()
