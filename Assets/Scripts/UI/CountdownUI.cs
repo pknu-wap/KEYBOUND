@@ -15,12 +15,12 @@ namespace Keybound.UI
         [SerializeField] private TMP_Text survivalText;
         [SerializeField] private GameFlowManager gameFlow;
 
-        private int displayedTenths = -1;
+        private int displayedHundredths = -1;
         private TMP_Text startCountdown;
 
         private void OnEnable()
         {
-            displayedTenths = -1;
+            displayedHundredths = -1;
             if (timeManager != null)
             {
                 if (timeSlider != null)
@@ -77,11 +77,11 @@ namespace Keybound.UI
             if (timeSlider != null)
                 timeSlider.SetValueWithoutNotify(seconds);
 
-            int tenths = Mathf.Max(0, Mathf.CeilToInt(seconds * 10f));
-            if (timeText != null && tenths != displayedTenths)
+            int hundredths = Mathf.Max(0, Mathf.CeilToInt(seconds * 100f));
+            if (timeText != null && hundredths != displayedHundredths)
             {
-                displayedTenths = tenths;
-                timeText.text = $"{tenths / 600:00}:{tenths / 10 % 60:00}.{tenths % 10}";
+                displayedHundredths = hundredths;
+                timeText.text = $"{hundredths / 6000:00}:{hundredths / 100 % 60:00}.{hundredths % 100:00}";
             }
         }
 
