@@ -15,8 +15,11 @@ namespace Keybound.UI
         [SerializeField] private TMP_Text survivalText;
         [SerializeField] private GameFlowManager gameFlow;
 
+        private const float WarningThreshold = 10f;
+        private const float WarningEdgeWidth = 12f;
         private int displayedHundredths = -1;
         private TMP_Text startCountdown;
+        private CanvasGroup timeWarning;
 
         private void OnEnable()
         {
@@ -70,6 +73,19 @@ namespace Keybound.UI
                 gameFlow.StartCountdownChanged -= DisplayStartCountdown;
             if (startCountdown != null)
                 startCountdown.enabled = false;
+            if (timeWarning != null)
+                timeWarning.alpha = 0f;
+        }
+
+        private void LateUpdate()
+        {
+            if (timeWarning == null)
+                return;
+
+            bool showWarning = timeManager != null && timeManager.IsRunning &&
+                gameFlow.State == GameState.Playing &&
+                timeManager.RemainingTime > 0f && timeManager.RemainingTime <= WarningThreshold;
+            timeWarning.alpha = showWarning ? 0.5f + 0.35f * Mathf.Cos(Time.time * 2f * Mathf.PI) : 0f;
         }
 
         private void DisplayCountdown(float seconds)
@@ -105,6 +121,26 @@ namespace Keybound.UI
             overlay.overrideSorting = true;
             overlay.sortingOrder = 90;
 
+            timeWarning = new GameObject("Low Time Warning", typeof(RectTransform), typeof(CanvasGroup))
+                .GetComponent<CanvasGroup>();
+            RectTransform warningRect = (RectTransform)timeWarning.transform;
+            warningRect.SetParent(overlayRect, false);
+            warningRect.anchorMin = Vector2.zero;
+            warningRect.anchorMax = Vector2.one;
+            warningRect.sizeDelta = Vector2.zero;
+            warningRect.anchoredPosition = Vector2.zero;
+            timeWarning.alpha = 0f;
+            timeWarning.blocksRaycasts = false;
+
+            CreateWarningEdge("Top", Vector2.up, Vector2.one,
+                new Vector2(0f, -WarningEdgeWidth), Vector2.zero);
+            CreateWarningEdge("Bottom", Vector2.zero, Vector2.right,
+                Vector2.zero, new Vector2(0f, WarningEdgeWidth));
+            CreateWarningEdge("Left", Vector2.zero, Vector2.up,
+                new Vector2(0f, WarningEdgeWidth), new Vector2(WarningEdgeWidth, -WarningEdgeWidth));
+            CreateWarningEdge("Right", Vector2.right, Vector2.one,
+                new Vector2(-WarningEdgeWidth, WarningEdgeWidth), new Vector2(0f, -WarningEdgeWidth));
+
             startCountdown = new GameObject("Game Start Countdown", typeof(RectTransform), typeof(TextMeshProUGUI))
                 .GetComponent<TMP_Text>();
             startCountdown.rectTransform.SetParent(overlayRect, false);
@@ -120,6 +156,20 @@ namespace Keybound.UI
             startCountdown.outlineWidth = 0.22f;
             startCountdown.alignment = TextAlignmentOptions.Center;
             startCountdown.raycastTarget = false;
+        }
+
+        private void CreateWarningEdge(string edge, Vector2 anchorMin, Vector2 anchorMax,
+            Vector2 offsetMin, Vector2 offsetMax)
+        {
+            Image image = new GameObject(edge, typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+            RectTransform rect = image.rectTransform;
+            rect.SetParent(timeWarning.transform, false);
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.offsetMin = offsetMin;
+            rect.offsetMax = offsetMax;
+            image.color = new Color(0.9f, 0.1f, 0.15f);
+            image.raycastTarget = false;
         }
 
         private void DisplaySurvival(float seconds)
