@@ -148,8 +148,9 @@ namespace Keybound.UI
             startCountdown.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
             startCountdown.rectTransform.sizeDelta = new Vector2(240f, 200f);
             startCountdown.rectTransform.anchoredPosition = Vector2.zero;
-            if (timeText != null)
-                startCountdown.font = timeText.font;
+            TMP_Text countdownFontSource = timeText != null ? timeText : stageText;
+            if (countdownFontSource != null)
+                startCountdown.font = countdownFontSource.font;
             startCountdown.fontSize = 144f;
             startCountdown.fontStyle = FontStyles.Bold;
             startCountdown.outlineColor = new Color32(24, 24, 24, 255);

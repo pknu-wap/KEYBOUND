@@ -160,9 +160,27 @@ public static class UIFlowValidation
                     Check(flow.State == GameState.Playing && map.enabled && player.enabled, "Playing input enabled");
                     Check(player.CurrentKey != null && map.TryGetKey(Key.A,out _),"Existing keyboard and player initialized");
                     Check(timer.RemainingTime > 0 && UnityEngine.Object.FindAnyObjectByType<CountdownUI>() != null,"Existing timer and UI connected");
-                    Check(System.Text.RegularExpressions.Regex.IsMatch(
-                        GameObject.Find("TimeText").GetComponent<TMPro.TMP_Text>().text, @"^\d{2}:\d{2}\.\d{2}$"),
-                        "Time displays minutes, seconds and hundredths");
+                    Check(GameObject.Find("TimeText") == null && GameObject.Find("Time Left Label") == null,
+                        "The separate remaining-time display is gone");
+                    var missionScreen = GameObject.Find("Mission Panel")?.GetComponent<CrtScreenGraphic>();
+                    Check(missionScreen != null && missionScreen.rectTransform.rect.height > 200f,
+                        "The combined CRT monitor is taller than the original mission screen");
+                    foreach (var name in new[] { "Stage Label", "Stage Number", "Survival Label", "Survival Time" })
+                    {
+                        var statusText = missionScreen.transform.Find(name) as RectTransform;
+                        Check(statusText != null && statusText.GetComponent<TMPro.TMP_Text>() != null,
+                            name + " is inside the CRT monitor");
+                        var bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(missionScreen.rectTransform, statusText);
+                        var screenRect = missionScreen.rectTransform.rect;
+                        Check(bounds.min.x >= screenRect.xMin && bounds.max.x <= screenRect.xMax &&
+                              bounds.min.y >= screenRect.yMax - 58f && bounds.max.y <= screenRect.yMax,
+                            name + " fits entirely in the CRT status row");
+                    }
+                    Check(missionScreen.transform.parent.GetComponentsInChildren<CrtScreenGraphic>().Length == 1,
+                        "Mission and status share one CRT screen");
+                    var timeGauge = missionScreen != null ? missionScreen.GetComponentInChildren<Slider>() : null;
+                    Check(timeGauge != null && !timeGauge.interactable && Mathf.Approximately(timeGauge.value, timer.RemainingTime),
+                        "The monitor gauge displays the live remaining time");
                     CheckTextMissions();
                     InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(Key.A)); break;
                 case 2:
@@ -193,6 +211,11 @@ public static class UIFlowValidation
                     {
                         Check(player.CurrentKey.Data.InputKey == Key.A, "Release returns to last held adjacent key");
                         Check(warning.alpha == 0f, "Warning hidden above ten seconds");
+                        UnityEngine.Object.FindAnyObjectByType<AimConditionProcessor>().StartAim(new AimData
+                        {
+                            Type = AimType.Calculation, QuestionText = "8 + 4 = ?", TargetText = "12",
+                            RequiredCount = 2, TargetKeys = { Key.Digit1, Key.Digit2 }
+                        });
                         timer.RemoveTime(timer.RemainingTime - 10f);
                         var numberHunt = AssetDatabase.LoadAssetAtPath<MiniGameData>(
                             AssetDatabase.GUIDToAssetPath("9f4c6ab3a6291e34c86c25268ca820dc"));
@@ -203,11 +226,16 @@ public static class UIFlowValidation
                     if (heldKeyStep == 4)
                     {
                         Check(warning.alpha > 0f, "Warning visible at ten seconds or less");
-                        var score = GameObject.Find("Mini-game Score or Wave").GetComponent<TMPro.TMP_Text>();
+                        var score = GameObject.Find("Mini-game Progress").GetComponent<TMPro.TMP_Text>();
                         var description = GameObject.Find("Mission Description").GetComponent<TMPro.TMP_Text>();
-                        Check(score.enabled && !description.enabled && score.text == "SCORE 0 / 100" &&
+                        Check(score.enabled && score.text == "SCORE 0/100" && description.enabled &&
+                            description.text.Contains("8 + 4 = ?") && description.text.Contains("__") &&
                             score.transform.parent == description.transform.parent,
-                            "Number Hunt score replaces the normal mission text inside the mission panel");
+                            "Number Hunt shows its current score and target alongside the current mission");
+                        var monitor = (RectTransform)score.transform.parent;
+                        var scoreBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(monitor, score.rectTransform);
+                        var missionBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(monitor, description.rectTransform);
+                        Check(scoreBounds.max.y <= missionBounds.min.y, "Score and mission use separate lines");
                         miniGame.CancelMiniGame();
                         timer.AddTime(50f);
                         heldKeyStep++;
@@ -216,8 +244,9 @@ public static class UIFlowValidation
                     if (heldKeyStep == 5)
                     {
                         Check(warning.alpha == 0f, "Warning clears after recovering time");
-                        Check(GameObject.Find("Mission Description").GetComponent<TMPro.TMP_Text>().enabled,
-                            "Normal mission returns after Number Hunt");
+                        Check(!GameObject.Find("Mini-game Progress").GetComponent<TMPro.TMP_Text>().enabled &&
+                            GameObject.Find("Mission Description").GetComponent<TMPro.TMP_Text>().enabled,
+                            "The score clears and the current mission stays visible after Number Hunt");
                         previousOverlapMission = CheckObstacleOverlap(map, miniGame);
                         heldKeyStep++;
                         return;
@@ -392,25 +421,44 @@ public static class UIFlowValidation
     private static void CheckTextMissions()
     {
         var processor = UnityEngine.Object.FindAnyObjectByType<AimConditionProcessor>();
+        var manager = UnityEngine.Object.FindAnyObjectByType<AimManager>();
         var description = GameObject.Find("Mission Description").GetComponent<TMPro.TMP_Text>();
         AimData previous = processor.CurrentAim;
-
-        processor.StartAim(new AimData
+        using var managerSettings = new SerializedObject(manager);
+        var missionPool = managerSettings.FindProperty("aimSettings");
+        var configuredMissions = new AimGenerationSettings[missionPool.arraySize];
+        for (int i = 0; i < configuredMissions.Length; i++)
+            configuredMissions[i] = missionPool.GetArrayElementAtIndex(i).objectReferenceValue as AimGenerationSettings;
+        var randomState = UnityEngine.Random.state;
+        try
         {
-            Type = AimType.Calculation, QuestionText = "8 + 4 = ?", TargetText = "12",
-            RequiredCount = 2, TargetKeys = { Key.Digit1, Key.Digit2 }
-        });
-        Check(description.text.Contains("8 + 4 = ?") && description.text.Contains("__") &&
-            !description.text.Contains("12"), "Mission panel shows the calculation prompt and blank input");
+            foreach (var type in new[] { AimType.Calculation, AimType.Typing })
+            {
+                var config = Array.Find(configuredMissions, item => item != null && item.Enabled && item.AimType == type);
+                Check(config != null, $"GameScene allows {type} missions");
+                missionPool.arraySize = 1;
+                missionPool.GetArrayElementAtIndex(0).objectReferenceValue = config;
+                managerSettings.ApplyModifiedPropertiesWithoutUndo();
 
-        processor.StartAim(new AimData
+                Check(manager.StartRandomAim() && processor.CurrentAim.Type == type,
+                    $"GameScene generates a {type} mission through AimManager");
+                AimData aim = processor.CurrentAim;
+                Check(!string.IsNullOrEmpty(aim.TargetText) && aim.TargetKeys.Count == aim.TargetText.Length,
+                    $"{type} generates a valid answer and input keys");
+                Check(description.text.StartsWith(aim.QuestionText + "\n", StringComparison.Ordinal) &&
+                    description.text.Contains(new string('_', aim.RequiredCount)),
+                    $"Mission panel shows the generated {type} prompt and blank input");
+            }
+        }
+        finally
         {
-            Type = AimType.Typing, QuestionText = "TYPE: KEYS", TargetText = "KEYS",
-            RequiredCount = 4, TargetKeys = { Key.K, Key.E, Key.Y, Key.S }
-        });
-        Check(description.text.Contains("TYPE: KEYS") && description.text.Contains("____"),
-            "Mission panel shows the typing prompt and blank input");
-        processor.StartAim(previous);
+            missionPool.arraySize = configuredMissions.Length;
+            for (int i = 0; i < configuredMissions.Length; i++)
+                missionPool.GetArrayElementAtIndex(i).objectReferenceValue = configuredMissions[i];
+            managerSettings.ApplyModifiedPropertiesWithoutUndo();
+            UnityEngine.Random.state = randomState;
+            processor.StartAim(previous);
+        }
     }
 
     private static AimData CheckObstacleOverlap(KeyboardMapManager map, MiniGameManager manager)
