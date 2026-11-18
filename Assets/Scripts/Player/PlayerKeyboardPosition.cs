@@ -37,6 +37,7 @@ namespace Keybound.Player
             if (keyboardMapManager != null)
             {
                 keyboardMapManager.KeyPressed += HandleKeyPressed;
+                keyboardMapManager.PreferredHeldKeyChanged += HandlePreferredHeldKey;
             }
         }
 
@@ -45,6 +46,7 @@ namespace Keybound.Player
             if (keyboardMapManager != null)
             {
                 keyboardMapManager.KeyPressed -= HandleKeyPressed;
+                keyboardMapManager.PreferredHeldKeyChanged -= HandlePreferredHeldKey;
             }
         }
 
@@ -98,12 +100,13 @@ namespace Keybound.Player
         private void HandleKeyPressed(KeyboardKey pressedKey)
         {
             if (movementInputMode == MovementInputMode.Wasd)
-            {
                 TryMoveByWasd(pressedKey.Data.InputKey);
-                return;
-            }
+        }
 
-            TryMoveTo(pressedKey);
+        private void HandlePreferredHeldKey(KeyboardKey key)
+        {
+            if (movementInputMode == MovementInputMode.DirectKey && key != CurrentKey)
+                TryMoveTo(key);
         }
 
         private void TryMoveByWasd(Key inputKey)

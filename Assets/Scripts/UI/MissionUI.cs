@@ -28,7 +28,16 @@ namespace Keybound.UI
             AimData aim = processor.CurrentAim;
             if (aim == null)
             {
-                description.text = "Waiting for mission";
+                description.text = "";
+                return;
+            }
+
+            if (aim.Type == AimType.Typing || aim.Type == AimType.Calculation)
+            {
+                string prompt = string.IsNullOrEmpty(aim.QuestionText) ? aim.Description : aim.QuestionText;
+                string submitted = processor.SubmittedText;
+                int remaining = Mathf.Max(0, required - submitted.Length);
+                description.text = $"{prompt}\n<color=#B9C7A9>{submitted}{new string('_', remaining)}</color>";
                 return;
             }
 
@@ -42,7 +51,7 @@ namespace Keybound.UI
             }
 
             description.text = aim.Type != AimType.Hold && required > 0
-                ? $"{instruction}  <color=#B3B3B3>{current}/{required}</color>"
+                ? $"{instruction}  <color=#B9C7A9>{current}/{required}</color>"
                 : instruction;
         }
     }

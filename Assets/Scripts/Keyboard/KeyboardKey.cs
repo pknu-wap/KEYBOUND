@@ -8,6 +8,8 @@ namespace Keybound.Keyboard
     [DisallowMultipleComponent]
     public sealed class KeyboardKey : MonoBehaviour
     {
+        private const float MaxMiniGameMarkerScale = 0.9f;
+
         [SerializeField] private TMP_Text keyNameText;
 
         public KeyboardKeyData Data { get; private set; }
@@ -49,6 +51,9 @@ namespace Keybound.Keyboard
             rect.anchorMax = Vector2.one;
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
+            // Keep the mission border visible around the marker and the key label above it.
+            rect.localScale = Vector3.one * Mathf.Min(scale, MaxMiniGameMarkerScale);
+            rect.SetAsFirstSibling();
 
             var image = marker.GetComponent<Image>();
             image.color = color;
@@ -59,11 +64,6 @@ namespace Keybound.Keyboard
             {
                 image.sprite = keyFace;
                 marker.AddComponent<MirrorKeyFace>();
-                rect.SetAsFirstSibling();
-            }
-            else
-            {
-                rect.localScale = Vector3.one * scale;
             }
 
             return marker;

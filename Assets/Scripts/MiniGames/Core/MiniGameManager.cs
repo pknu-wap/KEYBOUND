@@ -13,6 +13,7 @@ public class MiniGameManager : MonoBehaviour
     public float LastFailurePenalty { get; private set; }
 
     public MiniGameData ActiveData { get; private set; }
+    public MiniGameBase ActiveController => IsPlaying ? controller : null;
 
     public event Action<int> OnMiniGameStarted;
     public event Action<int> OnMiniGameCompleted;

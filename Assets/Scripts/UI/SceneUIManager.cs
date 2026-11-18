@@ -74,7 +74,8 @@ public class SceneUIManager : MonoBehaviour
 
     private void Update()
     {
-        if (gameFlowManager == null || gameFlowManager.State == GameState.GameOver)
+        if (gameFlowManager == null || gameFlowManager.State == GameState.GameOver ||
+            gameFlowManager.State == GameState.Starting)
             return;
 
         var keyboard = InputKeyboard.current;

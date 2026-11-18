@@ -13,12 +13,17 @@ namespace Keybound.UI
         [SerializeField] private TMP_Text stageText;
         [SerializeField] private bool showStageNumberOnly;
         [SerializeField] private TMP_Text survivalText;
+        [SerializeField] private GameFlowManager gameFlow;
 
-        private int displayedTenths = -1;
+        private const float WarningThreshold = 10f;
+        private const float WarningEdgeWidth = 12f;
+        private int displayedHundredths = -1;
+        private TMP_Text startCountdown;
+        private CanvasGroup timeWarning;
 
         private void OnEnable()
         {
-            displayedTenths = -1;
+            displayedHundredths = -1;
             if (timeManager != null)
             {
                 if (timeSlider != null)
@@ -43,6 +48,14 @@ namespace Keybound.UI
                 stageManager.OnStageStarted += DisplayStage;
                 DisplayStage(stageManager.CurrentStage);
             }
+
+            if (gameFlow != null)
+            {
+                if (startCountdown == null)
+                    CreateOverlays();
+                gameFlow.StartCountdownChanged += DisplayStartCountdown;
+                DisplayStartCountdown(gameFlow.StartCountdownSeconds);
+            }
         }
 
         private void OnDisable()
@@ -55,6 +68,24 @@ namespace Keybound.UI
 
             if (stageManager != null)
                 stageManager.OnStageStarted -= DisplayStage;
+
+            if (gameFlow != null)
+                gameFlow.StartCountdownChanged -= DisplayStartCountdown;
+            if (startCountdown != null)
+                startCountdown.enabled = false;
+            if (timeWarning != null)
+                timeWarning.alpha = 0f;
+        }
+
+        private void LateUpdate()
+        {
+            if (timeWarning == null)
+                return;
+
+            bool showWarning = timeManager != null && timeManager.IsRunning &&
+                gameFlow.State == GameState.Playing &&
+                timeManager.RemainingTime > 0f && timeManager.RemainingTime <= WarningThreshold;
+            timeWarning.alpha = showWarning ? 0.5f + 0.35f * Mathf.Cos(Time.time * 2f * Mathf.PI) : 0f;
         }
 
         private void DisplayCountdown(float seconds)
@@ -62,12 +93,84 @@ namespace Keybound.UI
             if (timeSlider != null)
                 timeSlider.SetValueWithoutNotify(seconds);
 
-            int tenths = Mathf.Max(0, Mathf.CeilToInt(seconds * 10f));
-            if (timeText != null && tenths != displayedTenths)
+            int hundredths = Mathf.Max(0, Mathf.CeilToInt(seconds * 100f));
+            if (timeText != null && hundredths != displayedHundredths)
             {
-                displayedTenths = tenths;
-                timeText.text = $"{tenths / 600:00}:{tenths / 10 % 60:00}.{tenths % 10}";
+                displayedHundredths = hundredths;
+                timeText.text = $"{hundredths / 6000:00}:{hundredths / 100 % 60:00}.{hundredths % 100:00}";
             }
+        }
+
+        private void DisplayStartCountdown(int seconds)
+        {
+            startCountdown.enabled = seconds > 0;
+            if (startCountdown.enabled)
+                startCountdown.SetText("{0}", seconds);
+        }
+
+        private void CreateOverlays()
+        {
+            Canvas overlay = new GameObject("Countdown Overlay", typeof(RectTransform), typeof(Canvas))
+                .GetComponent<Canvas>();
+            RectTransform overlayRect = (RectTransform)overlay.transform;
+            overlayRect.SetParent(transform, false);
+            overlayRect.anchorMax = Vector2.one;
+            overlayRect.anchorMin = Vector2.zero;
+            overlayRect.sizeDelta = Vector2.zero;
+            overlayRect.anchoredPosition = Vector2.zero;
+            overlay.overrideSorting = true;
+            overlay.sortingOrder = 90;
+
+            timeWarning = new GameObject("Low Time Warning", typeof(RectTransform), typeof(CanvasGroup))
+                .GetComponent<CanvasGroup>();
+            RectTransform warningRect = (RectTransform)timeWarning.transform;
+            warningRect.SetParent(overlayRect, false);
+            warningRect.anchorMin = Vector2.zero;
+            warningRect.anchorMax = Vector2.one;
+            warningRect.sizeDelta = Vector2.zero;
+            warningRect.anchoredPosition = Vector2.zero;
+            timeWarning.alpha = 0f;
+            timeWarning.blocksRaycasts = false;
+
+            CreateWarningEdge("Top", Vector2.up, Vector2.one,
+                new Vector2(0f, -WarningEdgeWidth), Vector2.zero);
+            CreateWarningEdge("Bottom", Vector2.zero, Vector2.right,
+                Vector2.zero, new Vector2(0f, WarningEdgeWidth));
+            CreateWarningEdge("Left", Vector2.zero, Vector2.up,
+                new Vector2(0f, WarningEdgeWidth), new Vector2(WarningEdgeWidth, -WarningEdgeWidth));
+            CreateWarningEdge("Right", Vector2.right, Vector2.one,
+                new Vector2(-WarningEdgeWidth, WarningEdgeWidth), new Vector2(0f, -WarningEdgeWidth));
+
+            startCountdown = new GameObject("Game Start Countdown", typeof(RectTransform), typeof(TextMeshProUGUI))
+                .GetComponent<TMP_Text>();
+            startCountdown.rectTransform.SetParent(overlayRect, false);
+            startCountdown.rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+            startCountdown.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            startCountdown.rectTransform.sizeDelta = new Vector2(240f, 200f);
+            startCountdown.rectTransform.anchoredPosition = Vector2.zero;
+            TMP_Text countdownFontSource = timeText != null ? timeText : stageText;
+            if (countdownFontSource != null)
+                startCountdown.font = countdownFontSource.font;
+            startCountdown.fontSize = 144f;
+            startCountdown.fontStyle = FontStyles.Bold;
+            startCountdown.outlineColor = new Color32(24, 24, 24, 255);
+            startCountdown.outlineWidth = 0.22f;
+            startCountdown.alignment = TextAlignmentOptions.Center;
+            startCountdown.raycastTarget = false;
+        }
+
+        private void CreateWarningEdge(string edge, Vector2 anchorMin, Vector2 anchorMax,
+            Vector2 offsetMin, Vector2 offsetMax)
+        {
+            Image image = new GameObject(edge, typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+            RectTransform rect = image.rectTransform;
+            rect.SetParent(timeWarning.transform, false);
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.offsetMin = offsetMin;
+            rect.offsetMax = offsetMax;
+            image.color = new Color(0.9f, 0.1f, 0.15f);
+            image.raycastTarget = false;
         }
 
         private void DisplaySurvival(float seconds)
