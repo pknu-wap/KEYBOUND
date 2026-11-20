@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac7546f85d962364398217546997b4d1, type: 3}
+  m_Name: Stage20_LineSweep_Pattern
+  m_EditorClassIdentifier: Assembly-CSharp::ObstacleDodgeData
+  CollisionPenaltySeconds: 3
+  Waves:
+  - Name: Wave 1 - LineSweep
+    Patterns:
+    - StartDelaySeconds: 1
+      LifetimeSeconds: 1.4
+      Keys: 290000002a0000001f000000250000000f000000210000002800000026000000i
+    - StartDelaySeconds: 3.5
+      LifetimeSeconds: 1.4
+      Keys: 2b0000002c000000130000002000000012000000140000001100000024000000i
+    - StartDelaySeconds: 6
+      LifetimeSeconds: 1.4
+      Keys: 2d0000002e00000022000000270000001500000016000000100000001c000000i
+    - StartDelaySeconds: 8.5
+      LifetimeSeconds: 1.5
+      Keys: 2f00000030000000230000001700000018000000190000001b00000007000000i
+  - Name: Wave 2 - LineSweep
+    Patterns:
+    - StartDelaySeconds: 1
+      LifetimeSeconds: 1.4
+      Keys: 31000000320000001d0000001e0000001a000000060000000800000009000000i
+    - StartDelaySeconds: 3.5
+      LifetimeSeconds: 1.4
+      Keys: 2f00000030000000230000001700000018000000190000001b00000007000000i
+    - StartDelaySeconds: 6
+      LifetimeSeconds: 1.4
+      Keys: 2d0000002e00000022000000270000001500000016000000100000001c000000i
+    - StartDelaySeconds: 8.5
+      LifetimeSeconds: 1.5
+      Keys: 2b0000002c000000130000002000000012000000140000001100000024000000i
+  - Name: Wave 3 - LineSweep
+    Patterns:
+    - StartDelaySeconds: 1
+      LifetimeSeconds: 1.4
+      Keys: 28000000260000001100000024000000100000001c0000001b000000070000000800000009000000i
+    - StartDelaySeconds: 3.5
+      LifetimeSeconds: 1.4
+      Keys: 0f000000210000001200000014000000150000001600000018000000190000001a00000006000000i
+    - StartDelaySeconds: 6
+      LifetimeSeconds: 1.4
+      Keys: 1f000000250000001300000020000000220000002700000023000000170000001d0000001e000000i
+    - StartDelaySeconds: 8.5
+      LifetimeSeconds: 1.5
+      Keys: 290000002a0000002b0000002c0000002d0000002e0000002f000000300000003100000032000000i

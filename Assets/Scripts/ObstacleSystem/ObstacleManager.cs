@@ -16,19 +16,43 @@ public sealed class ObstacleManager : MonoBehaviour
     private sealed class Entry
     {
         public GameObject Marker;
+        public object Owner;
+        public System.Action OnHit;
+        public Color ActiveColor;
         public float Warning, Lifetime, Damage;
     }
     private readonly Dictionary<Key, Entry> entries = new();
     private readonly List<Key> keys = new();
     public bool Contains(Key key) => entries.ContainsKey(key);
     public bool Spawn(Key key, float warningSeconds, float lifetimeSeconds, float damageSeconds)
+        => Spawn(key, warningSeconds, lifetimeSeconds, damageSeconds, null);
+    public bool Spawn(Key key, float warningSeconds, float lifetimeSeconds, float damageSeconds,
+        object owner, System.Action onHit = null, Sprite centerSprite = null,
+        float scale = .8f, Color? warningTint = null, Color? activeTint = null)
     {
         if (!isActiveAndEnabled || map == null || player == null || timeManager == null ||
             Contains(key) || (wallManager != null && wallManager.Contains(key)) ||
             !map.TryGetKey(key, out var tile)) return false;
         float warning = Mathf.Max(0, warningSeconds);
-        entries.Add(key, new Entry { Marker = tile.CreateMiniGameMarker("Obstacle_" + key,
-            warning > 0 ? warningColor : obstacleColor, .8f), Warning = warning,
+        Color active = activeTint ?? obstacleColor;
+        Color tint = warning > 0 ? (warningTint ?? warningColor) : active;
+        var marker = tile.CreateMiniGameMarker("Obstacle_" + key, tint, scale);
+        if (centerSprite != null)
+        {
+            var center = new GameObject("Center Marker", typeof(RectTransform), typeof(Image));
+            var rect = (RectTransform)center.transform;
+            rect.SetParent(marker.transform, false);
+            rect.anchorMin = rect.anchorMax = new Vector2(.5f, .5f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.sizeDelta = Vector2.one * 28f;
+            var image = center.GetComponent<Image>();
+            image.sprite = centerSprite;
+            image.color = tint;
+            image.preserveAspect = true;
+            image.raycastTarget = false;
+        }
+        entries.Add(key, new Entry { Marker = marker, Owner = owner, OnHit = onHit,
+            ActiveColor = active, Warning = warning,
             Lifetime = Mathf.Max(.05f, lifetimeSeconds), Damage = Mathf.Max(0, damageSeconds) });
         return true;
     }
@@ -45,11 +69,14 @@ public sealed class ObstacleManager : MonoBehaviour
             {
                 entry.Warning -= Time.deltaTime;
                 if (entry.Warning > 0) continue;
-                if (entry.Marker != null) entry.Marker.GetComponent<Image>().color = obstacleColor;
+                if (entry.Marker != null)
+                    foreach (var image in entry.Marker.GetComponentsInChildren<Image>())
+                        image.color = entry.ActiveColor;
             }
             if (player.CurrentKey != null && player.CurrentKey.Data.InputKey == key)
             {
                 Remove(key);
+                entry.OnHit?.Invoke();
                 timeManager.RemoveTime(entry.Damage);
                 if (!timeManager.IsRunning) break;
                 continue;
@@ -63,6 +90,19 @@ public sealed class ObstacleManager : MonoBehaviour
         if (!entries.TryGetValue(key, out var entry)) return;
         entries.Remove(key);
         if (entry.Marker != null) { entry.Marker.SetActive(false); Destroy(entry.Marker); }
+    }
+    public bool HasOwned(object owner)
+    {
+        foreach (var entry in entries.Values)
+            if (ReferenceEquals(entry.Owner, owner)) return true;
+        return false;
+    }
+    public void ClearOwned(object owner)
+    {
+        var owned = new List<Key>();
+        foreach (var pair in entries)
+            if (ReferenceEquals(pair.Value.Owner, owner)) owned.Add(pair.Key);
+        foreach (var key in owned) Remove(key);
     }
     public void Clear()
     {

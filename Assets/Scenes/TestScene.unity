@@ -547,16 +547,20 @@ MonoBehaviour:
   aimManager: {fileID: 381686747}
   processor: {fileID: 632371430}
   miniGameManager: {fileID: 116485354}
-  startingStage: 29
+  startingStage: 19
   miniGameSchedule:
-  - StageNumber: 3
-    Data: {fileID: 11400000, guid: 9f4c6ab3a6291e34c86c25268ca820dc, type: 2}
   - StageNumber: 10
-    Data: {fileID: 11400000, guid: e1a46334cf5b421468ad8454be12ebf0, type: 2}
-  - StageNumber: 25
-    Data: {fileID: 11400000, guid: fd83b94f9f301b1479b2babc851b3cdc, type: 2}
+    Data: {fileID: 11400000, guid: 9f4c6ab3a6291e34c86c25268ca820dc, type: 2}
+  - StageNumber: 20
+    Data: {fileID: 11400000, guid: fbf21c5ed0705e447b136f8257fc23dd, type: 2}
   - StageNumber: 30
-    Data: {fileID: 11400000, guid: 8ec9686434feceb46b6f78830e68f33d, type: 2}
+    Data: {fileID: 11400000, guid: c169fd898a7d13846a62167a10b7c24c, type: 2}
+  - StageNumber: 40
+    Data: {fileID: 11400000, guid: 26aa91a426eaa8341a10e292c15e73a6, type: 2}
+  - StageNumber: 50
+    Data: {fileID: 11400000, guid: 1173e91d401688e46b6db45e1faf793c, type: 2}
+  - StageNumber: 60
+    Data: {fileID: 11400000, guid: 1173e91d401688e46b6db45e1faf793c, type: 2}
   successReward: 5.5
   failurePenalty: 5
   defaultSecondsPerUnit: 3
@@ -3390,56 +3394,17 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1280737048}
   m_CullTransparentMesh: 1
---- !u!1 &1303009813
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1303009814}
-  - component: {fileID: 1303009815}
-  m_Layer: 0
-  m_Name: ObstacleSystem
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1303009814
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1303009813}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1303009815
+--- !u!114 &1303009815 stripped
 MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 1288699300554153864, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+  m_PrefabInstance: {fileID: 8015338991338182230}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1303009813}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a97b3370ff0bc84469f23889653efbb7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ObstacleManager
-  map: {fileID: 1648942543}
-  player: {fileID: 1276033144}
-  timeManager: {fileID: 1657927971}
-  wallManager: {fileID: 683075399}
-  warningColor: {r: 1, g: 0.6, b: 0, a: 0.8}
-  obstacleColor: {r: 0.9, g: 0.2, b: 0.2, a: 0.85}
 --- !u!1 &1334103504
 GameObject:
   m_ObjectHideFlags: 0
@@ -5645,6 +5610,79 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2136610425}
   m_CullTransparentMesh: 1
+--- !u!1001 &8015338991338182230
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1288699300554153864, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: map
+      value: 
+      objectReference: {fileID: 1648942543}
+    - target: {fileID: 1288699300554153864, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: player
+      value: 
+      objectReference: {fileID: 1276033144}
+    - target: {fileID: 1288699300554153864, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: timeManager
+      value: 
+      objectReference: {fileID: 1657927971}
+    - target: {fileID: 1288699300554153864, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: wallManager
+      value: 
+      objectReference: {fileID: 683075399}
+    - target: {fileID: 2933388309685641222, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2933388309685641222, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2933388309685641222, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2933388309685641222, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2933388309685641222, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2933388309685641222, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2933388309685641222, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2933388309685641222, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2933388309685641222, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2933388309685641222, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4423368661824504664, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_Name
+      value: ObstacleSystem
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -5659,7 +5697,7 @@ SceneRoots:
   - {fileID: 404500017}
   - {fileID: 683075398}
   - {fileID: 1373572686}
-  - {fileID: 1303009814}
+  - {fileID: 8015338991338182230}
   - {fileID: 316117833}
   - {fileID: 2120239423}
   - {fileID: 2096066360}
