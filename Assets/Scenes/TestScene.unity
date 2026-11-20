@@ -547,7 +547,7 @@ MonoBehaviour:
   aimManager: {fileID: 381686747}
   processor: {fileID: 632371430}
   miniGameManager: {fileID: 116485354}
-  startingStage: 1
+  startingStage: 29
   miniGameSchedule:
   - StageNumber: 3
     Data: {fileID: 11400000, guid: 9f4c6ab3a6291e34c86c25268ca820dc, type: 2}
@@ -555,6 +555,8 @@ MonoBehaviour:
     Data: {fileID: 11400000, guid: e1a46334cf5b421468ad8454be12ebf0, type: 2}
   - StageNumber: 25
     Data: {fileID: 11400000, guid: fd83b94f9f301b1479b2babc851b3cdc, type: 2}
+  - StageNumber: 30
+    Data: {fileID: 11400000, guid: 8ec9686434feceb46b6f78830e68f33d, type: 2}
   successReward: 5.5
   failurePenalty: 5
   defaultSecondsPerUnit: 3
@@ -1759,7 +1761,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AimConditionProcessor
   keyboardMapManager: {fileID: 1648942543}
-  playerPosition: {fileID: 1041733116}
+  playerPosition: {fileID: 1276033144}
   logProgress: 1
   logHold: 1
   holdLogInterval: 0.25
@@ -1900,6 +1902,56 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 634746354}
   m_CullTransparentMesh: 1
+--- !u!1 &683075397
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 683075398}
+  - component: {fileID: 683075399}
+  m_Layer: 0
+  m_Name: WallSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &683075398
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 683075397}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &683075399
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 683075397}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 259fdd894f523c142af2f85b30f48d24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WallManager
+  map: {fileID: 1648942543}
+  player: {fileID: 1276033144}
+  timeManager: {fileID: 1657927971}
+  obstacleManager: {fileID: 1303009815}
+  warningColor: {r: 0.5, g: 0.7, b: 1, a: 0.5}
+  wallColor: {r: 0.3, g: 0.4, b: 0.7, a: 1}
 --- !u!1 &728235300
 GameObject:
   m_ObjectHideFlags: 0
@@ -2641,58 +2693,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1041341155}
   m_CullTransparentMesh: 1
---- !u!1 &1041733115
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1041733117}
-  - component: {fileID: 1041733116}
-  m_Layer: 0
-  m_Name: PlayerKeyboardPosition
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1041733116
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1041733115}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8fc14358f02f4e219706bd027373430f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Keybound.Player.PlayerKeyboardPosition
-  keyboardMapManager: {fileID: 1648942543}
-  startingKey: 33
-  movementInputMode: 0
-  enableDebugLogs: 1
---- !u!224 &1041733117
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1041733115}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 441.64795, y: 137.24281}
-  m_SizeDelta: {x: 100, y: 100}
-  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1183322731
 GameObject:
   m_ObjectHideFlags: 0
@@ -2980,7 +2980,6 @@ GameObject:
   - component: {fileID: 1233327844}
   - component: {fileID: 1233327843}
   - component: {fileID: 1233327842}
-  - component: {fileID: 1233327846}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -3073,22 +3072,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
---- !u!114 &1233327846
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1233327841}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8fc14358f02f4e219706bd027373430f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Keybound.Player.PlayerKeyboardPosition
-  keyboardMapManager: {fileID: 1648942543}
-  startingKey: 33
-  movementInputMode: 0
-  enableDebugLogs: 1
 --- !u!1 &1276033142
 GameObject:
   m_ObjectHideFlags: 0
@@ -3143,6 +3126,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Keybound.Player.PlayerKeyboardPosition
   keyboardMapManager: {fileID: 1648942543}
+  wallManager: {fileID: 683075399}
   startingKey: 31
   movementInputMode: 0
   enableDebugLogs: 1
@@ -3406,6 +3390,56 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1280737048}
   m_CullTransparentMesh: 1
+--- !u!1 &1303009813
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1303009814}
+  - component: {fileID: 1303009815}
+  m_Layer: 0
+  m_Name: ObstacleSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1303009814
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1303009813}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1303009815
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1303009813}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a97b3370ff0bc84469f23889653efbb7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ObstacleManager
+  map: {fileID: 1648942543}
+  player: {fileID: 1276033144}
+  timeManager: {fileID: 1657927971}
+  wallManager: {fileID: 683075399}
+  warningColor: {r: 1, g: 0.6, b: 0, a: 0.8}
+  obstacleColor: {r: 0.9, g: 0.2, b: 0.2, a: 0.85}
 --- !u!1 &1334103504
 GameObject:
   m_ObjectHideFlags: 0
@@ -3664,6 +3698,54 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MiniGameHUD
   miniGameManager: {fileID: 0}
   progressText: {fileID: 1041341157}
+--- !u!1 &1373572685
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1373572686}
+  - component: {fileID: 1373572687}
+  m_Layer: 0
+  m_Name: HardzardTest
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1373572686
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1373572685}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1373572687
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1373572685}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62f72106416391d40a7aa6045fe98b7a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HazardTest
+  obstacleManager: {fileID: 1303009815}
+  wallManager: {fileID: 683075399}
+  obstacleKey: 18
+  wallKey: 20
 --- !u!1 &1399340420
 GameObject:
   m_ObjectHideFlags: 0
@@ -5569,13 +5651,15 @@ SceneRoots:
   m_Roots:
   - {fileID: 519420032}
   - {fileID: 619394802}
-  - {fileID: 1041733117}
   - {fileID: 978699676}
   - {fileID: 754173617}
   - {fileID: 1524353952}
   - {fileID: 1511866374}
   - {fileID: 1233327845}
   - {fileID: 404500017}
+  - {fileID: 683075398}
+  - {fileID: 1373572686}
+  - {fileID: 1303009814}
   - {fileID: 316117833}
   - {fileID: 2120239423}
   - {fileID: 2096066360}
