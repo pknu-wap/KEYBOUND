@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2ef1e6c77aebbce408af8eebed97dbf1, type: 3}
-  m_Name: ObstacleDodge
+  m_Name: KernelPanic_MiniGame
   m_EditorClassIdentifier: Assembly-CSharp::MiniGameData
-  Id: obstacle-dodge1
-  DisplayName: Obstacle Dodge
-  SuccessRewardSeconds: 40
-  FailurePenaltySeconds: 30
-  ControllerPrefab: {fileID: 2606372161363790538, guid: d4a44a536009c654ba9eccd2556c7c73, type: 3}
-  Settings: {fileID: 11400000, guid: 048aa43c32f7719459fea1b9c91b9482, type: 2}
+  Id: boss-KernelPanic
+  DisplayName: KernelPanic
+  SuccessRewardSeconds: 30
+  FailurePenaltySeconds: 0
+  ControllerPrefab: {fileID: 11400001, guid: 775037722c6c140409ea5960aaff371a, type: 3}
+  Settings: {fileID: 11400000, guid: 93473fe5ac7245142bf842c4a336ac5b, type: 2}

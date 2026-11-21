@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using Keybound.Keyboard;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -17,6 +16,7 @@ namespace Keybound.Player
         }
 
         [SerializeField] private KeyboardMapManager keyboardMapManager;
+        [SerializeField] private WallManager wallManager;
         [SerializeField] private KeyboardMapKey startingKey = KeyboardMapKey.S;
         [SerializeField] private MovementInputMode movementInputMode = MovementInputMode.DirectKey;
         [SerializeField] private bool enableDebugLogs = true;
@@ -73,6 +73,7 @@ namespace Keybound.Player
             }
 
             SetCurrentKey(startingKeyboardKey);
+
             LogDebug(
                 $"[플레이어 위치] 시작 키: {CurrentKey.Data.Name}");
         }
@@ -100,13 +101,18 @@ namespace Keybound.Player
         private void HandleKeyPressed(KeyboardKey pressedKey)
         {
             if (movementInputMode == MovementInputMode.Wasd)
+            {
                 TryMoveByWasd(pressedKey.Data.InputKey);
+            }
         }
 
         private void HandlePreferredHeldKey(KeyboardKey key)
         {
-            if (movementInputMode == MovementInputMode.DirectKey && key != CurrentKey)
+            if (movementInputMode == MovementInputMode.DirectKey &&
+                key != CurrentKey)
+            {
                 TryMoveTo(key);
+            }
         }
 
         private void TryMoveByWasd(Key inputKey)
@@ -145,6 +151,7 @@ namespace Keybound.Player
             string currentKeyName = CurrentKey.Data.Name;
             string targetKeyName = targetKey.Data.Name;
 
+            // 인접한 키인지 확인
             if (!keyboardMapManager.IsAdjacent(CurrentKey, targetKey))
             {
                 string reason = CurrentKey == targetKey
@@ -153,12 +160,43 @@ namespace Keybound.Player
 
                 LogDebug(
                     $"[플레이어 이동] {currentKeyName} -> {targetKeyName}: 실패 ({reason})");
+
                 return;
             }
 
+            // 벽 존재 여부 및 이동 제한 확인
+            if (wallManager != null)
+            {
+                bool isBlocked =
+                    wallManager.IsBlocked(targetKey.Data.InputKey);
+
+                Debug.Log(
+                    $"[Wall Check] {targetKey.Data.InputKey} / " +
+                    $"Contains: {wallManager.Contains(targetKey.Data.InputKey)} / " +
+                    $"Blocked: {isBlocked} / " +
+                    $"Manager: {wallManager.GetEntityId()}",
+                    this);
+
+                if (isBlocked)
+                {
+                    Debug.Log(
+                        "[Wall] 벽으로 인해 이동 제한",
+                        this);
+
+                    return;
+                }
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "[Wall] WallManager 참조 없음",
+                    this);
+            }
+
+            // 이동 가능한 경우 플레이어 위치 변경
             SetCurrentKey(targetKey);
 
-            // ADDED: Play sound only after a successful move.
+            // 이동 성공 시 효과음 재생
             AudioManager.Instance?.PlayMoveSFX();
 
             LogDebug(

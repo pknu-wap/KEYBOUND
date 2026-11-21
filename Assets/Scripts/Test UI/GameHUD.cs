@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
@@ -290,7 +290,7 @@ public class GameHUD : MonoBehaviour
 
     private void HandleStageMode(StageType mode)
     {
-        SetText(stageModeText, "AIM");
+        SetText(stageModeText, mode == StageType.MiniGame ? "MINIGAME" : "AIM");
     }
 
     private void HandleGameOver()

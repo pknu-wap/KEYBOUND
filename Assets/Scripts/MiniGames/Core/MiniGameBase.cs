@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using UnityEngine;
 
@@ -7,7 +7,7 @@ public abstract class MiniGameBase : MonoBehaviour
     // Event fired when the mini-game is completed.
     public event Action Completed;
 
-    // ADDED: Event fired when the mini-game fails.
+    // Event fired when the mini-game fails.
     public event Action Failed;
 
     // Event requesting a time penalty.
@@ -18,6 +18,8 @@ public abstract class MiniGameBase : MonoBehaviour
 
     // Starts the mini-game.
     public abstract void Begin(MiniGameData data);
+
+    public virtual void OnAimCompleted(AimData aim) { }
 
     // Changes the pause state.
     public virtual void SetPaused(bool value)
@@ -37,7 +39,7 @@ public abstract class MiniGameBase : MonoBehaviour
         Completed?.Invoke();
     }
 
-    // ADDED: Notifies listeners of mini-game failure.
+    // Notifies listeners of mini-game failure.
     protected void Fail()
     {
         Failed?.Invoke();

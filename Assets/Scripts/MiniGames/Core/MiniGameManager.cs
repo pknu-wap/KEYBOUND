@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using UnityEngine;
 
@@ -28,8 +28,14 @@ public class MiniGameManager : MonoBehaviour
         if (data == null || data.ControllerPrefab == null)
             return false;
 
+        if (data.ControllerPrefab is BossController && !(data.Settings is BossData))
+        {
+            Debug.LogError("MiniGameManager: BossData required.", this);
+            return false;
+        }
+
         if (IsPlaying)
-            FailMiniGame();
+            CancelMiniGame();
 
         ActiveStage = stage;
         ActiveData = data;
@@ -39,10 +45,10 @@ public class MiniGameManager : MonoBehaviour
             runtimeRoot != null ? runtimeRoot : transform
         );
 
-        // ADDED: Ensure the instantiated controller is active.
+        // Ensure the instantiated controller is active.
         controller.gameObject.SetActive(true);
 
-        // ADDED: Prevent starting under an inactive parent.
+        // Prevent starting under an inactive parent.
         if (!controller.gameObject.activeInHierarchy)
         {
             Debug.LogError(
@@ -56,7 +62,7 @@ public class MiniGameManager : MonoBehaviour
 
         controller.Completed += CompleteMiniGame;
 
-        // ADDED: Subscribe to the failure event.
+        // Subscribe to the failure event.
         controller.Failed += FailMiniGame;
 
         controller.PenaltyRequested += ReportPenalty;
@@ -65,7 +71,7 @@ public class MiniGameManager : MonoBehaviour
 
         controller.Begin(data);
 
-        OnMiniGameStarted?.Invoke(stage);
+        if (IsPlaying) OnMiniGameStarted?.Invoke(stage);
 
         return true;
     }
@@ -78,6 +84,11 @@ public class MiniGameManager : MonoBehaviour
         );
 
         return false;
+    }
+
+    public void NotifyAimCompleted(AimData aim)
+    {
+        if (IsPlaying && controller != null) controller.OnAimCompleted(aim);
     }
 
     private void ReportPenalty(float amount)
@@ -146,7 +157,7 @@ public class MiniGameManager : MonoBehaviour
         {
             controller.Completed -= CompleteMiniGame;
 
-            // ADDED: Unsubscribe from failure events.
+            // Unsubscribe from failure events.
             controller.Failed -= FailMiniGame;
 
             controller.PenaltyRequested -= ReportPenalty;
