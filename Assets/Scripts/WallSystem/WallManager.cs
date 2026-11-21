@@ -13,18 +13,19 @@ public sealed class WallManager : MonoBehaviour
     [SerializeField] private ObstacleManager obstacleManager;
     [SerializeField] private Color warningColor = new Color(.5f,.7f,1f,.5f);
     [SerializeField] private Color wallColor = new Color(.3f,.4f,.7f,1f);
-    private sealed class Entry { public GameObject Marker; public float Warning, Lifetime; }
+    private sealed class Entry { public object Owner; public GameObject Marker; public float Warning, Lifetime; }
     private readonly Dictionary<Key, Entry> entries = new();
     private readonly List<Key> keys = new();
     public bool Contains(Key key) => entries.ContainsKey(key);
     public bool IsBlocked(Key key) => entries.TryGetValue(key, out var entry) && entry.Warning <= 0;
-    public bool Spawn(Key key, float warningSeconds, float lifetimeSeconds)
+    public bool Spawn(Key key, float warningSeconds, float lifetimeSeconds) => Spawn(key, warningSeconds, lifetimeSeconds, null);
+    public bool Spawn(Key key, float warningSeconds, float lifetimeSeconds, object owner)
     {
         if (!isActiveAndEnabled || map == null || player == null || timeManager == null ||
             Contains(key) || (obstacleManager != null && obstacleManager.Contains(key)) ||
             IsPlayerOn(key) || !map.TryGetKey(key, out var tile)) return false;
         float warning = Mathf.Max(0, warningSeconds);
-        entries.Add(key, new Entry { Marker = tile.CreateMiniGameMarker("Wall_" + key,
+        entries.Add(key, new Entry { Owner = owner, Marker = tile.CreateMiniGameMarker("Wall_" + key,
             warning > 0 ? warningColor : wallColor, .8f), Warning = warning,
             Lifetime = Mathf.Max(.05f, lifetimeSeconds) });
         return true;
@@ -55,6 +56,13 @@ public sealed class WallManager : MonoBehaviour
         if (!entries.TryGetValue(key, out var entry)) return;
         entries.Remove(key);
         if (entry.Marker != null) { entry.Marker.SetActive(false); Destroy(entry.Marker); }
+    }
+    public void ClearOwned(object owner)
+    {
+        var owned = new List<Key>();
+        foreach (var pair in entries)
+            if (ReferenceEquals(pair.Value.Owner, owner)) owned.Add(pair.Key);
+        foreach (var key in owned) Remove(key);
     }
     public void Clear()
     {

@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ef1e6c77aebbce408af8eebed97dbf1, type: 3}
+  m_Name: KernelPanic_MiniGame
+  m_EditorClassIdentifier: Assembly-CSharp::MiniGameData
+  Id: boss-KernelPanic
+  DisplayName: KernelPanic
+  SuccessRewardSeconds: 30
+  FailurePenaltySeconds: 0
+  ControllerPrefab: {fileID: 11400001, guid: 775037722c6c140409ea5960aaff371a, type: 3}
+  Settings: {fileID: 11400000, guid: 93473fe5ac7245142bf842c4a336ac5b, type: 2}

@@ -547,7 +547,7 @@ MonoBehaviour:
   aimManager: {fileID: 381686747}
   processor: {fileID: 632371430}
   miniGameManager: {fileID: 116485354}
-  startingStage: 19
+  startingStage: 59
   miniGameSchedule:
   - StageNumber: 10
     Data: {fileID: 11400000, guid: 9f4c6ab3a6291e34c86c25268ca820dc, type: 2}
@@ -560,7 +560,9 @@ MonoBehaviour:
   - StageNumber: 50
     Data: {fileID: 11400000, guid: 1173e91d401688e46b6db45e1faf793c, type: 2}
   - StageNumber: 60
-    Data: {fileID: 11400000, guid: 1173e91d401688e46b6db45e1faf793c, type: 2}
+    Data: {fileID: 11400000, guid: fe098f93c7ba1654ebbf6964fae5bd1f, type: 2}
+  - StageNumber: 70
+    Data: {fileID: 11400000, guid: 0ccc495dc8b81c848bac3ccc3177aabc, type: 2}
   successReward: 5.5
   failurePenalty: 5
   defaultSecondsPerUnit: 3
