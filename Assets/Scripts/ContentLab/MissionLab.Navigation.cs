@@ -9,7 +9,7 @@ namespace Keybound.ContentLab
         private enum MenuCommand
         {
             Mission, MiniGame, MissionProfile, GamePattern, RunQueue, StopQueue, Start, Practice,
-            PassMission, FailMission, PassGame, FailGame, PreviousPage, NextPage, CheckAll, Clear, Back,
+            PassMission, FailMission, PassGame, FailGame, Library, PreviousPage, NextPage, CheckAll, Clear, Back,
             Entry = 100
         }
 
@@ -31,10 +31,15 @@ namespace Keybound.ContentLab
 
         private readonly List<MenuButton> menuButtons = new(PickerPageSize + 6);
         private MenuCommand focus = MenuCommand.Mission;
+        private bool pickerReferences;
 
         private bool CanStart => missionChoice > 0 || miniGameChoice > 0
             && GetStageMode(miniGameChoice) == MiniGameStageMode.OneStageAlone;
-        private int PickerCount => (picker == Picker.Mission ? MissionCount : MiniGameCount) - 1;
+        private int PickerTotal => (picker == Picker.Mission ? MissionCount : MiniGameCount) - 1;
+        private int PickerReferenceCount => picker == Picker.Mission ? LabCatalog.ReferenceMissionCount : LabCatalog.ReferenceMiniGameCount;
+        private int PickerCoreCount => PickerTotal - PickerReferenceCount;
+        private int PickerOffset => pickerReferences ? PickerCoreCount : 0;
+        private int PickerCount => pickerReferences ? PickerReferenceCount : PickerCoreCount;
         private int PickerPages => (PickerCount + PickerPageSize - 1) / PickerPageSize;
 
         private void Update()
@@ -54,6 +59,11 @@ namespace Keybound.ContentLab
 
             if (picker != Picker.None)
             {
+                if (keyboard.f2Key.wasPressedThisFrame)
+                {
+                    ToggleLibrary();
+                    return;
+                }
                 if (keyboard.f3Key.wasPressedThisFrame)
                 {
                     CheckAll(keyboard.shiftKey.isPressed);
@@ -159,6 +169,8 @@ namespace Keybound.ContentLab
 
         private void AddPickerButtons()
         {
+            AddButton(MenuCommand.Library, new Rect(321, 27, 173, 29),
+                pickerReferences ? "Library: References" : "Library: Core");
             AddButton(MenuCommand.PreviousPage, new Rect(505, 27, 95, 29), "Previous", pickerPage > 0);
             AddButton(MenuCommand.NextPage, new Rect(672, 27, 95, 29), "Next", pickerPage + 1 < PickerPages);
             AddButton(MenuCommand.CheckAll, new Rect(835, 26, 111, 29), "Check all");
@@ -173,10 +185,12 @@ namespace Keybound.ContentLab
             {
                 int offset = i - start;
                 var bounds = new Rect(90 + offset % columns * width, 65 + offset / columns * 35, width - 8, 31);
-                string label = picker == Picker.Mission ? MissionName(i) : MiniGameName(i);
-                int order = checkedItems.IndexOf((picker, i)) + 1;
+                int index = PickerOffset + i;
+                string label = picker == Picker.Mission ? MissionName(index) : MiniGameName(index);
+                string number = pickerReferences ? $"R{i:00}" : $"{i:000}";
+                int order = checkedItems.IndexOf((picker, index)) + 1;
                 string check = order > 0 ? $"[x{order}]" : "[ ]";
-                AddButton((MenuCommand)((int)MenuCommand.Entry + i), bounds, $"{check} {i:000}  {label}");
+                AddButton((MenuCommand)((int)MenuCommand.Entry + index), bounds, $"{check} {number}  {label}");
             }
         }
 
@@ -252,7 +266,7 @@ namespace Keybound.ContentLab
             int entry = (int)focus - (int)MenuCommand.Entry;
             if (entry > 0)
             {
-                int newIndex = Mathf.Min(entry + (next - pickerPage) * PickerPageSize, PickerCount);
+                int newIndex = Mathf.Min(entry + (next - pickerPage) * PickerPageSize, PickerOffset + PickerCount);
                 focus = (MenuCommand)((int)MenuCommand.Entry + newIndex);
             }
             pickerPage = next;
@@ -262,6 +276,14 @@ namespace Keybound.ContentLab
         {
             focus = picker == Picker.Mission ? MenuCommand.Mission : MenuCommand.MiniGame;
             picker = Picker.None;
+        }
+
+        private void ToggleLibrary()
+        {
+            pickerReferences = !pickerReferences;
+            pickerPage = 0;
+            // Put focus on the first item so Enter can pick it immediately.
+            focus = (MenuCommand)((int)MenuCommand.Entry + PickerOffset + 1);
         }
 
         private void InvokeMenuCommand(MenuCommand command)
@@ -286,6 +308,7 @@ namespace Keybound.ContentLab
                 case MenuCommand.FailMission: EndMission(false); break;
                 case MenuCommand.PassGame: miniGames.CompleteMiniGame(); break;
                 case MenuCommand.FailGame: miniGames.FailMiniGame(); break;
+                case MenuCommand.Library: ToggleLibrary(); break;
                 case MenuCommand.PreviousPage: ChangePage(-1); break;
                 case MenuCommand.NextPage: ChangePage(1); break;
                 case MenuCommand.CheckAll: CheckAll(false); break;

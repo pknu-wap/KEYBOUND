@@ -75,16 +75,16 @@ namespace Keybound.ContentLab
         {
             if (allLists)
             {
-                CheckRange(Picker.Mission, MissionCount - 1);
-                CheckRange(Picker.MiniGame, MiniGameCount - 1);
+                CheckRange(Picker.Mission, 0, MissionCount - 1);
+                CheckRange(Picker.MiniGame, 0, MiniGameCount - 1);
             }
             else
-                CheckRange(picker, PickerCount);
+                CheckRange(picker, PickerOffset, PickerCount);
         }
 
-        private void CheckRange(Picker kind, int count)
+        private void CheckRange(Picker kind, int offset, int count)
         {
-            for (int index = 1; index <= count; index++)
+            for (int index = offset + 1; index <= offset + count; index++)
             {
                 var item = (kind, index);
                 if (!checkedItems.Contains(item))
@@ -92,13 +92,13 @@ namespace Keybound.ContentLab
             }
 
             if (PairChoice(kind) == 0 && count > 0)
-                SetPairChoice(kind, 1);
+                SetPairChoice(kind, offset + 1);
         }
 
         private void ClearChecked(bool allLists)
         {
             bool IsInScope((Picker Kind, int Index) item) =>
-                allLists || item.Kind == picker;
+                allLists || item.Kind == picker && item.Index > PickerOffset && item.Index <= PickerOffset + PickerCount;
 
             bool clearMissionChoice = checkedItems.Contains((Picker.Mission, missionChoice))
                                       && IsInScope((Picker.Mission, missionChoice));

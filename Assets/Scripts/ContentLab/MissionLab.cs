@@ -1,8 +1,11 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using Keybound.Keyboard;
 using Keybound.Player;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using InputKeyboard = UnityEngine.InputSystem.Keyboard;
 
 namespace Keybound.ContentLab
 {
@@ -20,9 +23,14 @@ namespace Keybound.ContentLab
         [SerializeField] private AimGenerationSettings[] missions;
         [SerializeField] private MiniGameData[] games;
 
+        private readonly List<Key> submissions = new();
         private AimGenerationSettings[][] missionProfiles;
         private MiniGameData[][] gameProfiles;
+        private LabMission currentMission;
+        private CatalogRun catalogMission;
+        private LabBoard missionBoard;
         private MiniGameData activeGame;
+        private KeyboardKey origin;
         private Picker picker;
         private int pickerPage;
         private Outcome missionResult;
@@ -35,6 +43,7 @@ namespace Keybound.ContentLab
         private int gameProfile;
         private int activeMissionChoice;
         private int activeMissionProfile;
+        private string missionFeedback;
         private int stage;
         private int stageCount;
         private float rapidDeadline;
@@ -43,8 +52,9 @@ namespace Keybound.ContentLab
         private GUIStyle note;
 
         private const int PickerPageSize = 20;
-        public int MissionCount => 1 + missionProfiles.Length;
-        public int MiniGameCount => 1 + gameProfiles.Length;
+        private int OriginalMissionCount => missionProfiles.Length + LabMission.Names.Length;
+        public int MissionCount => 1 + OriginalMissionCount + LabCatalog.Missions.Length;
+        public int MiniGameCount => 1 + gameProfiles.Length + LabCatalog.MiniGames.Length;
         public int CurrentStage => stage;
         public bool IsRunning => running;
         public bool IsMissionRunning => missionResult == Outcome.Running;
@@ -64,6 +74,8 @@ namespace Keybound.ContentLab
 
         private void OnEnable()
         {
+            missionBoard = new LabBoard(map, 0.49f, new Vector2(-14f, 9f));
+            map.KeyPressed += OnKeyPressed;
             processor.OnAimCompleted += OnAimCompleted;
             miniGames.OnMiniGameCompleted += OnMiniGameCompleted;
             miniGames.OnMiniGameFailed += OnMiniGameFailed;
@@ -71,6 +83,8 @@ namespace Keybound.ContentLab
 
         private void OnDisable()
         {
+            if (map != null)
+                map.KeyPressed -= OnKeyPressed;
             if (processor != null)
                 processor.OnAimCompleted -= OnAimCompleted;
             if (miniGames != null)
@@ -137,7 +151,11 @@ namespace Keybound.ContentLab
         {
             if (index == 0)
                 return null;
-            return gameProfiles[index - 1][variant];
+            if (index <= gameProfiles.Length)
+                return gameProfiles[index - 1][variant];
+
+            var template = Array.Find(games, game => game != null && game.ControllerPrefab is LabMiniGameController);
+            return CatalogMiniGameData.Create(LabCatalog.MiniGames[index - gameProfiles.Length - 1], template.ControllerPrefab);
         }
 
         public void EndMission(bool success)
@@ -145,7 +163,12 @@ namespace Keybound.ContentLab
             if (!running || missionResult != Outcome.Running)
                 return;
             missionResult = success ? Outcome.Success : Outcome.Failure;
+            missionFeedback = catalogMission?.Feedback;
+            currentMission = null;
+            catalogMission = null;
             processor.StopAim();
+            missionBoard.Clear();
+            submissions.Clear();
         }
 
         private void BeginMission()
@@ -154,24 +177,49 @@ namespace Keybound.ContentLab
                 return;
 
             missionResult = Outcome.Running;
-            var selected = missionProfiles[activeMissionChoice - 1][activeMissionProfile];
-            if (!aimManager.StartAim(selected))
+            missionFeedback = null;
+            origin = player.CurrentKey;
+            if (activeMissionChoice <= missionProfiles.Length)
             {
-                EndMission(false);
+                var selected = missionProfiles[activeMissionChoice - 1][activeMissionProfile];
+                if (!aimManager.StartAim(selected))
+                {
+                    EndMission(false);
+                    return;
+                }
+
+                rapidDeadline = selected.AimType == AimType.RapidPress
+                    ? Time.time + processor.RequiredProgress * 0.5f : 0f;
                 return;
             }
 
-            rapidDeadline = selected.AimType == AimType.RapidPress
-                ? Time.time + processor.RequiredProgress * 0.5f : 0f;
+            if (activeMissionChoice > OriginalMissionCount)
+            {
+                catalogMission = new CatalogRun(LabCatalog.Missions[activeMissionChoice - OriginalMissionCount - 1],
+                    missionBoard, origin.Data.InputKey, startAtS: true);
+                rapidDeadline = 0f;
+                return;
+            }
+
+            var kind = (LabMissionKind)(activeMissionChoice - missionProfiles.Length - 1);
+            currentMission = new LabMission(kind, missionBoard, () => player.SetCurrentKey(origin), stage);
+            rapidDeadline = 0f;
         }
 
         private void StopTrial()
         {
             running = false;
+            missionFeedback = null;
+            currentMission = null;
+            catalogMission = null;
+            submissions.Clear();
+            missionBoard?.Clear();
             if (processor != null)
                 processor.StopAim();
             if (miniGames != null)
                 miniGames.CancelMiniGame();
+            if (activeGame is CatalogMiniGameData transient)
+                Destroy(transient);
             activeGame = null;
         }
 
@@ -185,6 +233,12 @@ namespace Keybound.ContentLab
                 miniResult = result;
         }
 
+        private void OnKeyPressed(KeyboardKey key)
+        {
+            if ((currentMission != null || catalogMission != null) && player.CurrentKey == key)
+                submissions.Add(key.Data.InputKey);
+        }
+
         private void LateUpdate()
         {
             if (!running)
@@ -193,7 +247,34 @@ namespace Keybound.ContentLab
                 return;
             }
 
-            if (missionResult == Outcome.Running && rapidDeadline > 0f && Time.time >= rapidDeadline)
+            if (catalogMission != null && player.CurrentKey != null)
+            {
+                Key position = player.CurrentKey.Data.InputKey;
+                catalogMission.Tick(position, InputKeyboard.current, Time.deltaTime);
+                foreach (Key key in submissions)
+                {
+                    if (key == position)
+                        catalogMission.Submit(key);
+                }
+                submissions.Clear();
+                if (catalogMission.Result.HasValue)
+                    EndMission(catalogMission.Result.Value);
+            }
+            else if (currentMission != null && player.CurrentKey != null)
+            {
+                Key position = player.CurrentKey.Data.InputKey;
+                currentMission.Tick(position, InputKeyboard.current, Time.deltaTime);
+                foreach (Key key in submissions)
+                {
+                    if (key == player.CurrentKey?.Data.InputKey)
+                        currentMission.Submit(key);
+                }
+                submissions.Clear();
+
+                if (currentMission.Completed)
+                    EndMission(true);
+            }
+            else if (missionResult == Outcome.Running && rapidDeadline > 0f && Time.time >= rapidDeadline)
             {
                 EndMission(false);
             }
@@ -222,16 +303,22 @@ namespace Keybound.ContentLab
         private string MissionName(int index)
         {
             if (index == 0) return "None";
-            return string.Join(" / ", missionProfiles[index - 1].Select(profile => profile.AimType));
+            if (index > OriginalMissionCount)
+                return LabCatalog.Missions[index - OriginalMissionCount - 1].Name;
+            return index <= missionProfiles.Length ? string.Join(" / ", missionProfiles[index - 1].Select(profile => profile.AimType))
+                : LabMission.Names[index - missionProfiles.Length - 1];
         }
 
         private string MiniGameName(int index)
         {
             if (index == 0) return "None";
-            return gameProfiles[index - 1][0].DisplayName;
+            return index > gameProfiles.Length ? LabCatalog.MiniGames[index - gameProfiles.Length - 1].Name
+                : gameProfiles[index - 1][0].DisplayName;
         }
 
-        private MiniGameStageMode GetStageMode(int index) => gameProfiles[index - 1][0].StageMode;
+        private MiniGameStageMode GetStageMode(int index) => index <= gameProfiles.Length
+            ? gameProfiles[index - 1][0].StageMode
+            : LabCatalog.MiniGames[index - gameProfiles.Length - 1].StageMode;
 
         private static string ModeLabel(MiniGameStageMode mode) => mode switch
         {
@@ -243,8 +330,12 @@ namespace Keybound.ContentLab
 
         private string MissionStatus()
         {
+            if (catalogMission != null)
+                return catalogMission.Status;
+            if (currentMission != null)
+                return currentMission.Status;
             if (missionResult != Outcome.Running || processor.CurrentAim == null)
-                return $"Mission  {missionResult}";
+                return $"Mission  {missionResult}   {missionFeedback}";
 
             var aim = processor.CurrentAim;
             string prompt = string.IsNullOrEmpty(aim.QuestionText) ? aim.Description : aim.QuestionText;
@@ -260,10 +351,13 @@ namespace Keybound.ContentLab
             if (activeGame == null)
                 return "Mini-game  Inactive";
             if (miniResult != Outcome.Running)
-                return $"{activeGame.DisplayName}  {miniResult}";
+                return activeGame is CatalogMiniGameData catalogData && !string.IsNullOrEmpty(catalogData.Feedback)
+                    ? $"{activeGame.DisplayName}  {miniResult}   {catalogData.Feedback}"
+                    : $"{activeGame.DisplayName}  {miniResult}";
 
             return miniGames.ActiveController switch
             {
+                LabMiniGameController lab => lab.Progress,
                 NumberHuntController hunt => $"Score  {hunt.CurrentScore}/{hunt.TargetScore}",
                 ObstacleDodgeController dodge => $"Wave  {dodge.CurrentWave}/{dodge.WaveCount}    Hits  {dodge.CollisionCount}/{dodge.MaxCollisions}",
                 _ => activeGame.DisplayName
@@ -310,8 +404,10 @@ namespace Keybound.ContentLab
         private void OpenPicker(Picker mode, int index)
         {
             picker = mode;
-            int highlighted = Mathf.Max(1, index);
-            pickerPage = (highlighted - 1) / PickerPageSize;
+            if (index > 0)
+                pickerReferences = index > PickerCoreCount;
+            int highlighted = Mathf.Max(PickerOffset + 1, index);
+            pickerPage = (highlighted - PickerOffset - 1) / PickerPageSize;
             focus = (MenuCommand)((int)MenuCommand.Entry + highlighted);
         }
 
@@ -324,7 +420,7 @@ namespace Keybound.ContentLab
             GUI.Label(new Rect(90, 240, 985, 22),
                 "Arrows  Move focus     Enter  Check / uncheck     Tab / Shift+Tab  Page     Esc  Back", note);
             GUI.Label(new Rect(90, 260, 985, 22),
-                "F3 / F4  Check / clear this list     Shift+F3 / Shift+F4  All lists", note);
+                "F2  Library     F3 / F4  Check / clear this list     Shift+F3 / Shift+F4  All lists", note);
             GUI.Label(new Rect(1052, 248, 138, 24), $"{checkedItems.Count} checked", note);
         }
     }
