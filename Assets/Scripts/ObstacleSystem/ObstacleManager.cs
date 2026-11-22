@@ -30,7 +30,7 @@ public sealed class ObstacleManager : MonoBehaviour
         object owner, System.Action onHit = null, Sprite centerSprite = null,
         float scale = .8f, Color? warningTint = null, Color? activeTint = null)
     {
-        if (!isActiveAndEnabled || map == null || player == null || timeManager == null ||
+        if (!isActiveAndEnabled || map == null || player == null ||
             Contains(key) || (wallManager != null && wallManager.Contains(key)) ||
             !map.TryGetKey(key, out var tile)) return false;
         float warning = Mathf.Max(0, warningSeconds);
@@ -60,7 +60,7 @@ public sealed class ObstacleManager : MonoBehaviour
     private void OnDisable() { if (timeManager != null) timeManager.OnTimeOver -= Clear; Clear(); }
     private void LateUpdate()
     {
-        if (timeManager == null || !timeManager.IsRunning || Time.deltaTime <= 0) return;
+        if (player == null || (timeManager != null && !timeManager.IsRunning) || Time.deltaTime <= 0) return;
         keys.Clear(); keys.AddRange(entries.Keys);
         foreach (var key in keys)
         {
@@ -77,8 +77,11 @@ public sealed class ObstacleManager : MonoBehaviour
             {
                 Remove(key);
                 entry.OnHit?.Invoke();
-                timeManager.RemoveTime(entry.Damage);
-                if (!timeManager.IsRunning) break;
+                if (timeManager != null)
+                {
+                    timeManager.RemoveTime(entry.Damage);
+                    if (!timeManager.IsRunning) break;
+                }
                 continue;
             }
             entry.Lifetime -= Time.deltaTime;

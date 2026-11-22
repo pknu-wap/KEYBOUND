@@ -60,7 +60,7 @@ namespace Keybound.ContentLab
         public bool IsMissionRunning => missionResult == Outcome.Running;
         public bool IsMiniGameRunning => miniResult == Outcome.Running;
 
-        private void Awake()
+        private void OnEnable()
         {
             missionProfiles = missions.GroupBy(mission => mission.AimType switch
             {
@@ -69,11 +69,7 @@ namespace Keybound.ContentLab
                 _ => mission.AimType
             }).Select(group => group.ToArray()).ToArray();
 
-            gameProfiles = games.GroupBy(game => game.DisplayName).Select(group => group.ToArray()).ToArray();
-        }
-
-        private void OnEnable()
-        {
+            gameProfiles = games.GroupBy(GameProfileName).Select(group => group.ToArray()).ToArray();
             missionBoard = new LabBoard(map, 0.49f, new Vector2(-14f, 9f));
             map.KeyPressed += OnKeyPressed;
             processor.OnAimCompleted += OnAimCompleted;
@@ -313,8 +309,11 @@ namespace Keybound.ContentLab
         {
             if (index == 0) return "None";
             return index > gameProfiles.Length ? LabCatalog.MiniGames[index - gameProfiles.Length - 1].Name
-                : gameProfiles[index - 1][0].DisplayName;
+                : GameProfileName(gameProfiles[index - 1][0]);
         }
+
+        private static string GameProfileName(MiniGameData game) =>
+            game.ControllerPrefab is ObstacleDodgeController ? "Obstacle Dodge" : game.DisplayName;
 
         private MiniGameStageMode GetStageMode(int index) => index <= gameProfiles.Length
             ? gameProfiles[index - 1][0].StageMode
@@ -359,7 +358,7 @@ namespace Keybound.ContentLab
             {
                 LabMiniGameController lab => lab.Progress,
                 NumberHuntController hunt => $"Score  {hunt.CurrentScore}/{hunt.TargetScore}",
-                ObstacleDodgeController dodge => $"Wave  {dodge.CurrentWave}/{dodge.WaveCount}    Hits  {dodge.CollisionCount}/{dodge.MaxCollisions}",
+                ObstacleDodgeController dodge => $"Wave  {dodge.CurrentWave}/{dodge.WaveCount}    Hits  {dodge.CollisionCount}",
                 _ => activeGame.DisplayName
             };
         }

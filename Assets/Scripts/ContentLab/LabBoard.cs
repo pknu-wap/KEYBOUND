@@ -52,18 +52,24 @@ namespace Keybound.ContentLab
             if (!markers.Remove(key, out var marker))
                 return;
 
-            marker.Image.gameObject.SetActive(false);
-            Object.Destroy(marker.Image.gameObject);
+            DestroyMarker(marker.Image);
         }
 
         internal void Clear()
         {
             foreach (var marker in markers.Values)
-            {
-                marker.Image.gameObject.SetActive(false);
-                Object.Destroy(marker.Image.gameObject);
-            }
+                DestroyMarker(marker.Image);
             markers.Clear();
+        }
+
+        private static void DestroyMarker(Image image)
+        {
+            if (image == null)
+                return;
+
+            GameObject marker = image.gameObject;
+            marker.SetActive(false);
+            Object.Destroy(marker);
         }
 
         internal static int Distance(Key from, Key to)

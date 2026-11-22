@@ -129,6 +129,7 @@ GameObject:
   m_Component:
   - component: {fileID: 116485353}
   - component: {fileID: 116485354}
+  - component: {fileID: 116485355}
   m_Layer: 0
   m_Name: MiniGameManager
   m_TagString: Untagged
@@ -164,6 +165,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MiniGameManager
   runtimeRoot: {fileID: 0}
+--- !u!114 &116485355
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 116485352}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a97b3370ff0bc84469f23889653efbb7, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ObstacleManager
+  map: {fileID: 1648942543}
+  player: {fileID: 1276033144}
+  timeManager: {fileID: 0}
+  wallManager: {fileID: 0}
+  warningColor: {r: 1, g: 0.6, b: 0, a: 0.8}
+  obstacleColor: {r: 0.9, g: 0.2, b: 0.2, a: 0.85}
 --- !u!1 &361411843
 GameObject:
   m_ObjectHideFlags: 0
@@ -208,8 +227,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 9671e9d50968dc243a18bdd4dcda6905, type: 2}
   games:
   - {fileID: 11400000, guid: 9f4c6ab3a6291e34c86c25268ca820dc, type: 2}
-  - {fileID: 11400000, guid: e1a46334cf5b421468ad8454be12ebf0, type: 2}
-  - {fileID: 11400000, guid: fd83b94f9f301b1479b2babc851b3cdc, type: 2}
+  - {fileID: 11400000, guid: c169fd898a7d13846a62167a10b7c24c, type: 2}
+  - {fileID: 11400000, guid: fbf21c5ed0705e447b136f8257fc23dd, type: 2}
   - {fileID: 11400000, guid: bef1a0f9e48281948905d9b5390b5423, type: 2}
   - {fileID: 11400000, guid: 10a27fe14f5c61d4dbba0dabfa00ab35, type: 2}
   - {fileID: 11400000, guid: 3154f51351dbc6c48ac5a6f4f589df1a, type: 2}
