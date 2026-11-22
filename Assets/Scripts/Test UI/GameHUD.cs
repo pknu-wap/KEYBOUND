@@ -1,3 +1,4 @@
+﻿
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -8,6 +9,10 @@ public class GameHUD : MonoBehaviour
     [SerializeField] private StageManager stageManager;
     [SerializeField] private TimeManager timeManager;
     [SerializeField] private AimConditionProcessor aimProcessor;
+
+    [Header("Score UI")]
+    [SerializeField] private ScoreManager scoreManager;
+    [SerializeField] private TMP_Text scoreText;
 
     [Header("Stage UI")]
     [SerializeField] private TMP_Text stageText;
@@ -38,6 +43,9 @@ public class GameHUD : MonoBehaviour
 
     private void Awake()
     {
+        if (scoreManager == null)
+            scoreManager = FindAnyObjectByType<ScoreManager>();
+
         ValidateReferences();
         ClearUI();
     }
@@ -45,6 +53,12 @@ public class GameHUD : MonoBehaviour
     private void OnEnable()
     {
         SubscribeEvents();
+
+        if (scoreManager != null)
+        {
+            scoreManager.OnScoreChanged += HandleScoreChanged;
+            HandleScoreChanged(scoreManager.TotalScore);
+        }
     }
 
     private void Start()
@@ -54,43 +68,23 @@ public class GameHUD : MonoBehaviour
 
     private void OnDisable()
     {
+        if (scoreManager != null)
+            scoreManager.OnScoreChanged -= HandleScoreChanged;
+
         UnsubscribeEvents();
     }
-
-    // ========================================
-    // References
-    // ========================================
 
     private void ValidateReferences()
     {
         if (stageManager == null)
-        {
-            Debug.LogWarning(
-                "[GameHUD] StageManager reference is missing.",
-                this
-            );
-        }
+            Debug.LogWarning("[GameHUD] StageManager reference is missing.", this);
 
         if (timeManager == null)
-        {
-            Debug.LogWarning(
-                "[GameHUD] TimeManager reference is missing.",
-                this
-            );
-        }
+            Debug.LogWarning("[GameHUD] TimeManager reference is missing.", this);
 
         if (aimProcessor == null)
-        {
-            Debug.LogWarning(
-                "[GameHUD] AimConditionProcessor reference is missing.",
-                this
-            );
-        }
+            Debug.LogWarning("[GameHUD] AimConditionProcessor reference is missing.", this);
     }
-
-    // ========================================
-    // Event Subscription
-    // ========================================
 
     private void SubscribeEvents()
     {
@@ -105,23 +99,16 @@ public class GameHUD : MonoBehaviour
 
         if (timeManager != null)
         {
-            timeManager.OnRemainingTimeChanged +=
-                HandleRemainingTimeChanged;
-
-            timeManager.OnElapsedTimeChanged +=
-                HandleElapsedTimeChanged;
-
-            timeManager.OnRemainingTimeUpdated +=
-                HandleRemainingTimeUpdated;
+            timeManager.OnRemainingTimeChanged += HandleRemainingTimeChanged;
+            timeManager.OnElapsedTimeChanged += HandleElapsedTimeChanged;
+            timeManager.OnRemainingTimeUpdated += HandleRemainingTimeUpdated;
         }
 
         if (aimProcessor != null)
         {
             aimProcessor.OnAimStarted += HandleAimStarted;
             aimProcessor.OnTextKeyInput += HandleTextKeyInput;
-
-            aimProcessor.OnAimProgressChanged +=
-                HandleAimProgressChanged;
+            aimProcessor.OnAimProgressChanged += HandleAimProgressChanged;
         }
     }
 
@@ -138,32 +125,27 @@ public class GameHUD : MonoBehaviour
 
         if (timeManager != null)
         {
-            timeManager.OnRemainingTimeChanged -=
-                HandleRemainingTimeChanged;
-
-            timeManager.OnElapsedTimeChanged -=
-                HandleElapsedTimeChanged;
-
-            timeManager.OnRemainingTimeUpdated -=
-                HandleRemainingTimeUpdated;
+            timeManager.OnRemainingTimeChanged -= HandleRemainingTimeChanged;
+            timeManager.OnElapsedTimeChanged -= HandleElapsedTimeChanged;
+            timeManager.OnRemainingTimeUpdated -= HandleRemainingTimeUpdated;
         }
 
         if (aimProcessor != null)
         {
             aimProcessor.OnAimStarted -= HandleAimStarted;
             aimProcessor.OnTextKeyInput -= HandleTextKeyInput;
-
-            aimProcessor.OnAimProgressChanged -=
-                HandleAimProgressChanged;
+            aimProcessor.OnAimProgressChanged -= HandleAimProgressChanged;
         }
     }
 
-    // ========================================
-    // Initial UI
-    // ========================================
+    private void HandleScoreChanged(int score)
+    {
+        SetText(scoreText, $"SCORE {score:N0}");
+    }
 
     private void ClearUI()
     {
+        SetText(scoreText, "SCORE 0");
         SetText(stageText, "STAGE 1");
         SetText(stageModeText, "AIM");
 
@@ -180,27 +162,23 @@ public class GameHUD : MonoBehaviour
         SetText(lastInputText, "LAST KEY: --");
 
         if (timeSlider != null)
-        {
             timeSlider.SetValueWithoutNotify(0f);
-        }
 
         if (aimProgressSlider != null)
-        {
             aimProgressSlider.SetValueWithoutNotify(0f);
-        }
 
         if (aimLimitSlider != null)
-        {
             aimLimitSlider.SetValueWithoutNotify(0f);
-        }
     }
 
     private void RefreshAll()
     {
+        if (scoreManager != null)
+            HandleScoreChanged(scoreManager.TotalScore);
+
         if (stageManager != null)
         {
             HandleStageStarted(stageManager.CurrentStage);
-
             RefreshStageSettings();
 
             HandleAimTimeChanged(
@@ -213,51 +191,26 @@ public class GameHUD : MonoBehaviour
 
         if (timeManager != null)
         {
-            HandleRemainingTimeChanged(
-                timeManager.RemainingTime
-            );
-
-            HandleElapsedTimeChanged(
-                timeManager.ElapsedTime
-            );
-
-            HandleRemainingTimeUpdated(
-                timeManager.RemainingTime
-            );
+            HandleRemainingTimeChanged(timeManager.RemainingTime);
+            HandleElapsedTimeChanged(timeManager.ElapsedTime);
+            HandleRemainingTimeUpdated(timeManager.RemainingTime);
         }
 
         RefreshAim();
 
         if (logHudEvents)
-        {
-            Debug.Log(
-                "[GameHUD] Initial UI refresh completed.",
-                this
-            );
-        }
+            Debug.Log("[GameHUD] Initial UI refresh completed.", this);
     }
-
-    // ========================================
-    // Stage UI
-    // ========================================
 
     private void HandleStageStarted(int stage)
     {
-        SetText(
-            stageText,
-            $"STAGE {stage}"
-        );
+        SetText(stageText, $"STAGE {stage}");
 
         RefreshStageSettings();
         RefreshAim();
 
         if (logHudEvents)
-        {
-            Debug.Log(
-                $"[GameHUD] Stage updated: {stage}",
-                this
-            );
-        }
+            Debug.Log($"[GameHUD] Stage updated: {stage}", this);
     }
 
     private void RefreshStageSettings()
@@ -272,15 +225,8 @@ public class GameHUD : MonoBehaviour
         float reward = stageManager.ClearRewardTime;
         float penalty = stageManager.FailurePenaltyTime;
 
-        SetText(
-            rewardText,
-            $"+{reward:0.#}s"
-        );
-
-        SetText(
-            penaltyText,
-            $"-{penalty:0.#}s"
-        );
+        SetText(rewardText, $"+{reward:0.#}s");
+        SetText(penaltyText, $"-{penalty:0.#}s");
     }
 
     private void HandleRewardChanged(float reward)
@@ -290,48 +236,29 @@ public class GameHUD : MonoBehaviour
 
     private void HandleStageMode(StageType mode)
     {
-        SetText(stageModeText, mode == StageType.MiniGame ? "MINIGAME" : "AIM");
+        SetText(
+            stageModeText,
+            mode == StageType.MiniGame ? "MINIGAME" : "AIM"
+        );
     }
 
     private void HandleGameOver()
     {
-        SetText(
-            aimTypeText,
-            "GAME OVER"
-        );
-
-        SetText(
-            aimDescriptionText,
-            "Time is up!"
-        );
+        SetText(aimTypeText, "GAME OVER");
+        SetText(aimDescriptionText, "Time is up!");
 
         if (logHudEvents)
-        {
-            Debug.Log(
-                "[GameHUD] Game over UI updated.",
-                this
-            );
-        }
+            Debug.Log("[GameHUD] Game over UI updated.", this);
     }
-
-    // ========================================
-    // Time UI
-    // ========================================
 
     private void HandleRemainingTimeChanged(float remaining)
     {
-        SetText(
-            remainingTimeText,
-            FormatTime(remaining)
-        );
+        SetText(remainingTimeText, FormatTime(remaining));
     }
 
     private void HandleElapsedTimeChanged(float elapsed)
     {
-        SetText(
-            elapsedTimeText,
-            FormatTime(elapsed)
-        );
+        SetText(elapsedTimeText, FormatTime(elapsed));
     }
 
     private void HandleRemainingTimeUpdated(float remaining)
@@ -351,10 +278,6 @@ public class GameHUD : MonoBehaviour
             Mathf.Clamp01(remaining / maxTime)
         );
     }
-
-    // ========================================
-    // Aim UI
-    // ========================================
 
     private void RefreshAim()
     {
@@ -382,15 +305,8 @@ public class GameHUD : MonoBehaviour
 
     private void ShowNoAim()
     {
-        SetText(
-            aimTypeText,
-            "No Aim"
-        );
-
-        SetText(
-            aimDescriptionText,
-            "Waiting for aim..."
-        );
+        SetText(aimTypeText, "No Aim");
+        SetText(aimDescriptionText, "Waiting for aim...");
 
         HandleAimProgressChanged(0, 0);
     }
@@ -402,18 +318,9 @@ public class GameHUD : MonoBehaviour
         if (aim == null)
             return;
 
-        SetText(
-            aimTypeText,
-            GetAimTypeName(aim.Type)
-        );
+        SetText(aimTypeText, GetAimTypeName(aim.Type));
+        SetText(aimDescriptionText, GetAimDescription(aim));
 
-        SetText(
-            aimDescriptionText,
-            GetAimDescription(aim)
-        );
-
-        // ADDED: 새로운 타이핑/계산 목표 시작 시
-        // 입력해야 하는 글자 수만큼 빈칸 표시
         if (aim.Type == AimType.Typing ||
             aim.Type == AimType.Calculation)
         {
@@ -430,8 +337,7 @@ public class GameHUD : MonoBehaviour
         if (logHudEvents)
         {
             Debug.Log(
-                $"[GameHUD] Aim updated: " +
-                $"{aim.Type} | {aim.Description}",
+                $"[GameHUD] Aim updated: {aim.Type} | {aim.Description}",
                 this
             );
         }
@@ -446,8 +352,7 @@ public class GameHUD : MonoBehaviour
 
         SetText(
             lastInputText,
-            $"LAST KEY: {keyName}  " +
-            $"({(accepted ? "ACCEPTED" : "PRESSED")})"
+            $"LAST KEY: {keyName} ({(accepted ? "ACCEPTED" : "PRESSED")})"
         );
     }
 
@@ -456,7 +361,6 @@ public class GameHUD : MonoBehaviour
         int required
     )
     {
-        // ADDED: 목표 설명에는 문제 또는 단어만 표시
         if (aimProcessor != null &&
             aimProcessor.CurrentAim != null)
         {
@@ -470,8 +374,6 @@ public class GameHUD : MonoBehaviour
             ? aimProcessor.CurrentAim
             : null;
 
-        // ADDED: Typing과 Calculation은
-        // 입력된 문자 + 남은 빈칸으로 진행 상황 표시
         if (activeAim != null &&
             (activeAim.Type == AimType.Typing ||
              activeAim.Type == AimType.Calculation))
@@ -488,7 +390,6 @@ public class GameHUD : MonoBehaviour
                 targetLength - submitted.Length
             );
 
-            // 예: ㅡㅡ -> 1ㅡ -> 19
             SetText(
                 aimProgressText,
                 submitted + new string('ㅡ', remaining)
@@ -496,7 +397,6 @@ public class GameHUD : MonoBehaviour
         }
         else
         {
-            // 기존 목표 진행도 표시 유지
             SetText(
                 aimProgressText,
                 $"{current} / {required}"
@@ -526,8 +426,6 @@ public class GameHUD : MonoBehaviour
         }
     }
 
-    // ADDED: 타이핑과 계산문제는
-    // 목표 설명 텍스트에 문제만 표시
     private string GetAimDescription(AimData aim)
     {
         if (aim == null)
@@ -567,10 +465,6 @@ public class GameHUD : MonoBehaviour
         }
     }
 
-    // ========================================
-    // English Aim Names
-    // ========================================
-
     private string GetAimTypeName(AimType type)
     {
         switch (type)
@@ -592,19 +486,13 @@ public class GameHUD : MonoBehaviour
         }
     }
 
-    // ========================================
-    // Utilities
-    // ========================================
-
     private static void SetText(
         TMP_Text target,
         string value
     )
     {
         if (target != null)
-        {
             target.text = value;
-        }
     }
 
     private static string FormatTime(float seconds)
