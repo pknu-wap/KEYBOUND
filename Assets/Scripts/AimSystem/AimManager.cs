@@ -56,6 +56,14 @@ public class AimManager : MonoBehaviour
             this
         );
 
+        return StartAim(selected);
+    }
+
+    public bool StartAim(AimGenerationSettings selected)
+    {
+        if (processor == null || selected == null || !selected.Enabled)
+            return false;
+
         // ADDED: Route each aim type to its responsible generator.
         AimData generatedAim;
         switch (selected.AimType)
