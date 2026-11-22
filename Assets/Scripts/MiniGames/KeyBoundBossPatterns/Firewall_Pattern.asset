@@ -1,0 +1,195 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aec44e7044fb2f240b26d9a82524019b, type: 3}
+  m_Name: Firewall_Pattern
+  m_EditorClassIdentifier: Assembly-CSharp::BossAttackPattern
+  Attacks:
+  - StartSeconds: 0
+    IsWall: 1
+    WarningSeconds: 1
+    LifetimeSeconds: 2.5
+    DamageSeconds: 3
+    Keys: 1f0000000f00000028000000i
+  - StartSeconds: 0.5
+    IsWall: 0
+    WarningSeconds: 1
+    LifetimeSeconds: 2
+    DamageSeconds: 3
+    Keys: 2c000000200000001400000024000000i
+  - StartSeconds: 4
+    IsWall: 1
+    WarningSeconds: 1
+    LifetimeSeconds: 2.5
+    DamageSeconds: 3
+    Keys: 2b0000001200000011000000i
+  - StartSeconds: 4.5
+    IsWall: 0
+    WarningSeconds: 1
+    LifetimeSeconds: 2
+    DamageSeconds: 3
+    Keys: 2e00000027000000160000001c000000i
+  - StartSeconds: 8
+    IsWall: 1
+    WarningSeconds: 1
+    LifetimeSeconds: 2.5
+    DamageSeconds: 3
+    Keys: 2d0000002200000010000000i
+  - StartSeconds: 8.5
+    IsWall: 0
+    WarningSeconds: 1
+    LifetimeSeconds: 2
+    DamageSeconds: 3
+    Keys: 30000000170000001900000007000000i
+  - StartSeconds: 12
+    IsWall: 1
+    WarningSeconds: 1
+    LifetimeSeconds: 2.5
+    DamageSeconds: 3
+    Keys: 2f0000002300000018000000i
+  - StartSeconds: 12.5
+    IsWall: 0
+    WarningSeconds: 1
+    LifetimeSeconds: 2
+    DamageSeconds: 3
+    Keys: 320000001e0000000600000009000000i
+  - StartSeconds: 16
+    IsWall: 1
+    WarningSeconds: 1
+    LifetimeSeconds: 2.5
+    DamageSeconds: 3
+    Keys: 1d0000001a00000008000000i
+  - StartSeconds: 16.5
+    IsWall: 0
+    WarningSeconds: 1
+    LifetimeSeconds: 2
+    DamageSeconds: 3
+    Keys: 2a000000250000002100000026000000i
+  - StartSeconds: 20
+    IsWall: 1
+    WarningSeconds: 1
+    LifetimeSeconds: 2.5
+    DamageSeconds: 3
+    Keys: 290000000f00000028000000i
+  - StartSeconds: 20.5
+    IsWall: 0
+    WarningSeconds: 1
+    LifetimeSeconds: 2
+    DamageSeconds: 3
+    Keys: 2c000000200000001400000024000000i
+  - StartSeconds: 24
+    IsWall: 1
+    WarningSeconds: 1
+    LifetimeSeconds: 2.5
+    DamageSeconds: 3
+    Keys: 2b0000001300000011000000i
+  - StartSeconds: 24.5
+    IsWall: 0
+    WarningSeconds: 1
+    LifetimeSeconds: 2
+    DamageSeconds: 3
+    Keys: 2e00000027000000160000001c000000i
+  - StartSeconds: 28
+    IsWall: 1
+    WarningSeconds: 1
+    LifetimeSeconds: 2.5
+    DamageSeconds: 3
+    Keys: 2d0000002200000015000000i
+  - StartSeconds: 28.5
+    IsWall: 0
+    WarningSeconds: 1
+    LifetimeSeconds: 2
+    DamageSeconds: 3
+    Keys: 30000000170000001900000007000000i
+  - StartSeconds: 32
+    IsWall: 1
+    WarningSeconds: 1
+    LifetimeSeconds: 2.5
+    DamageSeconds: 3
+    Keys: 23000000180000001b000000i
+  - StartSeconds: 32.5
+    IsWall: 0
+    WarningSeconds: 1
+    LifetimeSeconds: 2
+    DamageSeconds: 3
+    Keys: 320000001e0000000600000009000000i
+  - StartSeconds: 36
+    IsWall: 1
+    WarningSeconds: 1
+    LifetimeSeconds: 2.5
+    DamageSeconds: 3
+    Keys: 310000001a00000008000000i
+  - StartSeconds: 36.5
+    IsWall: 0
+    WarningSeconds: 1
+    LifetimeSeconds: 2
+    DamageSeconds: 3
+    Keys: 2a000000250000002100000026000000i
+  - StartSeconds: 40
+    IsWall: 1
+    WarningSeconds: 1
+    LifetimeSeconds: 2.5
+    DamageSeconds: 3
+    Keys: 290000001f00000028000000i
+  - StartSeconds: 40.5
+    IsWall: 0
+    WarningSeconds: 1
+    LifetimeSeconds: 2
+    DamageSeconds: 3
+    Keys: 2c0000002e00000020000000270000001400000016000000240000001c000000i
+  - StartSeconds: 44
+    IsWall: 1
+    WarningSeconds: 1
+    LifetimeSeconds: 2.5
+    DamageSeconds: 3
+    Keys: 2b0000001300000012000000i
+  - StartSeconds: 44.5
+    IsWall: 0
+    WarningSeconds: 1
+    LifetimeSeconds: 2
+    DamageSeconds: 3
+    Keys: 2e00000030000000270000001700000016000000190000001c00000007000000i
+  - StartSeconds: 48
+    IsWall: 1
+    WarningSeconds: 1
+    LifetimeSeconds: 2.5
+    DamageSeconds: 3
+    Keys: 220000001500000010000000i
+  - StartSeconds: 48.5
+    IsWall: 0
+    WarningSeconds: 1
+    LifetimeSeconds: 2
+    DamageSeconds: 3
+    Keys: 3000000032000000170000001e00000019000000060000000700000009000000i
+  - StartSeconds: 52
+    IsWall: 1
+    WarningSeconds: 1
+    LifetimeSeconds: 2.5
+    DamageSeconds: 3
+    Keys: 2f000000180000001b000000i
+  - StartSeconds: 52.5
+    IsWall: 0
+    WarningSeconds: 1
+    LifetimeSeconds: 2
+    DamageSeconds: 3
+    Keys: 2a00000032000000250000001e00000021000000060000002600000009000000i
+  - StartSeconds: 56
+    IsWall: 1
+    WarningSeconds: 1
+    LifetimeSeconds: 2.5
+    DamageSeconds: 3
+    Keys: 310000001d00000008000000i
+  - StartSeconds: 56.5
+    IsWall: 0
+    WarningSeconds: 1
+    LifetimeSeconds: 2
+    DamageSeconds: 3
+    Keys: 2a0000002c000000250000002000000021000000140000002600000024000000i

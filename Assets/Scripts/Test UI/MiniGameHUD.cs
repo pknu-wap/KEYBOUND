@@ -30,8 +30,10 @@ public class MiniGameHUD : MonoBehaviour
                 progressText.SetText("SCORE {0}/{1}", (float)hunt.CurrentScore, hunt.TargetScore);
                 break;
             case ObstacleDodgeController dodge when dodge.isActiveAndEnabled:
-                progressText.SetText("WAVE {0}/{1}   HITS {2}/{3}",
-                    dodge.CurrentWave, dodge.WaveCount, dodge.CollisionCount, dodge.MaxCollisions);
+                progressText.text = $"WAVE {dodge.CurrentWave}/{dodge.WaveCount}   HITS {dodge.CollisionCount}";
+                break;
+            case BossController boss when boss.isActiveAndEnabled:
+                progressText.text = $"BOSS HP {boss.CurrentHealth}/{boss.MaxHealth}";
                 break;
             default:
                 progressText.enabled = false;

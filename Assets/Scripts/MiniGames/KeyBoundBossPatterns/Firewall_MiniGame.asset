@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2ef1e6c77aebbce408af8eebed97dbf1, type: 3}
-  m_Name: Mini Game Data
+  m_Name: Firewall_MiniGame
   m_EditorClassIdentifier: Assembly-CSharp::MiniGameData
-  Id: obstacle-dodge2
-  DisplayName: Obstacle Dodge
+  Id: boss-Firewall
+  DisplayName: Firewall
   SuccessRewardSeconds: 30
-  FailurePenaltySeconds: 30
-  ControllerPrefab: {fileID: 2606372161363790538, guid: d4a44a536009c654ba9eccd2556c7c73, type: 3}
-  Settings: {fileID: 11400000, guid: ab4f75ad077fd4342b43b6acf7069dfd, type: 2}
+  FailurePenaltySeconds: 0
+  ControllerPrefab: {fileID: 11400001, guid: 775037722c6c140409ea5960aaff371a, type: 3}
+  Settings: {fileID: 11400000, guid: b9b75f2ae63c3dc4d9244727403ebee5, type: 2}

@@ -547,14 +547,22 @@ MonoBehaviour:
   aimManager: {fileID: 381686747}
   processor: {fileID: 632371430}
   miniGameManager: {fileID: 116485354}
-  startingStage: 1
+  startingStage: 59
   miniGameSchedule:
-  - StageNumber: 3
-    Data: {fileID: 11400000, guid: 9f4c6ab3a6291e34c86c25268ca820dc, type: 2}
   - StageNumber: 10
-    Data: {fileID: 11400000, guid: e1a46334cf5b421468ad8454be12ebf0, type: 2}
-  - StageNumber: 25
-    Data: {fileID: 11400000, guid: fd83b94f9f301b1479b2babc851b3cdc, type: 2}
+    Data: {fileID: 11400000, guid: 9f4c6ab3a6291e34c86c25268ca820dc, type: 2}
+  - StageNumber: 20
+    Data: {fileID: 11400000, guid: fbf21c5ed0705e447b136f8257fc23dd, type: 2}
+  - StageNumber: 30
+    Data: {fileID: 11400000, guid: c169fd898a7d13846a62167a10b7c24c, type: 2}
+  - StageNumber: 40
+    Data: {fileID: 11400000, guid: 26aa91a426eaa8341a10e292c15e73a6, type: 2}
+  - StageNumber: 50
+    Data: {fileID: 11400000, guid: 1173e91d401688e46b6db45e1faf793c, type: 2}
+  - StageNumber: 60
+    Data: {fileID: 11400000, guid: fe098f93c7ba1654ebbf6964fae5bd1f, type: 2}
+  - StageNumber: 70
+    Data: {fileID: 11400000, guid: 0ccc495dc8b81c848bac3ccc3177aabc, type: 2}
   successReward: 5.5
   failurePenalty: 5
   defaultSecondsPerUnit: 3
@@ -1759,7 +1767,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AimConditionProcessor
   keyboardMapManager: {fileID: 1648942543}
-  playerPosition: {fileID: 1041733116}
+  playerPosition: {fileID: 1276033144}
   logProgress: 1
   logHold: 1
   holdLogInterval: 0.25
@@ -1900,6 +1908,56 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 634746354}
   m_CullTransparentMesh: 1
+--- !u!1 &683075397
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 683075398}
+  - component: {fileID: 683075399}
+  m_Layer: 0
+  m_Name: WallSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &683075398
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 683075397}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &683075399
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 683075397}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 259fdd894f523c142af2f85b30f48d24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WallManager
+  map: {fileID: 1648942543}
+  player: {fileID: 1276033144}
+  timeManager: {fileID: 1657927971}
+  obstacleManager: {fileID: 1303009815}
+  warningColor: {r: 0.5, g: 0.7, b: 1, a: 0.5}
+  wallColor: {r: 0.3, g: 0.4, b: 0.7, a: 1}
 --- !u!1 &728235300
 GameObject:
   m_ObjectHideFlags: 0
@@ -2641,58 +2699,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1041341155}
   m_CullTransparentMesh: 1
---- !u!1 &1041733115
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1041733117}
-  - component: {fileID: 1041733116}
-  m_Layer: 0
-  m_Name: PlayerKeyboardPosition
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1041733116
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1041733115}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8fc14358f02f4e219706bd027373430f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Keybound.Player.PlayerKeyboardPosition
-  keyboardMapManager: {fileID: 1648942543}
-  startingKey: 33
-  movementInputMode: 0
-  enableDebugLogs: 1
---- !u!224 &1041733117
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1041733115}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 441.64795, y: 137.24281}
-  m_SizeDelta: {x: 100, y: 100}
-  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1183322731
 GameObject:
   m_ObjectHideFlags: 0
@@ -2980,7 +2986,6 @@ GameObject:
   - component: {fileID: 1233327844}
   - component: {fileID: 1233327843}
   - component: {fileID: 1233327842}
-  - component: {fileID: 1233327846}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -3073,22 +3078,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
---- !u!114 &1233327846
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1233327841}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8fc14358f02f4e219706bd027373430f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Keybound.Player.PlayerKeyboardPosition
-  keyboardMapManager: {fileID: 1648942543}
-  startingKey: 33
-  movementInputMode: 0
-  enableDebugLogs: 1
 --- !u!1 &1276033142
 GameObject:
   m_ObjectHideFlags: 0
@@ -3143,6 +3132,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Keybound.Player.PlayerKeyboardPosition
   keyboardMapManager: {fileID: 1648942543}
+  wallManager: {fileID: 683075399}
   startingKey: 31
   movementInputMode: 0
   enableDebugLogs: 1
@@ -3406,6 +3396,17 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1280737048}
   m_CullTransparentMesh: 1
+--- !u!114 &1303009815 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1288699300554153864, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+  m_PrefabInstance: {fileID: 8015338991338182230}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a97b3370ff0bc84469f23889653efbb7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ObstacleManager
 --- !u!1 &1334103504
 GameObject:
   m_ObjectHideFlags: 0
@@ -3664,6 +3665,54 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MiniGameHUD
   miniGameManager: {fileID: 0}
   progressText: {fileID: 1041341157}
+--- !u!1 &1373572685
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1373572686}
+  - component: {fileID: 1373572687}
+  m_Layer: 0
+  m_Name: HardzardTest
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1373572686
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1373572685}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1373572687
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1373572685}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62f72106416391d40a7aa6045fe98b7a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HazardTest
+  obstacleManager: {fileID: 1303009815}
+  wallManager: {fileID: 683075399}
+  obstacleKey: 18
+  wallKey: 20
 --- !u!1 &1399340420
 GameObject:
   m_ObjectHideFlags: 0
@@ -5563,19 +5612,94 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2136610425}
   m_CullTransparentMesh: 1
+--- !u!1001 &8015338991338182230
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1288699300554153864, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: map
+      value: 
+      objectReference: {fileID: 1648942543}
+    - target: {fileID: 1288699300554153864, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: player
+      value: 
+      objectReference: {fileID: 1276033144}
+    - target: {fileID: 1288699300554153864, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: timeManager
+      value: 
+      objectReference: {fileID: 1657927971}
+    - target: {fileID: 1288699300554153864, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: wallManager
+      value: 
+      objectReference: {fileID: 683075399}
+    - target: {fileID: 2933388309685641222, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2933388309685641222, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2933388309685641222, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2933388309685641222, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2933388309685641222, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2933388309685641222, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2933388309685641222, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2933388309685641222, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2933388309685641222, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2933388309685641222, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4423368661824504664, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
+      propertyPath: m_Name
+      value: ObstacleSystem
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: c351081beb90f0f4e967a854497a90ca, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 519420032}
   - {fileID: 619394802}
-  - {fileID: 1041733117}
   - {fileID: 978699676}
   - {fileID: 754173617}
   - {fileID: 1524353952}
   - {fileID: 1511866374}
   - {fileID: 1233327845}
   - {fileID: 404500017}
+  - {fileID: 683075398}
+  - {fileID: 1373572686}
+  - {fileID: 8015338991338182230}
   - {fileID: 316117833}
   - {fileID: 2120239423}
   - {fileID: 2096066360}
