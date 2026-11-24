@@ -6,13 +6,14 @@ using Keybound.Keyboard;
 using Keybound.Player;
 using UnityEngine;
 
-public enum GameState { Playing, Paused, GameOver, Starting }
+public enum GameState { Playing, Paused, GameOver, Starting, Tutorial }
 
 [DefaultExecutionOrder(-100)]
 public sealed class GameFlowManager : MonoBehaviour
 {
     [SerializeField] private TimeManager timeManager;
     [SerializeField] private StageManager stageManager;
+    [SerializeField] private TutorialManager tutorialManager;
     [SerializeField] private Behaviour[] pauseTargets;
 
     private readonly Dictionary<Behaviour, bool> previousEnabled =
@@ -21,9 +22,11 @@ public sealed class GameFlowManager : MonoBehaviour
     private float previousTimeScale = 1f;
     private bool miniGameTimePaused;
     private bool started;
+    private GameState stateBeforePause;
     private Coroutine startCountdown;
 
     public GameState State { get; private set; } = GameState.Playing;
+    public bool IsTutorialActive => tutorialManager != null && tutorialManager.IsActive;
     public int StartCountdownSeconds { get; private set; }
     public float? SurvivalSeconds { get; private set; }
     public int? FinalStage { get; private set; }
@@ -57,6 +60,9 @@ public sealed class GameFlowManager : MonoBehaviour
 
     private void OnEnable()
     {
+        if (tutorialManager != null)
+            tutorialManager.Completed += HandleTutorialCompleted;
+
         if (timeManager != null)
             timeManager.OnTimeOver += HandleTimeExpired;
 
@@ -77,6 +83,12 @@ public sealed class GameFlowManager : MonoBehaviour
     private void OnDisable()
     {
         CancelStartCountdown();
+        if (tutorialManager != null)
+        {
+            tutorialManager.Completed -= HandleTutorialCompleted;
+            tutorialManager.Stop();
+        }
+
         if (timeManager != null)
             timeManager.OnTimeOver -= HandleTimeExpired;
 
@@ -93,7 +105,7 @@ public sealed class GameFlowManager : MonoBehaviour
 
     public void StartGame()
     {
-        if (startCountdown != null || (started && State != GameState.GameOver))
+        if (started || State == GameState.Starting || IsTutorialActive)
             return;
 
         if (timeManager == null)
@@ -112,6 +124,30 @@ public sealed class GameFlowManager : MonoBehaviour
         SurvivalSeconds = null;
         FinalStage = null;
         State = GameState.Playing;
+
+        if (tutorialManager != null && tutorialManager.isActiveAndEnabled)
+        {
+            timeManager.StopTimer();
+            stageManager?.StopStages();
+            tutorialManager.Begin();
+            ChangeState(GameState.Tutorial);
+            return;
+        }
+
+        BeginStartCountdown();
+    }
+
+    private void HandleTutorialCompleted()
+    {
+        if (State != GameState.Tutorial)
+            return;
+
+        tutorialManager.Stop();
+        BeginStartCountdown();
+    }
+
+    private void BeginStartCountdown()
+    {
         ChangeState(GameState.Starting);
         startCountdown = StartCoroutine(CountDownToStart());
     }
@@ -176,21 +212,28 @@ public sealed class GameFlowManager : MonoBehaviour
 
     public void Pause()
     {
-        if (!started || State != GameState.Playing)
+        if (State == GameState.Playing && started)
+        {
+            stageManager?.PauseStages();
+            timeManager?.PauseTimer();
+        }
+        else if (State != GameState.Tutorial)
+        {
             return;
+        }
 
-        stageManager?.PauseStages();
-        timeManager?.PauseTimer();
-
+        stateBeforePause = State;
         ChangeState(GameState.Paused);
     }
 
     public void Resume()
     {
-        if (!started || State != GameState.Paused)
+        if (State != GameState.Paused)
             return;
 
-        ChangeState(GameState.Playing);
+        ChangeState(stateBeforePause);
+        if (State != GameState.Playing)
+            return;
 
         stageManager?.ResumeStages();
 
@@ -200,7 +243,7 @@ public sealed class GameFlowManager : MonoBehaviour
 
     public void HandleTimeExpired()
     {
-        if (State == GameState.GameOver)
+        if (State == GameState.GameOver || IsTutorialActive)
             return;
 
         if (State == GameState.Starting)
@@ -255,7 +298,7 @@ public sealed class GameFlowManager : MonoBehaviour
     // Remaining countdown time is not survival time.
     public void SetSurvivalTime(float seconds)
     {
-        if (float.IsNaN(seconds) || float.IsInfinity(seconds))
+        if (IsTutorialActive || float.IsNaN(seconds) || float.IsInfinity(seconds))
             return;
 
         SurvivalSeconds = Mathf.Max(0, seconds);
@@ -269,7 +312,10 @@ public sealed class GameFlowManager : MonoBehaviour
         if (State == next)
             return;
 
-        if (State == GameState.Playing)
+        bool isLive = IsLiveState(State);
+        bool nextIsLive = IsLiveState(next);
+
+        if (isLive && !nextIsLive)
         {
             previousTimeScale = Time.timeScale;
             previousEnabled.Clear();
@@ -289,16 +335,19 @@ public sealed class GameFlowManager : MonoBehaviour
             }
         }
 
-        if (next == GameState.Playing)
+        if (!isLive && nextIsLive)
             RestoreGameplay();
 
         State = next;
 
-        if (next != GameState.Playing)
+        if (!nextIsLive)
             Time.timeScale = 0f;
 
         StateChanged?.Invoke(State);
     }
+
+    private static bool IsLiveState(GameState state) =>
+        state == GameState.Playing || state == GameState.Tutorial;
 
     private void RestoreGameplay()
     {
@@ -310,7 +359,7 @@ public sealed class GameFlowManager : MonoBehaviour
 
         previousEnabled.Clear();
 
-        if (State != GameState.Playing)
+        if (!IsLiveState(State))
             Time.timeScale = previousTimeScale;
     }
 

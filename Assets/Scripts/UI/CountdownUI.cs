@@ -54,6 +54,7 @@ namespace Keybound.UI
                 if (startCountdown == null)
                     CreateOverlays();
                 gameFlow.StartCountdownChanged += DisplayStartCountdown;
+                gameFlow.StateChanged += RefreshStage;
                 DisplayStartCountdown(gameFlow.StartCountdownSeconds);
             }
         }
@@ -70,7 +71,10 @@ namespace Keybound.UI
                 stageManager.OnStageStarted -= DisplayStage;
 
             if (gameFlow != null)
+            {
                 gameFlow.StartCountdownChanged -= DisplayStartCountdown;
+                gameFlow.StateChanged -= RefreshStage;
+            }
             if (startCountdown != null)
                 startCountdown.enabled = false;
             if (timeWarning != null)
@@ -182,12 +186,22 @@ namespace Keybound.UI
             }
         }
 
+        private void RefreshStage(GameState _)
+        {
+            DisplayStage(stageManager != null ? stageManager.CurrentStage : 0);
+        }
+
         private void DisplayStage(int stage)
         {
             if (stageText == null)
                 return;
 
-            string stageNumber = stage > 0 ? $"{stage:00}" : "--";
+            string stageNumber = "--";
+            if (gameFlow != null && gameFlow.IsTutorialActive)
+                stageNumber = "00";
+            else if (stage > 0 && (gameFlow == null || gameFlow.State != GameState.Starting))
+                stageNumber = $"{stage:00}";
+
             stageText.text = showStageNumberOnly ? stageNumber : $"STAGE {stageNumber}";
         }
     }

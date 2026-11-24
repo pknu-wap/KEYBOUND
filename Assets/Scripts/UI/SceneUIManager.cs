@@ -239,7 +239,7 @@ public class SceneUIManager : MonoBehaviour
 
         SettingsOpen = false;
         Show(UIViewKind.Settings, false);
-        Show(UIViewKind.Gameplay, state == GameState.Playing);
+        Show(UIViewKind.Gameplay, state == GameState.Playing || state == GameState.Tutorial);
         Show(UIViewKind.PauseMenu, state == GameState.Paused);
         if (escapeKey != null)
         {

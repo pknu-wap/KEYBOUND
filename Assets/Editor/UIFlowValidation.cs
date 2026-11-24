@@ -103,7 +103,11 @@ public static class UIFlowValidation
             var timer = UnityEngine.Object.FindAnyObjectByType<TimeManager>();
             var map = UnityEngine.Object.FindAnyObjectByType<KeyboardMapManager>();
             var player = UnityEngine.Object.FindAnyObjectByType<PlayerKeyboardPosition>();
-            if ((step == 1 || step == 14 || step == 17 || step == 21) && flow != null &&
+            bool enteringGame = step == 1 || step == 14 || step == 17 || step == 21;
+            if (enteringGame && flow != null && flow.State == GameState.Tutorial)
+                CompleteTutorialForGameplayChecks(flow, ui, timer, map, step == 1);
+
+            if (enteringGame && flow != null &&
                 flow.State == GameState.Starting && EditorApplication.timeSinceStartup < countdownDeadline)
             {
                 if (step == 1 && flow.StartCountdownSeconds != lastCountdownNumber)
@@ -158,6 +162,10 @@ public static class UIFlowValidation
                     CheckButtonNavigation();
                     Check(lastCountdownNumber == 1, "All three countdown numbers displayed");
                     Check(flow.State == GameState.Playing && map.enabled && player.enabled, "Playing input enabled");
+                    Check(GameObject.Find("Stage Number").GetComponent<TMPro.TMP_Text>().text == "01" &&
+                        timer.IsRunning && timer.ElapsedTime < 1f &&
+                        Mathf.Approximately(timer.RemainingTime + timer.ElapsedTime, 60f),
+                        "After the tutorial, Stage 01 starts with a fresh 60-second timer");
                     Check(player.CurrentKey != null && map.TryGetKey(Key.A,out _),"Existing keyboard and player initialized");
                     Check(timer.RemainingTime > 0 && UnityEngine.Object.FindAnyObjectByType<CountdownUI>() != null,"Existing timer and UI connected");
                     Check(GameObject.Find("TimeText") == null && GameObject.Find("Time Left Label") == null,
@@ -408,6 +416,37 @@ public static class UIFlowValidation
         {
             SessionState.SetBool(Active,false); Debug.LogException(error); Finish(1);
         }
+    }
+
+    private static void CompleteTutorialForGameplayChecks(GameFlowManager flow, SceneUIManager ui,
+        TimeManager timer, KeyboardMapManager map, bool checkTutorial)
+    {
+        var tutorial = flow.GetComponent<TutorialManager>();
+        if (checkTutorial)
+        {
+            var stages = UnityEngine.Object.FindAnyObjectByType<StageManager>();
+            var stageNumber = GameObject.Find("Stage Number").GetComponent<TMPro.TMP_Text>();
+            Check(flow.IsTutorialActive && stageNumber.text == "00" && flow.StartCountdownSeconds == 0,
+                "START opens Stage 00 before the countdown");
+            Check(!timer.IsRunning && timer.RemainingTime == 0f && timer.ElapsedTime == 0f &&
+                !stages.IsGameRunning && stages.CurrentStage == 0 && map.enabled,
+                "Stage 00 enables movement while the timer and stages are stopped");
+            flow.HandleTimeExpired();
+            flow.SetSurvivalTime(10f);
+            Check(flow.State == GameState.Tutorial && !flow.SurvivalSeconds.HasValue,
+                "Stage 00 ignores game over and survival record updates");
+
+            ui.GetView(UIViewKind.Gameplay).primaryButton.onClick.Invoke();
+            tutorial.Complete();
+            Check(flow.State == GameState.Paused && flow.IsTutorialActive && stageNumber.text == "00" &&
+                !map.enabled && Time.timeScale == 0f && flow.StartCountdownSeconds == 0,
+                "Stage 00 can pause and waits for resume before completion");
+            flow.Resume();
+            Check(flow.State == GameState.Tutorial && map.enabled && Time.timeScale == 1f && !timer.IsRunning,
+                "Resume returns to Stage 00 with the game clock stopped");
+        }
+
+        tutorial.Complete();
     }
 
     private static void CheckButtonNavigation()

@@ -455,6 +455,7 @@ GameObject:
   m_Component:
   - component: {fileID: 313466177}
   - component: {fileID: 313466176}
+  - component: {fileID: 313466178}
   m_Layer: 0
   m_Name: GameFlowManager
   m_TagString: Untagged
@@ -476,7 +477,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameFlowManager
   timeManager: {fileID: 1807373829}
   stageManager: {fileID: 349645084}
+  tutorialManager: {fileID: 313466178}
   pauseTargets: []
+--- !u!114 &313466178
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 313466175}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e06bcffc329d4f42b2ce59096314fbb0, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::TutorialManager
 --- !u!4 &313466177
 Transform:
   m_ObjectHideFlags: 0
