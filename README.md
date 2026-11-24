@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/OWNER/REPOSITORY/releases/latest"><img src="docs/readme/download.svg" alt="Download KEYBOUND from GitHub Releases" width="245" /></a><br />
+  <a href="https://github.com/pknu-wap/KEYBOUND/releases/latest"><img src="docs/readme/download.svg" alt="Download KEYBOUND from GitHub Releases" width="245" /></a><br />
   <sub>GitHub Releases · 최신 빌드</sub>
 </p>
 
