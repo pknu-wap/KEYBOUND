@@ -83,6 +83,7 @@ public sealed class GameFlowManager : MonoBehaviour
     private void OnDisable()
     {
         CancelStartCountdown();
+        RestoreGameplay();
         if (tutorialManager != null)
         {
             tutorialManager.Completed -= HandleTutorialCompleted;
@@ -99,8 +100,6 @@ public sealed class GameFlowManager : MonoBehaviour
             stageManager.OnMiniGameTimePauseRequested -= HandleMiniGameTimePause;
             stageManager.OnGameOver -= HandleTimeExpired;
         }
-
-        RestoreGameplay();
     }
 
     public void StartGame()

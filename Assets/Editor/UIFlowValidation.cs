@@ -24,6 +24,10 @@ public static class UIFlowValidation
     private static double escapeHoldDeadline;
     private static double countdownDeadline;
     private static int lastCountdownNumber;
+    private static bool tutorialIntroChecked;
+    private static bool tutorialLessonChecked;
+    private static bool tutorialOutlineWasVisible;
+    private static int pausedTerminalCharacters;
     private static int heldKeyStep;
     private static GameObject startSelection;
     private static AimData previousOverlapMission;
@@ -54,6 +58,9 @@ public static class UIFlowValidation
         if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
         frames = 0; lastFrame = -1;
         lastCountdownNumber = 0;
+        tutorialIntroChecked = false;
+        tutorialLessonChecked = false;
+        tutorialOutlineWasVisible = false;
         heldKeyStep = 0;
         SessionState.SetBool(Active + ".Ready", false);
         if (Application.isBatchMode)
@@ -104,8 +111,18 @@ public static class UIFlowValidation
             var map = UnityEngine.Object.FindAnyObjectByType<KeyboardMapManager>();
             var player = UnityEngine.Object.FindAnyObjectByType<PlayerKeyboardPosition>();
             bool enteringGame = step == 1 || step == 14 || step == 17 || step == 21;
-            if (enteringGame && flow != null && flow.State == GameState.Tutorial)
-                CompleteTutorialForGameplayChecks(flow, ui, timer, map, step == 1);
+            if (enteringGame && flow != null && flow.IsTutorialActive)
+            {
+                if (EditorApplication.timeSinceStartup >= countdownDeadline)
+                    throw new Exception("FAIL: Tutorial presentation did not finish before the countdown");
+
+                var tutorial = flow.GetComponent<TutorialManager>();
+                if (step == 1)
+                    CheckTutorialPresentation(flow, tutorial, ui, timer, map, player);
+                else
+                    tutorial.Complete();
+                return;
+            }
 
             if (enteringGame && flow != null &&
                 flow.State == GameState.Starting && EditorApplication.timeSinceStartup < countdownDeadline)
@@ -155,7 +172,7 @@ public static class UIFlowValidation
                 case 0:
                     Check(SceneManager.GetActiveScene().name == "StartScene", "Enter waits for release");
                     InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState());
-                    countdownDeadline = EditorApplication.timeSinceStartup + 8.0;
+                    countdownDeadline = EditorApplication.timeSinceStartup + 12.0;
                     break;
                 case 1:
                     Check(SceneManager.GetActiveScene().name == "GameScene", "Enter loads GameScene");
@@ -166,6 +183,11 @@ public static class UIFlowValidation
                         timer.IsRunning && timer.ElapsedTime < 1f &&
                         Mathf.Approximately(timer.RemainingTime + timer.ElapsedTime, 60f),
                         "After the tutorial, Stage 01 starts with a fresh 60-second timer");
+                    Check(GameObject.Find("Tutorial Terminal") == null &&
+                        GameObject.Find("Tutorial Instruction") == null && GameObject.Find("Tutorial Target") == null &&
+                        GameObject.Find("Mission Description").GetComponent<TMPro.TMP_Text>().enabled &&
+                        GameObject.Find("Mission Label").GetComponent<TMPro.TMP_Text>().text == "MISSION",
+                        "Stage 01 restores the normal mission HUD and hides the tutorial visuals");
                     Check(player.CurrentKey != null && map.TryGetKey(Key.A,out _),"Existing keyboard and player initialized");
                     Check(timer.RemainingTime > 0 && UnityEngine.Object.FindAnyObjectByType<CountdownUI>() != null,"Existing timer and UI connected");
                     Check(GameObject.Find("TimeText") == null && GameObject.Find("Time Left Label") == null,
@@ -418,35 +440,98 @@ public static class UIFlowValidation
         }
     }
 
-    private static void CompleteTutorialForGameplayChecks(GameFlowManager flow, SceneUIManager ui,
-        TimeManager timer, KeyboardMapManager map, bool checkTutorial)
+    private static void CheckTutorialPresentation(GameFlowManager flow, TutorialManager tutorial,
+        SceneUIManager ui, TimeManager timer, KeyboardMapManager map, PlayerKeyboardPosition player)
     {
-        var tutorial = flow.GetComponent<TutorialManager>();
-        if (checkTutorial)
+        if (!tutorialIntroChecked)
         {
             var stages = UnityEngine.Object.FindAnyObjectByType<StageManager>();
             var stageNumber = GameObject.Find("Stage Number").GetComponent<TMPro.TMP_Text>();
+            var terminal = GameObject.Find("Tutorial Terminal Text")?.GetComponent<TMPro.TMP_Text>();
             Check(flow.IsTutorialActive && stageNumber.text == "00" && flow.StartCountdownSeconds == 0,
                 "START opens Stage 00 before the countdown");
             Check(!timer.IsRunning && timer.RemainingTime == 0f && timer.ElapsedTime == 0f &&
-                !stages.IsGameRunning && stages.CurrentStage == 0 && map.enabled,
-                "Stage 00 enables movement while the timer and stages are stopped");
+                !stages.IsGameRunning && stages.CurrentStage == 0 && !map.enabled,
+                "The terminal blocks movement while the timer and stages are stopped");
+            Check(terminal != null && terminal.text.Contains("SYSTEM INITIALIZING") &&
+                terminal.maxVisibleCharacters < terminal.text.Length &&
+                terminal.font.HasCharacter('감', tryAddCharacter: true),
+                "Stage 00 introduces the world with typed terminal text and Korean glyphs");
+            var terminalPanel = (RectTransform)terminal.transform.parent;
+            Check(terminalPanel.GetComponent<Image>().color == Color.black &&
+                terminalPanel.GetSiblingIndex() > ui.GetView(UIViewKind.Gameplay).transform.GetSiblingIndex() &&
+                terminalPanel.GetSiblingIndex() < ui.GetView(UIViewKind.PauseMenu).transform.GetSiblingIndex(),
+                "The black terminal covers gameplay while pause views stay above it");
             flow.HandleTimeExpired();
             flow.SetSurvivalTime(10f);
             Check(flow.State == GameState.Tutorial && !flow.SurvivalSeconds.HasValue,
                 "Stage 00 ignores game over and survival record updates");
 
+            pausedTerminalCharacters = terminal.maxVisibleCharacters;
             ui.GetView(UIViewKind.Gameplay).primaryButton.onClick.Invoke();
             tutorial.Complete();
             Check(flow.State == GameState.Paused && flow.IsTutorialActive && stageNumber.text == "00" &&
                 !map.enabled && Time.timeScale == 0f && flow.StartCountdownSeconds == 0,
                 "Stage 00 can pause and waits for resume before completion");
-            flow.Resume();
-            Check(flow.State == GameState.Tutorial && map.enabled && Time.timeScale == 1f && !timer.IsRunning,
-                "Resume returns to Stage 00 with the game clock stopped");
+            tutorialIntroChecked = true;
+            return;
         }
 
+        if (flow.State == GameState.Paused)
+        {
+            var terminal = GameObject.Find("Tutorial Terminal Text").GetComponent<TMPro.TMP_Text>();
+            Check(terminal.maxVisibleCharacters == pausedTerminalCharacters,
+                "The typewriter pauses with Stage 00");
+            flow.Resume();
+            Check(flow.State == GameState.Tutorial && !map.enabled && Time.timeScale == 1f && !timer.IsRunning,
+                "Resume returns to the introduction with movement and the game clock still stopped");
+            return;
+        }
+
+        if (tutorialLessonChecked)
+            return;
+
+        var instruction = GameObject.Find("Tutorial Instruction")?.GetComponent<TMPro.TMP_Text>();
+        if (instruction == null)
+            return;
+
+        var missionDescription = GameObject.Find("Mission Description").GetComponent<TMPro.TMP_Text>();
+        var target = GameObject.Find("Tutorial Target");
+        var targetKey = target != null ? target.GetComponentInParent<KeyboardKey>() : null;
+        var outline = target != null ? target.GetComponent<Image>() : null;
+        if (!tutorialOutlineWasVisible)
+        {
+            instruction.ForceMeshUpdate();
+            Check(map.enabled && GameObject.Find("Tutorial Terminal") == null && !timer.IsRunning,
+                "The keyboard is ready when the introduction closes");
+            Check(GameObject.Find("Mission Label").GetComponent<TMPro.TMP_Text>().text == "TUTORIAL" &&
+                instruction.text.Contains("01 / 04") && instruction.text.Contains("빛나는 키를 눌러 이동하세요.") &&
+                !instruction.isTextOverflowing && !missionDescription.enabled,
+                "The first lesson uses the mission area without overlapping the regular mission text");
+            Check(targetKey != null && map.IsAdjacent(player.CurrentKey, targetKey) &&
+                outline != null && outline.sprite == targetKey.GetComponent<Image>().overrideSprite &&
+                outline.GetComponent<MirrorKeyFace>().enabled && outline.color == Color.white &&
+                outline.rectTransform.offsetMin == Vector2.zero && outline.rectTransform.offsetMax == Vector2.zero &&
+                outline.material.shader.name == "KEYBOUND/UI/Tutorial Key Outline",
+                "The white outline follows the adjacent key sprite and its mirrored shape");
+            tutorialOutlineWasVisible = outline.enabled;
+            return;
+        }
+
+        if (outline.enabled)
+            return;
+
+        Check(target.activeInHierarchy && !outline.isActiveAndEnabled,
+            "The outline fully turns off after its bright phase");
+
         tutorial.Complete();
+        var completion = GameObject.Find("Tutorial Terminal Text")?.GetComponent<TMPro.TMP_Text>();
+        Check(completion != null && completion.text.Contains("TUTORIAL COMPLETE") &&
+            completion.maxVisibleCharacters == 0 && !map.enabled &&
+            GameObject.Find("Tutorial Target") == null && flow.StartCountdownSeconds == 0,
+            "The completion message types before the countdown and clears the lesson");
+        tutorialLessonChecked = true;
+        countdownDeadline = EditorApplication.timeSinceStartup + 8.0;
     }
 
     private static void CheckButtonNavigation()

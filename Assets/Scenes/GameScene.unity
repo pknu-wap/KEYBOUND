@@ -456,6 +456,7 @@ GameObject:
   - component: {fileID: 313466177}
   - component: {fileID: 313466176}
   - component: {fileID: 313466178}
+  - component: {fileID: 313466179}
   m_Layer: 0
   m_Name: GameFlowManager
   m_TagString: Untagged
@@ -491,6 +492,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e06bcffc329d4f42b2ce59096314fbb0, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TutorialManager
+  tutorialUI: {fileID: 313466179}
+  keyboardMap: {fileID: 1648942543}
+  player: {fileID: 1276033144}
+--- !u!114 &313466179
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 313466175}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d228444422d4f4eae2e566bb2cd9533, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::Keybound.UI.TutorialUI
+  popupRoot: {fileID: 1367422857}
+  missionHeading: {fileID: 1900400022}
+  missionDescription: {fileID: 1900400032}
+  tutorialTypeface: {fileID: 12800000, guid: 2ff4d044f5055554680d780ac60f46e7, type: 3}
+  targetOutlineShader: {fileID: 4800000, guid: b264bc96ceda44b79ba732d1a4d6ce36, type: 3}
 --- !u!4 &313466177
 Transform:
   m_ObjectHideFlags: 0
