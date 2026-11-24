@@ -22,6 +22,15 @@ public sealed class TutorialManager : MonoBehaviour
     private const float TerminalCharactersPerSecond = 27f;
     private const float TerminalHoldSeconds = 1.2f;
 
+    private static readonly Vector2Int[] HorizontalMoves = { Vector2Int.right, Vector2Int.left };
+    private static readonly Vector2Int[] VerticalMoves = { Vector2Int.down, Vector2Int.up };
+    private static readonly Vector2Int[] DiagonalMoves =
+    {
+        new Vector2Int(1, 1), new Vector2Int(-1, 1),
+        new Vector2Int(1, -1), new Vector2Int(-1, -1)
+    };
+    private static readonly Vector2Int[][] MovementLesson = { HorizontalMoves, VerticalMoves, DiagonalMoves, HorizontalMoves };
+
     [SerializeField] private TutorialUI tutorialUI;
     [SerializeField] private KeyboardMapManager keyboardMap;
     [SerializeField] private PlayerKeyboardPosition player;
@@ -31,6 +40,8 @@ public sealed class TutorialManager : MonoBehaviour
     private bool keyboardLocked;
     private bool keyboardWasEnabled;
     private bool ending;
+    private int movementStep;
+    private KeyboardKey movementTarget;
 
     public bool IsActive { get; private set; }
 
@@ -48,6 +59,7 @@ public sealed class TutorialManager : MonoBehaviour
     {
         IsActive = false;
         ending = false;
+        StopMovementLesson();
 
         if (terminalSequence != null)
         {
@@ -66,6 +78,7 @@ public sealed class TutorialManager : MonoBehaviour
             return;
 
         ending = true;
+        StopMovementLesson();
         tutorialUI.HideLesson();
         PlayTerminal(CompletionMessage);
     }
@@ -123,22 +136,57 @@ public sealed class TutorialManager : MonoBehaviour
 
     private void ShowMovementLesson()
     {
+        movementStep = 0;
         tutorialUI.ShowLesson(1, "빛나는 키를 눌러 이동하세요.");
+        player.Moved += HandlePlayerMoved;
+        SelectMovementTarget(player.CurrentKey);
+    }
 
-        var currentKey = player.CurrentKey;
-        if (currentKey == null)
+    private void HandlePlayerMoved(KeyboardKey currentKey)
+    {
+        if (gameFlow.State != GameState.Tutorial)
             return;
 
-        foreach (var keyData in KeyboardMapData.Keys)
+        if (currentKey == movementTarget)
         {
-            if (keyData.Row == currentKey.Data.Row &&
-                keyboardMap.TryGetKey(keyData.InputKey, out var key) &&
-                keyboardMap.IsAdjacent(currentKey, key))
+            movementStep++;
+            if (movementStep == MovementLesson.Length)
             {
-                tutorialUI.ShowTarget(key);
-                break;
+                StopMovementLesson();
+                tutorialUI.ShowTarget(null);
+                tutorialUI.ShowLesson(2, "위험 표시가 나타나면 다른 키로 이동하세요.");
+                return;
             }
         }
+
+        SelectMovementTarget(currentKey);
+    }
+
+    private void SelectMovementTarget(KeyboardKey currentKey)
+    {
+        movementTarget = null;
+        if (currentKey != null)
+        {
+            foreach (Vector2Int offset in MovementLesson[movementStep])
+            {
+                if (KeyboardMapData.TryGetByPosition(currentKey.Data.Position + offset, out var keyData) &&
+                    keyboardMap.TryGetKey(keyData.InputKey, out var key) &&
+                    keyboardMap.IsAdjacent(currentKey, key))
+                {
+                    movementTarget = key;
+                    break;
+                }
+            }
+        }
+
+        tutorialUI.ShowTarget(movementTarget);
+    }
+
+    private void StopMovementLesson()
+    {
+        if (player != null)
+            player.Moved -= HandlePlayerMoved;
+        movementTarget = null;
     }
 
 #if UNITY_EDITOR

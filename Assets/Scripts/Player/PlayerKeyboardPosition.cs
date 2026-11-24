@@ -26,6 +26,8 @@ namespace Keybound.Player
 
         public KeyboardKey CurrentKey { get; private set; }
 
+        public event Action<KeyboardKey> Moved;
+
         private void Awake()
         {
             playerRectTransform = (RectTransform)transform;
@@ -202,6 +204,8 @@ namespace Keybound.Player
             LogDebug(
                 $"[플레이어 이동] {currentKeyName} -> {targetKeyName}: 성공 " +
                 $"(현재 위치: {CurrentKey.Data.Name})");
+
+            Moved?.Invoke(CurrentKey);
         }
 
         private static bool TryGetDirection(

@@ -28,6 +28,11 @@ public static class UIFlowValidation
     private static bool tutorialLessonChecked;
     private static bool tutorialOutlineWasVisible;
     private static int pausedTerminalCharacters;
+    private static int tutorialMovementCheckStep;
+    private static KeyboardKey tutorialSpawnKey;
+    private static KeyboardKey tutorialExpectedTarget;
+    private static readonly Vector2Int[] TutorialMoveAxes =
+        { Vector2Int.right, Vector2Int.up, Vector2Int.one, Vector2Int.right };
     private static int heldKeyStep;
     private static GameObject startSelection;
     private static AimData previousOverlapMission;
@@ -61,6 +66,7 @@ public static class UIFlowValidation
         tutorialIntroChecked = false;
         tutorialLessonChecked = false;
         tutorialOutlineWasVisible = false;
+        tutorialMovementCheckStep = 0;
         heldKeyStep = 0;
         SessionState.SetBool(Active + ".Ready", false);
         if (Application.isBatchMode)
@@ -518,11 +524,17 @@ public static class UIFlowValidation
             return;
         }
 
-        if (outline.enabled)
-            return;
+        if (tutorialMovementCheckStep == 0)
+        {
+            if (outline.enabled)
+                return;
 
-        Check(target.activeInHierarchy && !outline.isActiveAndEnabled,
-            "The outline fully turns off after its bright phase");
+            Check(target.activeInHierarchy && !outline.isActiveAndEnabled,
+                "The outline fully turns off after its bright phase");
+        }
+
+        if (!CheckTutorialMovement(player, targetKey, instruction))
+            return;
 
         tutorial.Complete();
         var completion = GameObject.Find("Tutorial Terminal Text")?.GetComponent<TMPro.TMP_Text>();
@@ -532,6 +544,58 @@ public static class UIFlowValidation
             "The completion message types before the countdown and clears the lesson");
         tutorialLessonChecked = true;
         countdownDeadline = EditorApplication.timeSinceStartup + 8.0;
+    }
+
+    private static bool CheckTutorialMovement(PlayerKeyboardPosition player, KeyboardKey target, TMPro.TMP_Text instruction)
+    {
+        switch (tutorialMovementCheckStep)
+        {
+            case 0:
+                tutorialSpawnKey = player.CurrentKey;
+                tutorialExpectedTarget = target;
+                InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(Key.P));
+                break;
+            case 1:
+                Check(player.CurrentKey == tutorialSpawnKey && target == tutorialExpectedTarget,
+                    "A nonadjacent key neither moves the player nor changes the tutorial target");
+                InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(Key.A));
+                break;
+            default:
+                int moveIndex = tutorialMovementCheckStep - 2;
+                if (moveIndex == 0)
+                {
+                    Check(player.CurrentKey.Data.InputKey == Key.A && target != tutorialExpectedTarget &&
+                        instruction.text.Contains("01 / 04"),
+                        "An off-target move keeps the lesson open and relocates the target");
+                }
+                else
+                {
+                    Check(player.CurrentKey == tutorialExpectedTarget,
+                        $"Tutorial move {moveIndex} lands on the highlighted key");
+                }
+
+                if (moveIndex == TutorialMoveAxes.Length)
+                {
+                    Check(target == null && instruction.text.Contains("02 / 04") &&
+                        instruction.text.Contains("위험 표시가 나타나면 다른 키로 이동하세요."),
+                        "Four successful moves automatically open the evasion lesson");
+                    InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState());
+                    // Keep the subsequent gameplay input checks at their usual scene spawn.
+                    player.SetCurrentKey(tutorialSpawnKey);
+                    return true;
+                }
+
+                Check(target != null, $"Tutorial move {moveIndex + 1} shows a target");
+                Vector2Int delta = target.Data.Position - player.CurrentKey.Data.Position;
+                Check(new Vector2Int(Mathf.Abs(delta.x), Mathf.Abs(delta.y)) == TutorialMoveAxes[moveIndex],
+                    $"Tutorial move {moveIndex + 1} highlights the expected movement direction");
+                tutorialExpectedTarget = target;
+                InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(target.Data.InputKey));
+                break;
+        }
+
+        tutorialMovementCheckStep++;
+        return false;
     }
 
     private static void CheckButtonNavigation()
