@@ -495,6 +495,8 @@ MonoBehaviour:
   tutorialUI: {fileID: 313466179}
   keyboardMap: {fileID: 1648942543}
   player: {fileID: 1276033144}
+  obstacleManager: {fileID: 116485355}
+  evasionMarkerSprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
 --- !u!114 &313466179
 MonoBehaviour:
   m_ObjectHideFlags: 0

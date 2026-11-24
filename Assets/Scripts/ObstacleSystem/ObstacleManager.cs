@@ -18,6 +18,7 @@ public sealed class ObstacleManager : MonoBehaviour
         public GameObject Marker;
         public object Owner;
         public System.Action OnHit;
+        public System.Action<bool> OnActivated;
         public Color ActiveColor;
         public float Warning, Lifetime, Damage;
     }
@@ -56,15 +57,29 @@ public sealed class ObstacleManager : MonoBehaviour
             Lifetime = Mathf.Max(.05f, lifetimeSeconds), Damage = Mathf.Max(0, damageSeconds) });
         return true;
     }
+
+    internal bool SpawnPracticeAttack(Key key, float warningSeconds, float lifetimeSeconds,
+        object owner, System.Action<bool> onActivated, Sprite centerSprite)
+    {
+        if (!Spawn(key, Mathf.Max(.05f, warningSeconds), lifetimeSeconds, 0f, owner, centerSprite: centerSprite))
+            return false;
+
+        entries[key].OnActivated = onActivated;
+        return true;
+    }
+
     private void OnEnable() { if (timeManager != null) timeManager.OnTimeOver += Clear; }
     private void OnDisable() { if (timeManager != null) timeManager.OnTimeOver -= Clear; Clear(); }
     private void LateUpdate()
     {
-        if (player == null || (timeManager != null && !timeManager.IsRunning) || Time.deltaTime <= 0) return;
+        if (player == null || Time.timeScale <= 0f || Time.deltaTime <= 0f) return;
         keys.Clear(); keys.AddRange(entries.Keys);
         foreach (var key in keys)
         {
             if (!entries.TryGetValue(key, out var entry)) continue;
+            bool practiceAttack = entry.OnActivated != null;
+            if (!practiceAttack && timeManager != null && !timeManager.IsRunning) continue;
+
             if (entry.Warning > 0)
             {
                 entry.Warning -= Time.deltaTime;
@@ -72,8 +87,11 @@ public sealed class ObstacleManager : MonoBehaviour
                 if (entry.Marker != null)
                     foreach (var image in entry.Marker.GetComponentsInChildren<Image>())
                         image.color = entry.ActiveColor;
+
+                entry.OnActivated?.Invoke(IsPlayerOn(key));
             }
-            if (player.CurrentKey != null && player.CurrentKey.Data.InputKey == key)
+
+            if (!practiceAttack && IsPlayerOn(key))
             {
                 Remove(key);
                 entry.OnHit?.Invoke();
@@ -88,6 +106,9 @@ public sealed class ObstacleManager : MonoBehaviour
             if (entry.Lifetime <= 0) Remove(key);
         }
     }
+
+    private bool IsPlayerOn(Key key) => player.CurrentKey != null && player.CurrentKey.Data.InputKey == key;
+
     public void Remove(Key key)
     {
         if (!entries.TryGetValue(key, out var entry)) return;

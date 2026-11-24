@@ -21,6 +21,9 @@ public sealed class TutorialManager : MonoBehaviour
 
     private const float TerminalCharactersPerSecond = 27f;
     private const float TerminalHoldSeconds = 1.2f;
+    private const string EvasionInstruction = "위험 표시가 나타나면 다른 키로 이동하세요.";
+    private const float EvasionWarningSeconds = 4f;
+    private const float EvasionAttackSeconds = 0.65f;
 
     private static readonly Vector2Int[] HorizontalMoves = { Vector2Int.right, Vector2Int.left };
     private static readonly Vector2Int[] VerticalMoves = { Vector2Int.down, Vector2Int.up };
@@ -34,9 +37,12 @@ public sealed class TutorialManager : MonoBehaviour
     [SerializeField] private TutorialUI tutorialUI;
     [SerializeField] private KeyboardMapManager keyboardMap;
     [SerializeField] private PlayerKeyboardPosition player;
+    [SerializeField] private ObstacleManager obstacleManager;
+    [SerializeField] private Sprite evasionMarkerSprite;
 
     private GameFlowManager gameFlow;
     private Coroutine terminalSequence;
+    private Coroutine evasionSequence;
     private bool keyboardLocked;
     private bool keyboardWasEnabled;
     private bool ending;
@@ -60,6 +66,7 @@ public sealed class TutorialManager : MonoBehaviour
         IsActive = false;
         ending = false;
         StopMovementLesson();
+        StopEvasionLesson();
 
         if (terminalSequence != null)
         {
@@ -79,6 +86,7 @@ public sealed class TutorialManager : MonoBehaviour
 
         ending = true;
         StopMovementLesson();
+        StopEvasionLesson();
         tutorialUI.HideLesson();
         PlayTerminal(CompletionMessage);
     }
@@ -154,7 +162,8 @@ public sealed class TutorialManager : MonoBehaviour
             {
                 StopMovementLesson();
                 tutorialUI.ShowTarget(null);
-                tutorialUI.ShowLesson(2, "위험 표시가 나타나면 다른 키로 이동하세요.");
+                tutorialUI.ShowLesson(2, EvasionInstruction);
+                evasionSequence = StartCoroutine(RunEvasionLesson());
                 return;
             }
         }
@@ -164,22 +173,26 @@ public sealed class TutorialManager : MonoBehaviour
 
     private void SelectMovementTarget(KeyboardKey currentKey)
     {
-        movementTarget = null;
-        if (currentKey != null)
+        movementTarget = FindAdjacentKey(currentKey, MovementLesson[movementStep]);
+        tutorialUI.ShowTarget(movementTarget);
+    }
+
+    private KeyboardKey FindAdjacentKey(KeyboardKey origin, Vector2Int[] offsets)
+    {
+        if (origin == null)
+            return null;
+
+        foreach (Vector2Int offset in offsets)
         {
-            foreach (Vector2Int offset in MovementLesson[movementStep])
+            if (KeyboardMapData.TryGetByPosition(origin.Data.Position + offset, out var keyData) &&
+                keyboardMap.TryGetKey(keyData.InputKey, out var key) &&
+                keyboardMap.IsAdjacent(origin, key))
             {
-                if (KeyboardMapData.TryGetByPosition(currentKey.Data.Position + offset, out var keyData) &&
-                    keyboardMap.TryGetKey(keyData.InputKey, out var key) &&
-                    keyboardMap.IsAdjacent(currentKey, key))
-                {
-                    movementTarget = key;
-                    break;
-                }
+                return key;
             }
         }
 
-        tutorialUI.ShowTarget(movementTarget);
+        return null;
     }
 
     private void StopMovementLesson()
@@ -187,6 +200,69 @@ public sealed class TutorialManager : MonoBehaviour
         if (player != null)
             player.Moved -= HandlePlayerMoved;
         movementTarget = null;
+    }
+
+    private IEnumerator RunEvasionLesson()
+    {
+        yield return new WaitForSeconds(0.7f);
+
+        while (true)
+        {
+            while (gameFlow.State == GameState.Paused)
+                yield return null;
+
+            bool activated = false;
+            bool hit = false;
+            void ResolveAttack(bool occupied)
+            {
+                activated = true;
+                hit |= occupied;
+            }
+
+            var origin = player.CurrentKey;
+            if (!SpawnEvasionAttack(origin, ResolveAttack))
+            {
+                Debug.LogError("[Tutorial] Could not spawn the evasion attack.", this);
+                evasionSequence = null;
+                yield break;
+            }
+
+            var adjacentKey = FindAdjacentKey(origin, HorizontalMoves);
+            if (adjacentKey != null)
+                SpawnEvasionAttack(adjacentKey, ResolveAttack);
+
+            while (gameFlow.State == GameState.Paused || obstacleManager.HasOwned(this))
+                yield return null;
+
+            if (activated && !hit)
+                break;
+
+            tutorialUI.ShowLesson(2, "회피하지 못했습니다. 다시 시도하세요.");
+            yield return new WaitForSeconds(1.1f);
+            tutorialUI.ShowLesson(2, EvasionInstruction);
+        }
+
+        evasionSequence = null;
+        tutorialUI.ShowLesson(3, "상단에 표시된 미션을 완료하세요.");
+    }
+
+    private bool SpawnEvasionAttack(KeyboardKey key, Action<bool> onActivated)
+    {
+        return key != null && obstacleManager != null &&
+            obstacleManager.SpawnPracticeAttack(key.Data.InputKey, EvasionWarningSeconds, EvasionAttackSeconds,
+                this, onActivated, evasionMarkerSprite);
+    }
+
+    private void StopEvasionLesson()
+    {
+        if (evasionSequence != null)
+        {
+            StopCoroutine(evasionSequence);
+            evasionSequence = null;
+        }
+
+        if (obstacleManager != null)
+            obstacleManager.ClearOwned(this);
     }
 
 #if UNITY_EDITOR

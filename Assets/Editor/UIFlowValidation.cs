@@ -29,10 +29,16 @@ public static class UIFlowValidation
     private static bool tutorialOutlineWasVisible;
     private static int pausedTerminalCharacters;
     private static int tutorialMovementCheckStep;
+    private static bool tutorialMovementChecked;
     private static KeyboardKey tutorialSpawnKey;
     private static KeyboardKey tutorialExpectedTarget;
     private static readonly Vector2Int[] TutorialMoveAxes =
         { Vector2Int.right, Vector2Int.up, Vector2Int.one, Vector2Int.right };
+    private static int tutorialEvasionCheckStep;
+    private static KeyboardKey tutorialEvasionOrigin;
+    private static KeyboardKey tutorialEscapeKey;
+    private static Color tutorialWarningColor;
+    private static double tutorialEvasionResumeAt;
     private static int heldKeyStep;
     private static GameObject startSelection;
     private static AimData previousOverlapMission;
@@ -67,6 +73,8 @@ public static class UIFlowValidation
         tutorialLessonChecked = false;
         tutorialOutlineWasVisible = false;
         tutorialMovementCheckStep = 0;
+        tutorialMovementChecked = false;
+        tutorialEvasionCheckStep = 0;
         heldKeyStep = 0;
         SessionState.SetBool(Active + ".Ready", false);
         if (Application.isBatchMode)
@@ -178,7 +186,7 @@ public static class UIFlowValidation
                 case 0:
                     Check(SceneManager.GetActiveScene().name == "StartScene", "Enter waits for release");
                     InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState());
-                    countdownDeadline = EditorApplication.timeSinceStartup + 12.0;
+                    countdownDeadline = EditorApplication.timeSinceStartup + 30.0;
                     break;
                 case 1:
                     Check(SceneManager.GetActiveScene().name == "GameScene", "Enter loads GameScene");
@@ -483,7 +491,7 @@ public static class UIFlowValidation
             return;
         }
 
-        if (flow.State == GameState.Paused)
+        if (flow.State == GameState.Paused && !tutorialOutlineWasVisible)
         {
             var terminal = GameObject.Find("Tutorial Terminal Text").GetComponent<TMPro.TMP_Text>();
             Check(terminal.maxVisibleCharacters == pausedTerminalCharacters,
@@ -533,8 +541,19 @@ public static class UIFlowValidation
                 "The outline fully turns off after its bright phase");
         }
 
-        if (!CheckTutorialMovement(player, targetKey, instruction))
+        if (!tutorialMovementChecked)
+        {
+            tutorialMovementChecked = CheckTutorialMovement(player, targetKey, instruction);
+            if (!tutorialMovementChecked)
+                return;
+        }
+
+        if (!CheckTutorialEvasion(flow, tutorial, player, map, timer, instruction))
             return;
+
+        InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState());
+        // Leave the player at the scene spawn for the later gameplay input checks.
+        player.SetCurrentKey(tutorialSpawnKey);
 
         tutorial.Complete();
         var completion = GameObject.Find("Tutorial Terminal Text")?.GetComponent<TMPro.TMP_Text>();
@@ -579,9 +598,6 @@ public static class UIFlowValidation
                     Check(target == null && instruction.text.Contains("02 / 04") &&
                         instruction.text.Contains("위험 표시가 나타나면 다른 키로 이동하세요."),
                         "Four successful moves automatically open the evasion lesson");
-                    InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState());
-                    // Keep the subsequent gameplay input checks at their usual scene spawn.
-                    player.SetCurrentKey(tutorialSpawnKey);
                     return true;
                 }
 
@@ -595,6 +611,92 @@ public static class UIFlowValidation
         }
 
         tutorialMovementCheckStep++;
+        return false;
+    }
+
+    private static bool CheckTutorialEvasion(GameFlowManager flow, TutorialManager tutorial,
+        PlayerKeyboardPosition player, KeyboardMapManager map, TimeManager timer, TMPro.TMP_Text instruction)
+    {
+        var obstacles = UnityEngine.Object.FindAnyObjectByType<ObstacleManager>();
+        var origin = tutorialEvasionOrigin != null ? tutorialEvasionOrigin : player.CurrentKey;
+        var warning = origin.transform.Find("Obstacle_" + origin.Data.InputKey)?.GetComponent<Image>();
+        switch (tutorialEvasionCheckStep)
+        {
+            case 0:
+                if (warning == null)
+                    return false;
+
+                tutorialEvasionOrigin = origin;
+                tutorialWarningColor = warning.color;
+                tutorialEscapeKey = null;
+                int markedNeighbors = 0;
+                foreach (var data in KeyboardMapData.Keys)
+                {
+                    if (!map.TryGetKey(data.InputKey, out var key) || !map.IsAdjacent(origin, key))
+                        continue;
+
+                    if (obstacles.Contains(data.InputKey))
+                        markedNeighbors++;
+                    else if (tutorialEscapeKey == null)
+                        tutorialEscapeKey = key;
+                }
+
+                Check(obstacles.HasOwned(tutorial) && markedNeighbors == 1 && tutorialEscapeKey != null &&
+                    !timer.IsRunning && timer.ElapsedTime == 0f,
+                    "The training attack warns two nearby keys with an adjacent escape and a frozen game clock");
+                flow.Pause();
+                tutorialEvasionResumeAt = EditorApplication.timeSinceStartup + 4.2;
+                break;
+            case 1:
+                if (EditorApplication.timeSinceStartup < tutorialEvasionResumeAt)
+                    return false;
+
+                Check(flow.State == GameState.Paused && warning != null && warning.color == tutorialWarningColor,
+                    "Pausing holds the training warning past its usual activation time");
+                flow.Resume();
+                break;
+            case 2:
+                if (warning != null && warning.color == tutorialWarningColor)
+                    return false;
+
+                Check(warning != null && player.CurrentKey == origin,
+                    "The first attack becomes active while the player remains in danger");
+                break;
+            case 3:
+                if (!instruction.text.Contains("다시 시도하세요"))
+                    return false;
+
+                Check(flow.State == GameState.Tutorial && !obstacles.HasOwned(tutorial) && !timer.IsRunning &&
+                    timer.RemainingTime == 0f && timer.ElapsedTime == 0f,
+                    "Being caught clears the attack and prompts a retry without time loss or game over");
+                break;
+            case 4:
+                if (warning == null)
+                    return false;
+
+                Check(warning.color == tutorialWarningColor &&
+                    !obstacles.Contains(tutorialEscapeKey.Data.InputKey), "Retry creates a fresh warning with a safe key");
+                InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(tutorialEscapeKey.Data.InputKey));
+                break;
+            case 5:
+                if (warning != null && warning.color == tutorialWarningColor)
+                    return false;
+
+                Check(warning != null && player.CurrentKey == tutorialEscapeKey,
+                    "Player input reaches a safe key before the retry activates");
+                InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(origin.Data.InputKey));
+                break;
+            case 6:
+                if (!instruction.text.Contains("03 / 04"))
+                    return false;
+
+                Check(player.CurrentKey == origin && !obstacles.HasOwned(tutorial) &&
+                    !timer.IsRunning && timer.ElapsedTime == 0f,
+                    "Evasion is judged at activation and opens the mission lesson after all markers clear");
+                return true;
+        }
+
+        tutorialEvasionCheckStep++;
         return false;
     }
 
