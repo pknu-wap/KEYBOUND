@@ -13,6 +13,7 @@ namespace Keybound.UI
         [SerializeField] private RectTransform popupRoot;
         [SerializeField] private TMP_Text missionHeading;
         [SerializeField] private TMP_Text missionDescription;
+        [SerializeField] private MissionUI missionUI;
         [SerializeField] private Font tutorialTypeface;
         [SerializeField] private Shader targetOutlineShader;
 
@@ -25,7 +26,10 @@ namespace Keybound.UI
         private Material targetOutlineMaterial;
         private float targetShownAt;
         private string previousMissionHeading;
+        private TMP_FontAsset previousMissionFont;
         private bool missionDescriptionWasEnabled;
+        private bool lessonShown;
+        private bool missionGuideShown;
 
         private void Update()
         {
@@ -53,6 +57,9 @@ namespace Keybound.UI
 
         internal void ShowLesson(int step, string instruction)
         {
+            BeginLesson();
+            ClearMissionGuide();
+
             if (instructionText == null)
             {
                 instructionText = Instantiate(missionDescription, missionDescription.transform.parent);
@@ -62,24 +69,37 @@ namespace Keybound.UI
                 instructionText.gameObject.SetActive(false);
             }
 
-            if (!instructionText.gameObject.activeSelf)
-            {
-                previousMissionHeading = missionHeading.text;
-                missionDescriptionWasEnabled = missionDescription.enabled;
-            }
-
-            missionHeading.text = "TUTORIAL";
             missionDescription.enabled = false;
             instructionText.text = $"<size=60%><color=#B3B3B3>{step:00} / 04</color></size>\n{instruction}";
             instructionText.enabled = true;
             instructionText.gameObject.SetActive(true);
         }
 
+        internal void ShowMissionLesson(string instruction)
+        {
+            BeginLesson();
+            if (instructionText != null)
+                instructionText.gameObject.SetActive(false);
+
+            if (!missionGuideShown)
+            {
+                missionGuideShown = true;
+                previousMissionFont = missionDescription.font;
+                missionDescription.font = GetTutorialFont();
+            }
+
+            missionUI.SetTutorialGuide($"<size=60%><color=#B3B3B3>03 / 04   {instruction}</color></size>");
+            missionDescription.enabled = true;
+        }
+
         internal void HideLesson()
         {
-            if (instructionText != null && instructionText.gameObject.activeSelf)
+            if (lessonShown)
             {
-                instructionText.gameObject.SetActive(false);
+                lessonShown = false;
+                ClearMissionGuide();
+                if (instructionText != null)
+                    instructionText.gameObject.SetActive(false);
                 if (missionHeading != null)
                     missionHeading.text = previousMissionHeading;
                 if (missionDescription != null)
@@ -87,6 +107,29 @@ namespace Keybound.UI
             }
 
             ShowTarget(null);
+        }
+
+        private void BeginLesson()
+        {
+            if (lessonShown)
+                return;
+
+            lessonShown = true;
+            previousMissionHeading = missionHeading.text;
+            missionDescriptionWasEnabled = missionDescription.enabled;
+            missionHeading.text = "TUTORIAL";
+        }
+
+        private void ClearMissionGuide()
+        {
+            if (!missionGuideShown)
+                return;
+
+            missionGuideShown = false;
+            if (missionDescription != null)
+                missionDescription.font = previousMissionFont;
+            if (missionUI != null)
+                missionUI.SetTutorialGuide(null);
         }
 
         internal void ShowTarget(KeyboardKey key)

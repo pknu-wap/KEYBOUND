@@ -497,6 +497,10 @@ MonoBehaviour:
   player: {fileID: 1276033144}
   obstacleManager: {fileID: 116485355}
   evasionMarkerSprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+  aimProcessor: {fileID: 632371430}
+  stageManager: {fileID: 349645084}
+  timeManager: {fileID: 1807373829}
+  countdownUI: {fileID: 811246652}
 --- !u!114 &313466179
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -512,6 +516,7 @@ MonoBehaviour:
   popupRoot: {fileID: 1367422857}
   missionHeading: {fileID: 1900400022}
   missionDescription: {fileID: 1900400032}
+  missionUI: {fileID: 1900400040}
   tutorialTypeface: {fileID: 12800000, guid: 2ff4d044f5055554680d780ac60f46e7, type: 3}
   targetOutlineShader: {fileID: 4800000, guid: b264bc96ceda44b79ba732d1a4d6ce36, type: 3}
 --- !u!4 &313466177

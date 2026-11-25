@@ -21,9 +21,13 @@ public sealed class TutorialManager : MonoBehaviour
 
     private const float TerminalCharactersPerSecond = 27f;
     private const float TerminalHoldSeconds = 1.2f;
-    private const string EvasionInstruction = "위험 표시가 나타나면 다른 키로 이동하세요.";
-    private const float EvasionWarningSeconds = 4f;
+    private const string EvasionInstruction = "위험 표시가 나타나면 구역 밖으로 이동하세요.";
+    private const float EvasionWarningSeconds = 3f;
     private const float EvasionAttackSeconds = 0.65f;
+    private const int MissionPressCount = 3;
+    private const string TimeInstruction =
+        "시간은 당신의 목숨입니다. 시간이 0이 되면 게임오버입니다.\n" +
+        "미션을 완료하여 시간을 확보하고 최대한 오래 생존하세요.";
 
     private static readonly Vector2Int[] HorizontalMoves = { Vector2Int.right, Vector2Int.left };
     private static readonly Vector2Int[] VerticalMoves = { Vector2Int.down, Vector2Int.up };
@@ -39,15 +43,21 @@ public sealed class TutorialManager : MonoBehaviour
     [SerializeField] private PlayerKeyboardPosition player;
     [SerializeField] private ObstacleManager obstacleManager;
     [SerializeField] private Sprite evasionMarkerSprite;
+    [SerializeField] private AimConditionProcessor aimProcessor;
+    [SerializeField] private StageManager stageManager;
+    [SerializeField] private TimeManager timeManager;
+    [SerializeField] private CountdownUI countdownUI;
 
     private GameFlowManager gameFlow;
     private Coroutine terminalSequence;
     private Coroutine evasionSequence;
+    private Coroutine timeLessonSequence;
     private bool keyboardLocked;
     private bool keyboardWasEnabled;
     private bool ending;
     private int movementStep;
     private KeyboardKey movementTarget;
+    private AimData tutorialAim;
 
     public bool IsActive { get; private set; }
 
@@ -67,6 +77,8 @@ public sealed class TutorialManager : MonoBehaviour
         ending = false;
         StopMovementLesson();
         StopEvasionLesson();
+        StopMissionLesson();
+        StopTimeLesson();
 
         if (terminalSequence != null)
         {
@@ -87,6 +99,8 @@ public sealed class TutorialManager : MonoBehaviour
         ending = true;
         StopMovementLesson();
         StopEvasionLesson();
+        StopMissionLesson();
+        StopTimeLesson();
         tutorialUI.HideLesson();
         PlayTerminal(CompletionMessage);
     }
@@ -227,9 +241,11 @@ public sealed class TutorialManager : MonoBehaviour
                 yield break;
             }
 
-            var adjacentKey = FindAdjacentKey(origin, HorizontalMoves);
-            if (adjacentKey != null)
-                SpawnEvasionAttack(adjacentKey, ResolveAttack);
+            foreach (var data in KeyboardMapData.Keys)
+            {
+                if (keyboardMap.TryGetKey(data.InputKey, out var key) && keyboardMap.IsAdjacent(origin, key))
+                    SpawnEvasionAttack(key, ResolveAttack);
+            }
 
             while (gameFlow.State == GameState.Paused || obstacleManager.HasOwned(this))
                 yield return null;
@@ -243,7 +259,7 @@ public sealed class TutorialManager : MonoBehaviour
         }
 
         evasionSequence = null;
-        tutorialUI.ShowLesson(3, "상단에 표시된 미션을 완료하세요.");
+        BeginMissionLesson();
     }
 
     private bool SpawnEvasionAttack(KeyboardKey key, Action<bool> onActivated)
@@ -263,6 +279,108 @@ public sealed class TutorialManager : MonoBehaviour
 
         if (obstacleManager != null)
             obstacleManager.ClearOwned(this);
+    }
+
+    private void BeginMissionLesson()
+    {
+        var key = player.CurrentKey.Data;
+        tutorialAim = new AimData
+        {
+            Type = AimType.PressCount,
+            RequiredCount = MissionPressCount,
+            TargetKeys = { key.InputKey },
+            Description = $"Press {key.Name} {MissionPressCount} times"
+        };
+
+        aimProcessor.OnAimCompleted += HandleTutorialAimCompleted;
+        gameFlow.StateChanged += UpdateTutorialAimPause;
+        aimProcessor.StartAim(tutorialAim);
+        tutorialUI.ShowMissionLesson("상단에 표시된 미션을 완료하세요.");
+    }
+
+    private void UpdateTutorialAimPause(GameState state)
+    {
+        if (state == GameState.Paused)
+            aimProcessor.PauseAim();
+        else if (state == GameState.Tutorial)
+            aimProcessor.ResumeAim();
+    }
+
+    private void HandleTutorialAimCompleted(AimData aim)
+    {
+        if (aim != tutorialAim)
+            return;
+
+        AudioManager.Instance?.PlayClearSFX();
+        tutorialUI.ShowMissionLesson("미션 완료");
+        timeLessonSequence = StartCoroutine(RunTimeLesson());
+    }
+
+    private void StopMissionLesson()
+    {
+        if (tutorialAim == null)
+            return;
+
+        gameFlow.StateChanged -= UpdateTutorialAimPause;
+        if (aimProcessor != null)
+        {
+            aimProcessor.OnAimCompleted -= HandleTutorialAimCompleted;
+            if (aimProcessor.CurrentAim == tutorialAim)
+                aimProcessor.StopAim();
+        }
+
+        tutorialAim = null;
+    }
+
+    private IEnumerator RunTimeLesson()
+    {
+        yield return new WaitForSeconds(1.05f);
+        while (gameFlow.State == GameState.Paused)
+            yield return null;
+
+        StopMissionLesson();
+        tutorialUI.ShowLesson(4, TimeInstruction);
+
+        float start = timeManager.StartingTime;
+        float reward = Mathf.Max(0f, stageManager.ClearRewardTime);
+        float reduced = Mathf.Max(0f, start - Mathf.Max(5f, reward));
+        float recovered = Mathf.Min(timeManager.MaxRemainingTime, reduced + reward);
+        countdownUI.ShowTutorialTimePreview(start);
+        yield return AnimateTimePreview(start, reduced, 5f);
+        yield return new WaitForSeconds(1f);
+        yield return AnimateTimePreview(reduced, recovered, 1f, recovered - reduced);
+        yield return new WaitForSeconds(3f);
+        while (gameFlow.State == GameState.Paused)
+            yield return null;
+
+        timeLessonSequence = null;
+        Complete();
+    }
+
+    private IEnumerator AnimateTimePreview(float from, float to, float duration, float reward = 0f)
+    {
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            yield return null;
+            if (gameFlow.State != GameState.Tutorial)
+                continue;
+
+            elapsed += Time.deltaTime;
+            countdownUI.ShowTutorialTimePreview(Mathf.Lerp(from, to, elapsed / duration), reward);
+        }
+    }
+
+    private void StopTimeLesson()
+    {
+        if (timeLessonSequence != null)
+        {
+            StopCoroutine(timeLessonSequence);
+            timeLessonSequence = null;
+        }
+
+        if (countdownUI != null)
+            countdownUI.ClearTutorialTimePreview();
     }
 
 #if UNITY_EDITOR

@@ -20,6 +20,8 @@ namespace Keybound.UI
         private int displayedHundredths = -1;
         private TMP_Text startCountdown;
         private CanvasGroup timeWarning;
+        private TMP_Text tutorialTimeLabel;
+        private Outline tutorialTimeOutline;
 
         private void OnEnable()
         {
@@ -79,6 +81,7 @@ namespace Keybound.UI
                 startCountdown.enabled = false;
             if (timeWarning != null)
                 timeWarning.alpha = 0f;
+            ClearTutorialTimePreview();
         }
 
         private void LateUpdate()
@@ -102,6 +105,65 @@ namespace Keybound.UI
             {
                 displayedHundredths = hundredths;
                 timeText.text = $"{hundredths / 6000:00}:{hundredths / 100 % 60:00}.{hundredths % 100:00}";
+            }
+        }
+
+        internal void ShowTutorialTimePreview(float seconds, float reward = 0f)
+        {
+            if (timeSlider == null)
+                return;
+
+            if (tutorialTimeLabel == null)
+                CreateTutorialTimeDisplay();
+
+            DisplayCountdown(seconds);
+            tutorialTimeLabel.text = reward > 0f ? $"{seconds:0.0}s   (+{reward:0.#}s)" : $"{seconds:0.0}s";
+            tutorialTimeLabel.gameObject.SetActive(true);
+            if (tutorialTimeOutline != null)
+                tutorialTimeOutline.enabled = true;
+        }
+
+        internal void ClearTutorialTimePreview()
+        {
+            if (tutorialTimeLabel == null || !tutorialTimeLabel.gameObject.activeSelf)
+                return;
+
+            tutorialTimeLabel.gameObject.SetActive(false);
+            if (tutorialTimeOutline != null)
+                tutorialTimeOutline.enabled = false;
+            if (timeManager != null)
+                DisplayCountdown(timeManager.RemainingTime);
+        }
+
+        private void CreateTutorialTimeDisplay()
+        {
+            tutorialTimeLabel = new GameObject("Tutorial Time Preview", typeof(RectTransform),
+                typeof(TextMeshProUGUI)).GetComponent<TMP_Text>();
+            RectTransform rect = tutorialTimeLabel.rectTransform;
+            rect.SetParent(timeSlider.transform, false);
+            rect.anchorMin = new Vector2(0f, 0.5f);
+            rect.anchorMax = new Vector2(1f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.anchoredPosition = new Vector2(0f, -16f);
+            rect.sizeDelta = new Vector2(0f, 28f);
+
+            var fontSource = timeText != null ? timeText : stageText;
+            if (fontSource != null)
+                tutorialTimeLabel.font = fontSource.font;
+            tutorialTimeLabel.fontSize = 24f;
+            tutorialTimeLabel.enableAutoSizing = true;
+            tutorialTimeLabel.fontSizeMin = 14f;
+            tutorialTimeLabel.fontSizeMax = 24f;
+            tutorialTimeLabel.alignment = TextAlignmentOptions.Center;
+            tutorialTimeLabel.outlineColor = Color.black;
+            tutorialTimeLabel.outlineWidth = 0.24f;
+            tutorialTimeLabel.raycastTarget = false;
+
+            if (timeSlider.fillRect != null && timeSlider.fillRect.TryGetComponent<Graphic>(out var fill))
+            {
+                tutorialTimeOutline = fill.gameObject.AddComponent<Outline>();
+                tutorialTimeOutline.effectColor = Color.white;
+                tutorialTimeOutline.effectDistance = new Vector2(2.5f, 2.5f);
             }
         }
 
