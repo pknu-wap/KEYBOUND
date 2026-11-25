@@ -16,6 +16,7 @@ namespace Keybound.UI
         public Slider sfxSlider;
         public Toggle fullscreenToggle;
         public Toggle skipTutorialToggle;
+        public Toggle showRemainingTimeToggle;
         public Text resultText;
         public Text resultStageText;
     }

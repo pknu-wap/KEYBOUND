@@ -175,10 +175,12 @@ public class SceneUIManager : MonoBehaviour
                 v.sfxSlider.SetValueWithoutNotify(GameSettings.Sfx);
                 v.fullscreenToggle.SetIsOnWithoutNotify(GameSettings.Fullscreen);
                 v.skipTutorialToggle.SetIsOnWithoutNotify(GameSettings.SkipTutorial);
+                v.showRemainingTimeToggle.SetIsOnWithoutNotify(GameSettings.ShowRemainingTime);
                 v.bgmSlider.onValueChanged.AddListener(value => GameSettings.SetVolume(SoundChannel.BGM, value));
                 v.sfxSlider.onValueChanged.AddListener(value => GameSettings.SetVolume(SoundChannel.SFX, value));
                 v.fullscreenToggle.onValueChanged.AddListener(GameSettings.SetFullscreen);
                 v.skipTutorialToggle.onValueChanged.AddListener(GameSettings.SetSkipTutorial);
+                v.showRemainingTimeToggle.onValueChanged.AddListener(GameSettings.SetShowRemainingTime);
                 break;
             case UIViewKind.GameOver: v.menuButton.onClick.AddListener(OnClickGoToStart); break;
             case UIViewKind.Gameplay: v.primaryButton.onClick.AddListener(() => gameFlowManager.Pause()); break;

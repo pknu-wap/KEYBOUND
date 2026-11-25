@@ -18,7 +18,9 @@ namespace Keybound.UI
         private const float WarningThreshold = 10f;
         private const float WarningEdgeWidth = 12f;
         private int displayedHundredths = -1;
+        private int displayedTenths = -1;
         private TMP_Text startCountdown;
+        private TMP_Text remainingTimeLabel;
         private CanvasGroup timeWarning;
         private TMP_Text tutorialTimeLabel;
         private Outline tutorialTimeOutline;
@@ -56,8 +58,10 @@ namespace Keybound.UI
                 if (startCountdown == null)
                     CreateOverlays();
                 gameFlow.StartCountdownChanged += DisplayStartCountdown;
-                gameFlow.StateChanged += RefreshStage;
+                gameFlow.StateChanged += RefreshGameState;
+                GameSettings.RemainingTimeDisplayChanged += RefreshRemainingTimeDisplay;
                 DisplayStartCountdown(gameFlow.StartCountdownSeconds);
+                RefreshRemainingTimeDisplay();
             }
         }
 
@@ -75,10 +79,13 @@ namespace Keybound.UI
             if (gameFlow != null)
             {
                 gameFlow.StartCountdownChanged -= DisplayStartCountdown;
-                gameFlow.StateChanged -= RefreshStage;
+                gameFlow.StateChanged -= RefreshGameState;
             }
+            GameSettings.RemainingTimeDisplayChanged -= RefreshRemainingTimeDisplay;
             if (startCountdown != null)
                 startCountdown.enabled = false;
+            if (remainingTimeLabel != null)
+                remainingTimeLabel.enabled = false;
             if (timeWarning != null)
                 timeWarning.alpha = 0f;
             ClearTutorialTimePreview();
@@ -106,6 +113,54 @@ namespace Keybound.UI
                 displayedHundredths = hundredths;
                 timeText.text = $"{hundredths / 6000:00}:{hundredths / 100 % 60:00}.{hundredths % 100:00}";
             }
+
+            if (remainingTimeLabel != null && remainingTimeLabel.enabled)
+                DisplayRemainingTime(seconds);
+        }
+
+        private void RefreshRemainingTimeDisplay()
+        {
+            bool show = GameSettings.ShowRemainingTime && gameFlow.State == GameState.Playing &&
+                timeManager != null && timeManager.RemainingTime > 0f && timeSlider != null && timeSlider.fillRect != null;
+            if (show && remainingTimeLabel == null)
+                CreateRemainingTimeLabel();
+
+            if (remainingTimeLabel == null)
+                return;
+
+            remainingTimeLabel.enabled = show;
+            if (show)
+                DisplayRemainingTime(timeManager.RemainingTime);
+        }
+
+        private void DisplayRemainingTime(float seconds)
+        {
+            int tenths = Mathf.CeilToInt(seconds * 10f);
+            if (tenths == displayedTenths)
+                return;
+
+            displayedTenths = tenths;
+            remainingTimeLabel.SetText("{0:0.0}s", tenths / 10f);
+        }
+
+        private void CreateRemainingTimeLabel()
+        {
+            remainingTimeLabel = new GameObject("Remaining Time Value", typeof(RectTransform),
+                typeof(TextMeshProUGUI)).GetComponent<TMP_Text>();
+            RectTransform rect = remainingTimeLabel.rectTransform;
+            rect.SetParent(timeSlider.fillRect, false);
+            rect.anchorMin = rect.anchorMax = Vector2.one;
+            rect.pivot = new Vector2(0.5f, 0f);
+            rect.anchoredPosition = new Vector2(0f, 14f);
+            rect.sizeDelta = new Vector2(80f, 24f);
+
+            TMP_Text fontSource = timeText != null ? timeText : stageText;
+            if (fontSource != null)
+                remainingTimeLabel.font = fontSource.font;
+            remainingTimeLabel.fontSize = 20f;
+            remainingTimeLabel.fontStyle = FontStyles.Bold;
+            remainingTimeLabel.alignment = TextAlignmentOptions.Center;
+            remainingTimeLabel.raycastTarget = false;
         }
 
         internal void ShowTutorialTimePreview(float seconds, float reward = 0f)
@@ -248,9 +303,10 @@ namespace Keybound.UI
             }
         }
 
-        private void RefreshStage(GameState _)
+        private void RefreshGameState(GameState _)
         {
             DisplayStage(stageManager != null ? stageManager.CurrentStage : 0);
+            RefreshRemainingTimeDisplay();
         }
 
         private void DisplayStage(int stage)

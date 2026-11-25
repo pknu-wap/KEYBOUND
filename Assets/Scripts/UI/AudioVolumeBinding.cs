@@ -10,12 +10,15 @@ namespace Keybound.UI
         private const string Prefix = "KEYBOUND.";
         private const string SkipTutorialKey = Prefix + "SkipTutorial";
         private const string TutorialCompletedKey = Prefix + "TutorialCompleted";
+        private const string ShowRemainingTimeKey = Prefix + "ShowRemainingTime";
         public static float Bgm => Mathf.Clamp01(PlayerPrefs.GetFloat(Prefix + "BGM", 0.5f));
         public static float Sfx => Mathf.Clamp01(PlayerPrefs.GetFloat(Prefix + "SFX", 0.5f));
         public static bool Fullscreen => PlayerPrefs.GetInt(Prefix + "Fullscreen", Screen.fullScreen ? 1 : 0) != 0;
         public static bool SkipTutorial => PlayerPrefs.GetInt(SkipTutorialKey, 0) != 0;
         public static bool HasCompletedTutorial => PlayerPrefs.GetInt(TutorialCompletedKey, 0) != 0;
+        public static bool ShowRemainingTime => PlayerPrefs.GetInt(ShowRemainingTimeKey, 0) != 0;
         public static event Action VolumeChanged;
+        public static event Action RemainingTimeDisplayChanged;
         public static void SetVolume(SoundChannel channel, float value)
         {
             PlayerPrefs.SetFloat(Prefix + channel, Mathf.Clamp01(value));
@@ -30,6 +33,13 @@ namespace Keybound.UI
         {
             PlayerPrefs.SetInt(SkipTutorialKey, value ? 1 : 0);
             PlayerPrefs.Save();
+        }
+
+        public static void SetShowRemainingTime(bool value)
+        {
+            PlayerPrefs.SetInt(ShowRemainingTimeKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            RemainingTimeDisplayChanged?.Invoke();
         }
 
         internal static void MarkTutorialCompleted()
