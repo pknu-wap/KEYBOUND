@@ -1,0 +1,29 @@
+{
+    "Version": 1,
+    "Records": [
+        {
+            "PlayerName": "AAAAAAAA",
+            "Score": 180,
+            "Stage": 40,
+            "SurvivalTime": 8.636987686157227,
+            "CompletedAimCount": 1,
+            "RecordedAt": "2026-11-25T07:39:39.3978935Z"
+        },
+        {
+            "PlayerName": "PLAYER1",
+            "Score": 0,
+            "Stage": 1,
+            "SurvivalTime": 0.0,
+            "CompletedAimCount": 0,
+            "RecordedAt": "2026-11-25T07:40:39.1105049Z"
+        },
+        {
+            "PlayerName": "PLAYER2",
+            "Score": 0,
+            "Stage": 1,
+            "SurvivalTime": 0.0,
+            "CompletedAimCount": 0,
+            "RecordedAt": "2026-11-25T07:40:39.5508985Z"
+        }
+    ]
+}
