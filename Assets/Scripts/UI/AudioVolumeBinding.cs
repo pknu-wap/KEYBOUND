@@ -8,9 +8,13 @@ namespace Keybound.UI
     public static class GameSettings
     {
         private const string Prefix = "KEYBOUND.";
+        private const string SkipTutorialKey = Prefix + "SkipTutorial";
+        private const string TutorialCompletedKey = Prefix + "TutorialCompleted";
         public static float Bgm => Mathf.Clamp01(PlayerPrefs.GetFloat(Prefix + "BGM", 0.5f));
         public static float Sfx => Mathf.Clamp01(PlayerPrefs.GetFloat(Prefix + "SFX", 0.5f));
         public static bool Fullscreen => PlayerPrefs.GetInt(Prefix + "Fullscreen", Screen.fullScreen ? 1 : 0) != 0;
+        public static bool SkipTutorial => PlayerPrefs.GetInt(SkipTutorialKey, 0) != 0;
+        public static bool HasCompletedTutorial => PlayerPrefs.GetInt(TutorialCompletedKey, 0) != 0;
         public static event Action VolumeChanged;
         public static void SetVolume(SoundChannel channel, float value)
         {
@@ -22,6 +26,21 @@ namespace Keybound.UI
             PlayerPrefs.SetInt(Prefix + "Fullscreen", value ? 1 : 0); PlayerPrefs.Save();
             Screen.fullScreenMode = value ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed;
         }
+        public static void SetSkipTutorial(bool value)
+        {
+            PlayerPrefs.SetInt(SkipTutorialKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+        }
+
+        internal static void MarkTutorialCompleted()
+        {
+            if (HasCompletedTutorial)
+                return;
+
+            PlayerPrefs.SetInt(TutorialCompletedKey, 1);
+            PlayerPrefs.Save();
+        }
+
         public static void ApplyDisplay()
         {
             if (PlayerPrefs.HasKey(Prefix + "Fullscreen"))

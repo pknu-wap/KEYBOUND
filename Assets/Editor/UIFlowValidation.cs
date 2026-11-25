@@ -15,6 +15,9 @@ using UnityEngine.UI;
 public static class UIFlowValidation
 {
     private const string Active = "KEYBOUND.Validation.Active";
+    private const string SkipTutorialPref = "KEYBOUND.SkipTutorial";
+    private const string TutorialCompletedPref = "KEYBOUND.TutorialCompleted";
+    private static readonly string[] TutorialPrefs = { SkipTutorialPref, TutorialCompletedPref };
     private static int frames;
     private static int lastFrame = -1;
     private static int step;
@@ -25,6 +28,9 @@ public static class UIFlowValidation
     private static double countdownDeadline;
     private static int lastCountdownNumber;
     private static bool tutorialIntroChecked;
+    private static bool tutorialIntroPaused;
+    private static bool tutorialShortcutChecked;
+    private static bool tutorialShortcutPressed;
     private static bool tutorialLessonChecked;
     private static bool tutorialOutlineWasVisible;
     private static int pausedTerminalCharacters;
@@ -68,16 +74,24 @@ public static class UIFlowValidation
                 SessionState.SetBool(Active + ".Ready", true);
             }
             else if (state == PlayModeStateChange.ExitingPlayMode)
+            {
                 SessionState.SetBool(Active + ".Ready", false);
+                SessionState.SetBool(Active, false);
+                RestoreTutorialPrefs();
+            }
         };
     }
     [MenuItem("KEYBOUND/Validate UI Flow")]
     public static void Run()
     {
+        if (EditorApplication.isPlayingOrWillChangePlaymode) return;
         if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
         frames = 0; lastFrame = -1;
         lastCountdownNumber = 0;
         tutorialIntroChecked = false;
+        tutorialIntroPaused = false;
+        tutorialShortcutChecked = false;
+        tutorialShortcutPressed = false;
         tutorialLessonChecked = false;
         tutorialOutlineWasVisible = false;
         tutorialMovementCheckStep = 0;
@@ -97,8 +111,15 @@ public static class UIFlowValidation
             EditorSettings.enterPlayModeOptionsEnabled = false;
         }
         SessionState.SetBool(Active,true);
-        SessionState.SetInt("KEYBOUND.Validation.Step",-3);
+        SessionState.SetInt("KEYBOUND.Validation.Step", -5);
         EditorSceneManager.OpenScene("Assets/Scenes/StartScene.unity");
+        foreach (string preference in TutorialPrefs)
+        {
+            SessionState.SetInt(Active + "." + preference, PlayerPrefs.GetInt(preference, int.MinValue));
+            PlayerPrefs.DeleteKey(preference);
+        }
+        PlayerPrefs.Save();
+        SessionState.SetBool(Active + ".TutorialPrefsBackedUp", true);
         EditorApplication.isPlaying = true;
     }
     private static void Check(bool condition, string name)
@@ -108,6 +129,7 @@ public static class UIFlowValidation
     }
     private static void Finish(int result)
     {
+        RestoreTutorialPrefs();
         if (Application.isBatchMode)
             EditorSettings.enterPlayModeOptionsEnabled = SessionState.GetBool(Active + ".OptionsEnabled", true);
         if (capturedVolumes)
@@ -120,6 +142,23 @@ public static class UIFlowValidation
         if (batchInputSettings != null) UnityEngine.Object.DestroyImmediate(batchInputSettings);
         if (Application.isBatchMode) EditorApplication.Exit(result);
         else EditorApplication.isPlaying = false;
+    }
+
+    private static void RestoreTutorialPrefs()
+    {
+        if (!SessionState.GetBool(Active + ".TutorialPrefsBackedUp", false))
+            return;
+
+        foreach (string preference in TutorialPrefs)
+        {
+            int value = SessionState.GetInt(Active + "." + preference, int.MinValue);
+            if (value == int.MinValue)
+                PlayerPrefs.DeleteKey(preference);
+            else
+                PlayerPrefs.SetInt(preference, value);
+        }
+        PlayerPrefs.Save();
+        SessionState.SetBool(Active + ".TutorialPrefsBackedUp", false);
     }
     private static void Tick()
     {
@@ -147,8 +186,12 @@ public static class UIFlowValidation
                 var tutorial = flow.GetComponent<TutorialManager>();
                 if (step == 1)
                     CheckTutorialPresentation(flow, tutorial, ui, timer, map, player);
+                else if (step == 14)
+                    throw new Exception("FAIL: The skip preference should go directly to the countdown");
+                else if (step == 17)
+                    PressTutorialShortcut(flow);
                 else
-                    tutorial.Complete();
+                    tutorial.CompleteForTesting();
                 return;
             }
 
@@ -172,7 +215,7 @@ public static class UIFlowValidation
                 EditorApplication.timeSinceStartup < escapeHoldDeadline) return;
             switch(step)
             {
-                case -3:
+                case -5:
                     Check(SceneManager.GetActiveScene().name == "StartScene", "StartScene loaded");
                     Check(ui != null && ui.GetView(UIViewKind.StartMenu) != null, "Start menu reference available");
                     if (Application.isBatchMode)
@@ -186,6 +229,18 @@ public static class UIFlowValidation
                     if (Keyboard.current == null) InputSystem.AddDevice<Keyboard>();
                     Check(ui.GetView(UIViewKind.StartMenu).gameObject.activeSelf,"Start menu instantiated");
                     CheckButtonNavigation();
+                    ui.OpenSettings();
+                    CheckTutorialSetting(ui, false);
+                    Check(!GameSettings.HasCompletedTutorial, "A new profile starts without a tutorial completion record");
+                    break;
+                case -4:
+                    ui.GetView(UIViewKind.Settings).skipTutorialToggle.isOn = true;
+                    CheckTutorialSetting(ui, true);
+                    Check(!GameSettings.HasCompletedTutorial, "Changing the setting does not mark the tutorial complete");
+                    break;
+                case -3:
+                    ui.GetView(UIViewKind.Settings).skipTutorialToggle.isOn = false;
+                    ui.CloseSettings();
                     startSelection = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
                     Check(startSelection != null, "Start menu has selected button");
                     InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(Key.DownArrow)); break;
@@ -204,6 +259,8 @@ public static class UIFlowValidation
                     break;
                 case 1:
                     Check(SceneManager.GetActiveScene().name == "GameScene", "Enter loads GameScene");
+                    Check(tutorialLessonChecked && GameSettings.HasCompletedTutorial == !Application.isBatchMode &&
+                        !GameSettings.SkipTutorial, "Finishing the lessons records completion independently of the preference");
                     CheckButtonNavigation();
                     Check(lastCountdownNumber == 1, "All three countdown numbers displayed");
                     Check(flow.State == GameState.Playing && map.enabled && player.enabled, "Playing input enabled");
@@ -402,13 +459,22 @@ public static class UIFlowValidation
                 case 13:
                     Check(SceneManager.GetActiveScene().name == "StartScene" && Time.timeScale == 1,"Enter release on the result restores timescale and StartScene");
                     Check(Mathf.Approximately(GameSettings.Bgm,.37f) && Mathf.Approximately(GameSettings.Sfx,.62f),"Volumes survive Scene transition");
+                    ui.OpenSettings();
+                    CheckTutorialSetting(ui, false).isOn = true;
+                    ui.CloseSettings();
                     countdownDeadline = EditorApplication.timeSinceStartup + 8.0;
                     ui.GetView(UIViewKind.StartMenu).primaryButton.onClick.Invoke(); break;
                 case 14:
                     Check(flow.State == GameState.Playing && player.enabled && timer.RemainingTime > 0,"New run initializes after game over");
+                    Check(GameObject.Find("Tutorial Terminal") == null && GameSettings.SkipTutorial &&
+                        GameSettings.HasCompletedTutorial == !Application.isBatchMode,
+                        "The saved skip preference starts Stage 01 without creating tutorial UI");
                     ui.HandleEscape();
                     ui.GetView(UIViewKind.PauseMenu).settingsButton.onClick.Invoke();
                     Check(ui.SettingsOpen, "Clicking the SETTINGS button opens settings");
+                    CheckTutorialSetting(ui, true).isOn = false;
+                    Check(flow.State == GameState.Paused && !flow.IsTutorialActive,
+                        "Turning skip off in-game leaves the current run in place");
                     ui.GetView(UIViewKind.Settings).primaryButton.onClick.Invoke();
                     Check(!ui.SettingsOpen && flow.State == GameState.Paused,"Settings BACK keeps pause");
                     ui.GetView(UIViewKind.PauseMenu).primaryButton.onClick.Invoke();
@@ -420,9 +486,19 @@ public static class UIFlowValidation
                     ui.HandleEscape(); ui.GetView(UIViewKind.PauseMenu).menuButton.onClick.Invoke(); break;
                 case 16:
                     Check(SceneManager.GetActiveScene().name == "StartScene" && Time.timeScale == 1,"Pause MAIN MENU works");
+                    Check(!GameSettings.SkipTutorial, "The changed preference is shared after returning to the title");
+                    if (Application.isBatchMode)
+                    {
+                        PlayerPrefs.SetInt(TutorialCompletedPref, 1);
+                        PlayerPrefs.Save();
+                    }
                     countdownDeadline = EditorApplication.timeSinceStartup + 8.0;
                     ui.GetView(UIViewKind.StartMenu).primaryButton.onClick.Invoke(); break;
                 case 17:
+                    Check(tutorialShortcutPressed && flow.State == GameState.Playing && GameSettings.HasCompletedTutorial &&
+                        !GameSettings.SkipTutorial && GameObject.Find("Skip Tutorial Hint") == null &&
+                        GameObject.Find("Tutorial Terminal") == null,
+                        "Enter skips only this replay, cleans up the tutorial, and starts Stage 01");
                     escapeRestY = ((RectTransform)ui.GetView(UIViewKind.Gameplay).primaryButton.transform).anchoredPosition.y;
                     escapeHoldDeadline = EditorApplication.timeSinceStartup + 1.25;
                     InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(Key.Escape)); break;
@@ -458,6 +534,7 @@ public static class UIFlowValidation
                         "Numpad Enter release on the result returns to StartScene");
                     GameSettings.SetVolume(SoundChannel.BGM,SessionState.GetFloat("KEYBOUND.Validation.Bgm",1));
                     GameSettings.SetVolume(SoundChannel.SFX,SessionState.GetFloat("KEYBOUND.Validation.Sfx",1));
+                    RestoreTutorialPrefs();
                     SessionState.SetBool(Active,false);
                     Debug.Log("KEYBOUND_INTEGRATION_OK"); Finish(0); return;
             }
@@ -467,6 +544,36 @@ public static class UIFlowValidation
         {
             SessionState.SetBool(Active,false); Debug.LogException(error); Finish(1);
         }
+    }
+
+    private static Toggle CheckTutorialSetting(SceneUIManager ui, bool expected)
+    {
+        Toggle toggle = ui.GetView(UIViewKind.Settings).skipTutorialToggle;
+        string display = toggle.GetComponentInChildren<Text>().text;
+        Check(ui.SettingsOpen && toggle.isOn == expected && GameSettings.SkipTutorial == expected &&
+            display.Contains(expected ? "OFF</color>" : "ON</color>"),
+            $"The settings panel reflects the saved skip value ({(expected ? "ON" : "OFF")})");
+        return toggle;
+    }
+
+    private static void PressTutorialShortcut(GameFlowManager flow)
+    {
+        if (tutorialShortcutPressed)
+            return;
+
+        if (!tutorialShortcutChecked)
+        {
+            var hint = GameObject.Find("Skip Tutorial Hint")?.GetComponent<TMPro.TMP_Text>();
+            Check(flow.State == GameState.Tutorial && !GameSettings.SkipTutorial && hint != null &&
+                hint.text == "SKIP TUTORIAL [ENTER]" &&
+                UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject == null,
+                "Replay with skip off offers Enter without selecting the gameplay pause button");
+            tutorialShortcutChecked = true;
+            return;
+        }
+
+        InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(Key.Enter));
+        tutorialShortcutPressed = true;
     }
 
     private static void CheckTutorialPresentation(GameFlowManager flow, TutorialManager tutorial,
@@ -496,13 +603,29 @@ public static class UIFlowValidation
             Check(flow.State == GameState.Tutorial && !flow.SurvivalSeconds.HasValue,
                 "Stage 00 ignores game over and survival record updates");
 
+            Check(GameObject.Find("Skip Tutorial Hint") == null,
+                "A first-time player has no in-game skip prompt");
+            InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(Key.Enter));
+            tutorialIntroChecked = true;
+            return;
+        }
+
+        if (!tutorialIntroPaused)
+        {
+            var terminal = GameObject.Find("Tutorial Terminal Text").GetComponent<TMPro.TMP_Text>();
+            Check(flow.State == GameState.Tutorial && flow.StartCountdownSeconds == 0,
+                "Enter cannot skip or open pause on the first tutorial");
+            InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState());
             pausedTerminalCharacters = terminal.maxVisibleCharacters;
             ui.GetView(UIViewKind.Gameplay).primaryButton.onClick.Invoke();
-            tutorial.Complete();
-            Check(flow.State == GameState.Paused && flow.IsTutorialActive && stageNumber.text == "00" &&
+            tutorial.CompleteForTesting();
+            Check(flow.State == GameState.Paused && flow.IsTutorialActive &&
                 !map.enabled && Time.timeScale == 0f && flow.StartCountdownSeconds == 0,
                 "Stage 00 can pause and waits for resume before completion");
-            tutorialIntroChecked = true;
+            ui.OpenSettings();
+            CheckTutorialSetting(ui, false).isOn = true;
+            ui.CloseSettings();
+            tutorialIntroPaused = true;
             return;
         }
 
@@ -512,8 +635,14 @@ public static class UIFlowValidation
             Check(terminal.maxVisibleCharacters == pausedTerminalCharacters,
                 "The typewriter pauses with Stage 00");
             flow.Resume();
-            Check(flow.State == GameState.Tutorial && !map.enabled && Time.timeScale == 1f && !timer.IsRunning,
-                "Resume returns to the introduction with movement and the game clock still stopped");
+            Check(GameSettings.SkipTutorial && flow.State == GameState.Tutorial && !map.enabled &&
+                Time.timeScale == 1f && !timer.IsRunning,
+                "Changing skip during the tutorial does not bypass the current run on resume");
+            flow.Pause();
+            ui.OpenSettings();
+            CheckTutorialSetting(ui, true).isOn = false;
+            ui.CloseSettings();
+            flow.Resume();
             return;
         }
 
@@ -575,7 +704,7 @@ public static class UIFlowValidation
             // The mission processor needs a rendered end of frame for real key presses.
             var processor = UnityEngine.Object.FindAnyObjectByType<AimConditionProcessor>();
             CheckTutorialMissionStart(processor, timer, missionDescription);
-            tutorial.Complete();
+            tutorial.CompleteForTesting();
         }
         else
         {

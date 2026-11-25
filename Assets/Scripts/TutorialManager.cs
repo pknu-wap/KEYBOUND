@@ -4,6 +4,7 @@ using Keybound.Keyboard;
 using Keybound.Player;
 using Keybound.UI;
 using UnityEngine;
+using InputKeyboard = UnityEngine.InputSystem.Keyboard;
 
 [DisallowMultipleComponent]
 public sealed class TutorialManager : MonoBehaviour
@@ -55,19 +56,39 @@ public sealed class TutorialManager : MonoBehaviour
     private bool keyboardLocked;
     private bool keyboardWasEnabled;
     private bool ending;
+    private bool skipAvailable;
     private int movementStep;
     private KeyboardKey movementTarget;
     private AimData tutorialAim;
 
     public bool IsActive { get; private set; }
 
-    public event Action Completed;
+    public event Action Finished;
 
     private void Awake() => gameFlow = GetComponent<GameFlowManager>();
+
+    private void Update()
+    {
+        if (!IsActive)
+            return;
+
+        bool canSkip = skipAvailable && !ending && gameFlow.State == GameState.Tutorial;
+        tutorialUI.ShowSkipHint(canSkip);
+        if (!canSkip)
+            return;
+
+        var keyboard = InputKeyboard.current;
+        if (keyboard != null &&
+            (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame))
+        {
+            Finished?.Invoke();
+        }
+    }
 
     internal void Begin()
     {
         IsActive = true;
+        skipAvailable = GameSettings.HasCompletedTutorial;
         PlayTerminal(IntroMessage);
     }
 
@@ -91,7 +112,7 @@ public sealed class TutorialManager : MonoBehaviour
             tutorialUI.Clear();
     }
 
-    public void Complete()
+    private void BeginCompletion(bool recordCompletion)
     {
         if (!IsActive || ending || gameFlow.State != GameState.Tutorial)
             return;
@@ -102,10 +123,10 @@ public sealed class TutorialManager : MonoBehaviour
         StopMissionLesson();
         StopTimeLesson();
         tutorialUI.HideLesson();
-        PlayTerminal(CompletionMessage);
+        PlayTerminal(CompletionMessage, recordCompletion);
     }
 
-    private void PlayTerminal(string message)
+    private void PlayTerminal(string message, bool recordCompletion = false)
     {
         if (terminalSequence != null)
             StopCoroutine(terminalSequence);
@@ -118,10 +139,10 @@ public sealed class TutorialManager : MonoBehaviour
         }
 
         tutorialUI.ShowTerminal(message);
-        terminalSequence = StartCoroutine(TypeTerminal(message.Length));
+        terminalSequence = StartCoroutine(TypeTerminal(message.Length, recordCompletion));
     }
 
-    private IEnumerator TypeTerminal(int characterCount)
+    private IEnumerator TypeTerminal(int characterCount, bool recordCompletion)
     {
         float elapsed = 0f;
         float duration = characterCount / TerminalCharactersPerSecond + TerminalHoldSeconds;
@@ -141,7 +162,11 @@ public sealed class TutorialManager : MonoBehaviour
         RestoreKeyboard();
 
         if (ending)
-            Completed?.Invoke();
+        {
+            if (recordCompletion)
+                GameSettings.MarkTutorialCompleted();
+            Finished?.Invoke();
+        }
         else
             ShowMovementLesson();
     }
@@ -354,7 +379,7 @@ public sealed class TutorialManager : MonoBehaviour
             yield return null;
 
         timeLessonSequence = null;
-        Complete();
+        BeginCompletion(true);
     }
 
     private IEnumerator AnimateTimePreview(float from, float to, float duration, float reward = 0f)
@@ -385,10 +410,10 @@ public sealed class TutorialManager : MonoBehaviour
 
 #if UNITY_EDITOR
     [ContextMenu("Test/Complete Tutorial (Editor only)")]
-    private void TestComplete()
+    public void CompleteForTesting()
     {
         if (Application.isPlaying)
-            Complete();
+            BeginCompletion(false);
     }
 #endif
 }

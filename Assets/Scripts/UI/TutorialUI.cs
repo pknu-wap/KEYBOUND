@@ -20,6 +20,7 @@ namespace Keybound.UI
         private TMP_FontAsset tutorialFont;
         private TMP_Text terminalText;
         private TMP_Text instructionText;
+        private TMP_Text skipHint;
         private GameObject terminal;
         private Image targetOutline;
         private MirrorKeyFace targetOutlineMirror;
@@ -159,6 +160,32 @@ namespace Keybound.UI
         {
             HideTerminal();
             HideLesson();
+            ShowSkipHint(false);
+        }
+
+        internal void ShowSkipHint(bool visible)
+        {
+            if (skipHint == null && visible)
+            {
+                skipHint = new GameObject("Skip Tutorial Hint", typeof(RectTransform),
+                    typeof(TextMeshProUGUI)).GetComponent<TMP_Text>();
+                var rect = skipHint.rectTransform;
+                rect.SetParent(popupRoot, false);
+                rect.anchorMin = rect.anchorMax = rect.pivot = Vector2.right;
+                rect.anchoredPosition = new Vector2(-22f, 8f);
+                rect.sizeDelta = new Vector2(300f, 26f);
+                PlaceBelowPause(rect);
+
+                skipHint.font = missionHeading.font;
+                skipHint.fontSize = 20f;
+                skipHint.alignment = TextAlignmentOptions.Right;
+                skipHint.color = Color.white;
+                skipHint.raycastTarget = false;
+                skipHint.text = "SKIP TUTORIAL [ENTER]";
+            }
+
+            if (skipHint != null && skipHint.gameObject.activeSelf != visible)
+                skipHint.gameObject.SetActive(visible);
         }
 
         private void CreateTerminal()
@@ -168,15 +195,7 @@ namespace Keybound.UI
             FitToParent(panel, popupRoot, Vector2.zero, Vector2.one);
             terminal.GetComponent<Image>().color = Color.black;
 
-            // Keep the pause and settings views above the terminal in the existing popup canvas.
-            foreach (var view in popupRoot.GetComponentsInChildren<UIView>(true))
-            {
-                if (view.kind != UIViewKind.PauseMenu)
-                    continue;
-
-                panel.SetSiblingIndex(view.transform.GetSiblingIndex());
-                break;
-            }
+            PlaceBelowPause(panel);
 
             terminalText = new GameObject("Tutorial Terminal Text", typeof(RectTransform),
                 typeof(TextMeshProUGUI)).GetComponent<TMP_Text>();
@@ -197,6 +216,18 @@ namespace Keybound.UI
             if (tutorialFont == null)
                 tutorialFont = TMP_FontAsset.CreateFontAsset(tutorialTypeface);
             return tutorialFont;
+        }
+
+        private void PlaceBelowPause(RectTransform overlay)
+        {
+            foreach (var view in popupRoot.GetComponentsInChildren<UIView>(true))
+            {
+                if (view.kind != UIViewKind.PauseMenu)
+                    continue;
+
+                overlay.SetSiblingIndex(view.transform.GetSiblingIndex());
+                return;
+            }
         }
 
         private void CreateTargetOutline()
@@ -225,6 +256,8 @@ namespace Keybound.UI
                 Destroy(terminal);
             if (instructionText != null)
                 Destroy(instructionText.gameObject);
+            if (skipHint != null)
+                Destroy(skipHint.gameObject);
             if (targetOutline != null)
                 Destroy(targetOutline.gameObject);
             if (targetOutlineMaterial != null)

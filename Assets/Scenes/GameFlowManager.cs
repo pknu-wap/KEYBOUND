@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Keybound.Keyboard;
 using Keybound.Player;
+using Keybound.UI;
 using UnityEngine;
 
 public enum GameState { Playing, Paused, GameOver, Starting, Tutorial }
@@ -61,7 +62,7 @@ public sealed class GameFlowManager : MonoBehaviour
     private void OnEnable()
     {
         if (tutorialManager != null)
-            tutorialManager.Completed += HandleTutorialCompleted;
+            tutorialManager.Finished += HandleTutorialFinished;
 
         if (timeManager != null)
             timeManager.OnTimeOver += HandleTimeExpired;
@@ -86,7 +87,7 @@ public sealed class GameFlowManager : MonoBehaviour
         RestoreGameplay();
         if (tutorialManager != null)
         {
-            tutorialManager.Completed -= HandleTutorialCompleted;
+            tutorialManager.Finished -= HandleTutorialFinished;
             tutorialManager.Stop();
         }
 
@@ -124,7 +125,7 @@ public sealed class GameFlowManager : MonoBehaviour
         FinalStage = null;
         State = GameState.Playing;
 
-        if (tutorialManager != null && tutorialManager.isActiveAndEnabled)
+        if (tutorialManager != null && tutorialManager.isActiveAndEnabled && !GameSettings.SkipTutorial)
         {
             timeManager.StopTimer();
             stageManager?.StopStages();
@@ -136,7 +137,7 @@ public sealed class GameFlowManager : MonoBehaviour
         BeginStartCountdown();
     }
 
-    private void HandleTutorialCompleted()
+    private void HandleTutorialFinished()
     {
         if (State != GameState.Tutorial)
             return;
