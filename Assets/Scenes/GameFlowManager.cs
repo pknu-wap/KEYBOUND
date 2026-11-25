@@ -25,6 +25,7 @@ public sealed class GameFlowManager : MonoBehaviour
     private bool started;
     private GameState stateBeforePause;
     private Coroutine startCountdown;
+    private PlayerKeyboardPosition player;
 
     public GameState State { get; private set; } = GameState.Playing;
     public bool IsTutorialActive => tutorialManager != null && tutorialManager.IsActive;
@@ -42,6 +43,8 @@ public sealed class GameFlowManager : MonoBehaviour
 
         if (stageManager == null)
             stageManager = FindAnyObjectByType<StageManager>();
+
+        player = FindAnyObjectByType<PlayerKeyboardPosition>();
 
         if (pauseTargets == null || pauseTargets.Length == 0)
         {
@@ -120,6 +123,8 @@ public sealed class GameFlowManager : MonoBehaviour
         Time.timeScale = 1f;
         previousTimeScale = Time.timeScale;
 
+        stageManager?.ResetForNewRun();
+        timeManager.ResetForNewRun();
         miniGameTimePaused = false;
         SurvivalSeconds = null;
         FinalStage = null;
@@ -127,8 +132,7 @@ public sealed class GameFlowManager : MonoBehaviour
 
         if (tutorialManager != null && tutorialManager.isActiveAndEnabled && !GameSettings.SkipTutorial)
         {
-            timeManager.StopTimer();
-            stageManager?.StopStages();
+            player?.ResetToStartingKey();
             tutorialManager.Begin();
             ChangeState(GameState.Tutorial);
             return;
@@ -148,6 +152,7 @@ public sealed class GameFlowManager : MonoBehaviour
 
     private void BeginStartCountdown()
     {
+        player?.ResetToStartingKey();
         ChangeState(GameState.Starting);
         startCountdown = StartCoroutine(CountDownToStart());
     }
@@ -324,7 +329,7 @@ public sealed class GameFlowManager : MonoBehaviour
             {
                 foreach (var target in pauseTargets)
                 {
-                    // The player places its sprite in Start. The map gates keyboard input.
+                    // Keep the player visible during the countdown. The map gates keyboard input.
                     if (target == null || target == this ||
                         (next == GameState.Starting && target is PlayerKeyboardPosition))
                         continue;

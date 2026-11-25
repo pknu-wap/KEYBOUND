@@ -32,12 +32,14 @@ public class TimeManager : MonoBehaviour
     private int lastRemainingSecond = -1;
     private int lastElapsedSecond = -1;
 
-    public void StartTimer()
+    public void StartTimer() => ResetTimer(StartingTime);
+
+    internal void ResetForNewRun() => ResetTimer(0f);
+
+    private void ResetTimer(float remainingTime)
     {
         ElapsedTime = 0f;
-
-        RemainingTime = StartingTime;
-
+        RemainingTime = remainingTime;
         IsRunning = RemainingTime > 0f;
 
         lastRemainingSecond = -1;

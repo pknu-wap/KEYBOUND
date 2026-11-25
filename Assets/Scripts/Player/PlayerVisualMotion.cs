@@ -36,6 +36,19 @@ namespace Keybound.Player
             restScale = characterRect.localScale;
         }
 
+        private void OnEnable() => player.ReturnedToStartingKey += ResetMotion;
+
+        private void OnDisable() => player.ReturnedToStartingKey -= ResetMotion;
+
+        private void ResetMotion()
+        {
+            currentKey = player.CurrentKey;
+            startOffset = Vector2.zero;
+            elapsed = StepDuration;
+            facingRight = false;
+            ShowIdle();
+        }
+
         private void LateUpdate()
         {
             KeyboardKey nextKey = player.CurrentKey;
