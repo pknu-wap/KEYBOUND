@@ -174,9 +174,14 @@ public class SceneUIManager : MonoBehaviour
                 v.bgmSlider.SetValueWithoutNotify(GameSettings.Bgm);
                 v.sfxSlider.SetValueWithoutNotify(GameSettings.Sfx);
                 v.fullscreenToggle.SetIsOnWithoutNotify(GameSettings.Fullscreen);
+                v.skipTutorialToggle.SetIsOnWithoutNotify(GameSettings.SkipTutorial);
+                v.showRemainingTimeToggle.SetIsOnWithoutNotify(GameSettings.ShowRemainingTime);
                 v.bgmSlider.onValueChanged.AddListener(value => GameSettings.SetVolume(SoundChannel.BGM, value));
                 v.sfxSlider.onValueChanged.AddListener(value => GameSettings.SetVolume(SoundChannel.SFX, value));
-                v.fullscreenToggle.onValueChanged.AddListener(GameSettings.SetFullscreen); break;
+                v.fullscreenToggle.onValueChanged.AddListener(GameSettings.SetFullscreen);
+                v.skipTutorialToggle.onValueChanged.AddListener(GameSettings.SetSkipTutorial);
+                v.showRemainingTimeToggle.onValueChanged.AddListener(GameSettings.SetShowRemainingTime);
+                break;
             case UIViewKind.GameOver: v.menuButton.onClick.AddListener(OnClickGoToStart); break;
             case UIViewKind.Gameplay: v.primaryButton.onClick.AddListener(() => gameFlowManager.Pause()); break;
         }
@@ -239,7 +244,8 @@ public class SceneUIManager : MonoBehaviour
 
         SettingsOpen = false;
         Show(UIViewKind.Settings, false);
-        Show(UIViewKind.Gameplay, state == GameState.Playing);
+        Show(UIViewKind.Gameplay, state == GameState.Playing || state == GameState.Tutorial,
+            selectDefault: state != GameState.Tutorial);
         Show(UIViewKind.PauseMenu, state == GameState.Paused);
         if (escapeKey != null)
         {
@@ -278,12 +284,18 @@ public class SceneUIManager : MonoBehaviour
                 : "STAGE --";
         }
     }
-    private void Show(UIViewKind kind, bool visible)
+    private void Show(UIViewKind kind, bool visible, bool selectDefault = true)
     {
         if (!views.TryGetValue(kind, out var view)) return;
         view.gameObject.SetActive(visible);
         if (visible && EventSystem.current != null)
         {
+            if (!selectDefault)
+            {
+                EventSystem.current.SetSelectedGameObject(null);
+                return;
+            }
+
             var button = view.primaryButton != null ? view.primaryButton : view.menuButton;
             if (button != null) EventSystem.current.SetSelectedGameObject(button.gameObject);
         }

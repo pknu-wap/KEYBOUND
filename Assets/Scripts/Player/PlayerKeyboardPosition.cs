@@ -26,6 +26,9 @@ namespace Keybound.Player
 
         public KeyboardKey CurrentKey { get; private set; }
 
+        public event Action<KeyboardKey> Moved;
+        internal event Action ReturnedToStartingKey;
+
         private void Awake()
         {
             playerRectTransform = (RectTransform)transform;
@@ -52,6 +55,12 @@ namespace Keybound.Player
 
         private void Start()
         {
+            if (CurrentKey == null)
+                ResetToStartingKey();
+        }
+
+        internal void ResetToStartingKey()
+        {
             if (keyboardMapManager == null)
             {
                 Debug.LogError(
@@ -73,6 +82,7 @@ namespace Keybound.Player
             }
 
             SetCurrentKey(startingKeyboardKey);
+            ReturnedToStartingKey?.Invoke();
 
             LogDebug(
                 $"[플레이어 위치] 시작 키: {CurrentKey.Data.Name}");
@@ -202,6 +212,8 @@ namespace Keybound.Player
             LogDebug(
                 $"[플레이어 이동] {currentKeyName} -> {targetKeyName}: 성공 " +
                 $"(현재 위치: {CurrentKey.Data.Name})");
+
+            Moved?.Invoke(CurrentKey);
         }
 
         private static bool TryGetDirection(

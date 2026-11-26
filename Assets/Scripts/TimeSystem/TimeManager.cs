@@ -16,6 +16,7 @@ public class TimeManager : MonoBehaviour
 
     // 시간 슬라이더의 최대 기준값
     public float MaxRemainingTime => maxRemainingTime;
+    internal float StartingTime => Mathf.Clamp(initialTime, 0f, maxRemainingTime);
 
     public bool IsRunning { get; private set; }
 
@@ -31,16 +32,14 @@ public class TimeManager : MonoBehaviour
     private int lastRemainingSecond = -1;
     private int lastElapsedSecond = -1;
 
-    public void StartTimer()
+    public void StartTimer() => ResetTimer(StartingTime);
+
+    internal void ResetForNewRun() => ResetTimer(0f);
+
+    private void ResetTimer(float remainingTime)
     {
         ElapsedTime = 0f;
-
-        RemainingTime = Mathf.Clamp(
-            initialTime,
-            0f,
-            maxRemainingTime
-        );
-
+        RemainingTime = remainingTime;
         IsRunning = RemainingTime > 0f;
 
         lastRemainingSecond = -1;

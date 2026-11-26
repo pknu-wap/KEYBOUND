@@ -171,6 +171,13 @@ public class StageManager : MonoBehaviour
         StartStages();
     }
 
+    internal void ResetForNewRun()
+    {
+        StopStages();
+        CurrentStage = 0;
+        CurrentStageType = StageType.Aim;
+    }
+
     public void StopStages()
     {
         if (transition != null)
