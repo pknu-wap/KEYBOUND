@@ -319,9 +319,9 @@ public static class UIFlowValidation
                             RequiredCount = 2, TargetKeys = { Key.Digit1, Key.Digit2 }
                         });
                         timer.RemoveTime(timer.RemainingTime - 10f);
-                        var numberHunt = AssetDatabase.LoadAssetAtPath<MiniGameData>(
-                            AssetDatabase.GUIDToAssetPath("9f4c6ab3a6291e34c86c25268ca820dc"));
-                        Check(miniGame.StartMiniGame(3, numberHunt), "Number Hunt starts");
+                        var virusChase = AssetDatabase.LoadAssetAtPath<MiniGameData>(
+                            "Assets/Scripts/ContentLab/Definitions/VirusChase.asset");
+                        Check(miniGame.StartMiniGame(3, virusChase), "Virus Chase starts");
                         heldKeyStep++;
                         return;
                     }
@@ -330,14 +330,14 @@ public static class UIFlowValidation
                         Check(warning.alpha > 0f, "Warning visible at ten seconds or less");
                         var score = GameObject.Find("Mini-game Progress").GetComponent<TMPro.TMP_Text>();
                         var description = GameObject.Find("Mission Description").GetComponent<TMPro.TMP_Text>();
-                        Check(score.enabled && score.text == "SCORE 0/100" && description.enabled &&
+                        Check(score.enabled && score.text.StartsWith("Stay ahead of the virus") && description.enabled &&
                             description.text.Contains("8 + 4 = ?") && description.text.Contains("__") &&
                             score.transform.parent == description.transform.parent,
-                            "Number Hunt shows its current score and target alongside the current mission");
+                            "Virus Chase shows its timer alongside the current mission");
                         var panel = (RectTransform)score.transform.parent;
                         var scoreBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(panel, score.rectTransform);
                         var missionBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(panel, description.rectTransform);
-                        Check(scoreBounds.max.y <= missionBounds.min.y, "Score and mission use separate lines");
+                        Check(scoreBounds.max.y <= missionBounds.min.y, "Mini-game progress and mission use separate lines");
                         miniGame.CancelMiniGame();
                         timer.AddTime(50f);
                         heldKeyStep++;
@@ -348,7 +348,7 @@ public static class UIFlowValidation
                         Check(warning.alpha == 0f, "Warning clears after recovering time");
                         Check(!GameObject.Find("Mini-game Progress").GetComponent<TMPro.TMP_Text>().enabled &&
                             GameObject.Find("Mission Description").GetComponent<TMPro.TMP_Text>().enabled,
-                            "The score clears and the current mission stays visible after Number Hunt");
+                            "Mini-game progress clears and the current mission stays visible after Virus Chase");
                         previousOverlapMission = CheckObstacleOverlap(map, miniGame);
                         heldKeyStep++;
                         return;

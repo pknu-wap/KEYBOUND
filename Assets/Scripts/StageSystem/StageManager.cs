@@ -9,6 +9,7 @@ public class MiniGameStageEntry
 {
     [Min(1)] public int StageNumber = 5;
     public MiniGameData Data;
+    public bool PlayWithoutMission;
 }
 
 [Serializable]
@@ -88,6 +89,7 @@ public class StageManager : MonoBehaviour
 
     private bool transitioning;
     private Coroutine transition;
+    private int completedMiniMissions;
 
     private void OnEnable()
     {
@@ -230,6 +232,7 @@ public class StageManager : MonoBehaviour
             return;
 
         transitioning = false;
+        completedMiniMissions = 0;
         CurrentStageType = StageType.Aim;
 
         OnStageModeChanged?.Invoke(StageType.Aim);
@@ -251,7 +254,7 @@ public class StageManager : MonoBehaviour
                 return;
             }
 
-            if (IsGameRunning && !transitioning)
+            if (!entry.PlayWithoutMission && entry.Data.RunsWithMission && IsGameRunning && !transitioning)
                 StartAim();
             return;
         }
@@ -355,9 +358,15 @@ public class StageManager : MonoBehaviour
 
         if (CurrentStageType == StageType.MiniGame)
         {
+            completedMiniMissions++;
             miniGameManager?.NotifyAimCompleted(aim);
             if (IsGameRunning && !transitioning && miniGameManager != null && miniGameManager.IsPlaying)
-                transition = StartCoroutine(NextMiniAim());
+            {
+                if (completedMiniMissions < miniGameManager.ActiveData.ConcurrentMissionLimit)
+                    transition = StartCoroutine(NextMiniAim());
+                else
+                    processor?.StopAim();
+            }
             return;
         }
 

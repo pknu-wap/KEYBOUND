@@ -1,4 +1,5 @@
 using TMPro;
+using Keybound.ContentLab;
 using UnityEngine;
 
 public class MiniGameHUD : MonoBehaviour
@@ -30,10 +31,13 @@ public class MiniGameHUD : MonoBehaviour
                 progressText.SetText("SCORE {0}/{1}", (float)hunt.CurrentScore, hunt.TargetScore);
                 break;
             case ObstacleDodgeController dodge when dodge.isActiveAndEnabled:
-                progressText.text = $"WAVE {dodge.CurrentWave}/{dodge.WaveCount}   HITS {dodge.CollisionCount}";
+                progressText.text = $"DODGE  |  {miniGameManager.ActiveData.DisplayName}  |  WAVE {dodge.CurrentWave}/{dodge.WaveCount}   HITS {dodge.CollisionCount}";
                 break;
             case BossController boss when boss.isActiveAndEnabled:
                 progressText.text = $"BOSS HP {boss.CurrentHealth}/{boss.MaxHealth}";
+                break;
+            case LabMiniGameController lab when lab.isActiveAndEnabled:
+                progressText.text = lab.Progress;
                 break;
             default:
                 progressText.enabled = false;
