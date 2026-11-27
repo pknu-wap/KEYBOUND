@@ -9,7 +9,9 @@ public class TypingAimGenerator : MonoBehaviour
 {
     [SerializeField] private TypingAimDatabase database;
 
-    public AimData Generate(AimGenerationSettings settings)
+    public AimData Generate(AimGenerationSettings settings) => Generate(settings, 0);
+
+    internal AimData Generate(AimGenerationSettings settings, int campaignStage)
     {
         if (settings == null || !settings.Enabled || database == null) return null;
         List<string> validWords = new List<string>();
@@ -31,6 +33,13 @@ public class TypingAimGenerator : MonoBehaviour
         {
             Debug.LogError("[TypingAimGenerator] No valid words available.", this);
             return null;
+        }
+        if (campaignStage > 0)
+        {
+            int tier = CampaignMissionBalance.Tier(campaignStage);
+            var stageWords = validWords.FindAll(word => word.Length >= tier + 2 && word.Length <= tier + 3);
+            if (stageWords.Count > 0)
+                validWords = stageWords;
         }
         string selected = validWords[UnityEngine.Random.Range(0, validWords.Count)];
         AimData aim = new AimData

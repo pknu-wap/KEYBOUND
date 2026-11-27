@@ -144,7 +144,7 @@ public class AimConditionProcessor : MonoBehaviour
     // ========================================
 
     // ADDED: 현재 플레이어 위치의 입력 키 가져오기
-    private bool TryGetPlayerKey(out Key key)
+    internal bool TryGetPlayerKey(out Key key)
     {
         key = Key.None;
 

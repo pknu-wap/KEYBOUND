@@ -6,7 +6,6 @@ public class ScoreManager : MonoBehaviour
     [Header("References")]
     [SerializeField] private TimeManager timeManager;
     [SerializeField] private StageManager stageManager;
-    [SerializeField] private AimConditionProcessor aimProcessor;
 
     [Header("Score Settings")]
     [SerializeField, Min(0)] private int pointsPerSurvivedSecond = 10;
@@ -22,15 +21,18 @@ public class ScoreManager : MonoBehaviour
     {
         if (timeManager == null) timeManager = FindAnyObjectByType<TimeManager>();
         if (stageManager == null) stageManager = FindAnyObjectByType<StageManager>();
-        if (aimProcessor == null) aimProcessor = FindAnyObjectByType<AimConditionProcessor>();
     }
 
     private void OnEnable()
     {
         if (timeManager != null)
             timeManager.OnElapsedTimeChanged += HandleElapsedTimeChanged;
-        if (aimProcessor != null)
-            aimProcessor.OnAimCompleted += HandleAimCompleted;
+        if (stageManager != null)
+        {
+            stageManager.OnMissionCleared += HandleAimCompleted;
+            stageManager.OnStageFinished += HandleStageFinished;
+            stageManager.OnRunCleared += HandleRunCleared;
+        }
     }
 
     private void Start()
@@ -44,8 +46,12 @@ public class ScoreManager : MonoBehaviour
     {
         if (timeManager != null)
             timeManager.OnElapsedTimeChanged -= HandleElapsedTimeChanged;
-        if (aimProcessor != null)
-            aimProcessor.OnAimCompleted -= HandleAimCompleted;
+        if (stageManager != null)
+        {
+            stageManager.OnMissionCleared -= HandleAimCompleted;
+            stageManager.OnStageFinished -= HandleStageFinished;
+            stageManager.OnRunCleared -= HandleRunCleared;
+        }
     }
 
     public void ResetScore()
@@ -59,7 +65,7 @@ public class ScoreManager : MonoBehaviour
     private void HandleElapsedTimeChanged(float elapsed)
     {
         int currentSeconds = Mathf.Max(0, Mathf.FloorToInt(elapsed));
-        if (currentSeconds < SurvivedSeconds || (elapsed == 0f && CompletedAimCount > 0))
+        if (currentSeconds < SurvivedSeconds || (elapsed == 0f && (CompletedAimCount > 0 || TotalScore > 0)))
         {
             ResetScore();
         }
@@ -73,11 +79,25 @@ public class ScoreManager : MonoBehaviour
 
     private void HandleAimCompleted(AimData aim)
     {
-        if (stageManager == null || !stageManager.IsGameRunning || stageManager.IsPaused)
-            return;
-
         CompletedAimCount++;
-        AddScore(pointsPerCompletedAim);
+        AddScore(stageManager.UsesCampaignBalance
+            ? CampaignMissionBalance.RewardPoints(aim, stageManager.CurrentStage, pointsPerCompletedAim)
+            : pointsPerCompletedAim);
+    }
+
+    private void HandleStageFinished(StageResult result)
+    {
+        if (stageManager.UsesCampaignBalance && result.StageType == StageType.MiniGame &&
+            result.Result == StageResultType.Success)
+        {
+            AddScore(120 + 3 * result.Stage);
+        }
+    }
+
+    private void HandleRunCleared()
+    {
+        if (stageManager.UsesCampaignBalance)
+            AddScore(1000 + 20 * Mathf.FloorToInt(timeManager != null ? timeManager.RemainingTime : 0f));
     }
 
     private void AddScore(int points)

@@ -186,7 +186,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ScoreManager
   timeManager: {fileID: 1657927971}
   stageManager: {fileID: 349645084}
-  aimProcessor: {fileID: 632371430}
   pointsPerSurvivedSecond: 10
   pointsPerCompletedAim: 100
 --- !u!4 &111496400

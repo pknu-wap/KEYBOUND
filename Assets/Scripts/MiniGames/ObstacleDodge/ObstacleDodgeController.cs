@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -16,6 +17,7 @@ public class ObstacleDodgeController : MiniGameBase
     public int CurrentWave { get; private set; }
     public int WaveCount => config != null && config.Waves != null ? config.Waves.Count : 0;
     public int CollisionCount { get; private set; }
+    public event Action<int, int> OnWaveCleared;
 
     public override void Begin(MiniGameData data)
     {
@@ -65,6 +67,7 @@ public class ObstacleDodgeController : MiniGameBase
                 elapsed += Time.deltaTime;
                 yield return null;
             }
+            OnWaveCleared?.Invoke(CurrentWave, WaveCount);
         }
         if (!finished) { finished = true; Complete(); }
     }

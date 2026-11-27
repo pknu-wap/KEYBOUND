@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class MiniGameManager : MonoBehaviour
 {
+    private const float DodgeRewardPaidDuringWaves = .70f;
     [SerializeField] private Transform runtimeRoot;
 
     public bool IsPlaying { get; private set; }
@@ -20,10 +21,14 @@ public class MiniGameManager : MonoBehaviour
     public event Action<int> OnMiniGameFailed;
 
     public event Action<float> OnCollisionPenalty;
+    public event Action<float> OnTimeReward;
 
     private MiniGameBase controller;
+    private float paidTimeReward;
 
-    public bool StartMiniGame(int stage, MiniGameData data)
+    public bool StartMiniGame(int stage, MiniGameData data) => StartMiniGame(stage, data, false);
+
+    internal bool StartMiniGame(int stage, MiniGameData data, bool rewardDodgeWaves)
     {
         if (data == null || data.ControllerPrefab == null)
             return false;
@@ -39,6 +44,7 @@ public class MiniGameManager : MonoBehaviour
 
         ActiveStage = stage;
         ActiveData = data;
+        paidTimeReward = 0f;
 
         controller = Instantiate(
             data.ControllerPrefab,
@@ -66,6 +72,8 @@ public class MiniGameManager : MonoBehaviour
         controller.Failed += FailMiniGame;
 
         controller.PenaltyRequested += ReportPenalty;
+        if (rewardDodgeWaves && controller is ObstacleDodgeController dodge)
+            dodge.OnWaveCleared += RewardDodgeWave;
 
         IsPlaying = true;
 
@@ -97,6 +105,16 @@ public class MiniGameManager : MonoBehaviour
             OnCollisionPenalty?.Invoke(amount);
     }
 
+    private void RewardDodgeWave(int wave, int totalWaves)
+    {
+        if (!IsPlaying || wave >= totalWaves || ActiveData.SuccessRewardSeconds <= 0f)
+            return;
+
+        float reward = ActiveData.SuccessRewardSeconds * DodgeRewardPaidDuringWaves / (totalWaves - 1);
+        paidTimeReward += reward;
+        OnTimeReward?.Invoke(reward);
+    }
+
     public void CompleteMiniGame()
     {
         if (!IsPlaying)
@@ -104,8 +122,7 @@ public class MiniGameManager : MonoBehaviour
 
         int stage = ActiveStage;
 
-        LastSuccessReward =
-            ActiveData.SuccessRewardSeconds;
+        LastSuccessReward = Mathf.Max(0f, ActiveData.SuccessRewardSeconds - paidTimeReward);
 
         Cleanup();
 
@@ -161,6 +178,8 @@ public class MiniGameManager : MonoBehaviour
             controller.Failed -= FailMiniGame;
 
             controller.PenaltyRequested -= ReportPenalty;
+            if (controller is ObstacleDodgeController dodge)
+                dodge.OnWaveCleared -= RewardDodgeWave;
 
             controller.StopGame();
 

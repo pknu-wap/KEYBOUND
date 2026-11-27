@@ -1,6 +1,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class AimManager : MonoBehaviour
 {
@@ -21,6 +22,11 @@ public class AimManager : MonoBehaviour
         processor != null ? processor.CurrentAim : null;
 
     public bool StartRandomAim()
+    {
+        return StartRandomAim(0);
+    }
+
+    internal bool StartRandomAim(int campaignStage)
     {
         if (processor == null)
         {
@@ -48,34 +54,47 @@ public class AimManager : MonoBehaviour
             return false;
         }
 
-        AimGenerationSettings selected =
-            enabledSettings[Random.Range(0, enabledSettings.Count)];
+        if (campaignStage > 0)
+        {
+            var availableSettings = enabledSettings.FindAll(
+                settings => CampaignMissionBalance.IsAvailable(settings.AimType, campaignStage));
+            if (availableSettings.Count > 0)
+                enabledSettings = availableSettings;
+        }
+
+        AimGenerationSettings selected = enabledSettings[Random.Range(0, enabledSettings.Count)];
 
         Debug.Log(
             $"[AimManager] Selected aim type: {selected.AimType}",
             this
         );
 
-        return StartAim(selected);
+        return StartAim(selected, campaignStage);
     }
 
-    public bool StartAim(AimGenerationSettings selected)
+    public bool StartAim(AimGenerationSettings selected) => StartAim(selected, 0);
+
+    private bool StartAim(AimGenerationSettings selected, int campaignStage)
     {
         if (processor == null || selected == null || !selected.Enabled)
             return false;
+
+        Key origin = Key.None;
+        if (campaignStage > 0)
+            processor.TryGetPlayerKey(out origin);
 
         // ADDED: Route each aim type to its responsible generator.
         AimData generatedAim;
         switch (selected.AimType)
         {
             case AimType.Typing:
-                generatedAim = typingGenerator != null ? typingGenerator.Generate(selected) : null;
+                generatedAim = typingGenerator != null ? typingGenerator.Generate(selected, campaignStage) : null;
                 break;
             case AimType.Calculation:
-                generatedAim = calculationGenerator != null ? calculationGenerator.Generate(selected) : null;
+                generatedAim = calculationGenerator != null ? calculationGenerator.Generate(selected, campaignStage) : null;
                 break;
             default:
-                generatedAim = generator != null ? generator.Generate(selected) : null;
+                generatedAim = generator != null ? generator.Generate(selected, campaignStage, origin) : null;
                 break;
         }
         if (generatedAim == null)
@@ -85,6 +104,9 @@ public class AimManager : MonoBehaviour
         {
             return false;
         }
+
+        if (campaignStage > 0 && generatedAim.Type != AimType.Sequence)
+            generatedAim.TravelSteps = CampaignMissionRoute.TravelSteps(origin, generatedAim);
 
         processor.StartAim(generatedAim);
 

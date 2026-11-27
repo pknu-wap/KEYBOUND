@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: PacketSorting
   DisplayName: Packet Sorting
   SuccessRewardSeconds: 10
-  FailurePenaltySeconds: 5
+  FailurePenaltySeconds: 3
   ControllerPrefab: {fileID: 3494633686191786669, guid: 1f1bebfdafe72b84a92bdbc79a2da795, type: 3}
   Settings: {fileID: 0}
   stageMode: 3

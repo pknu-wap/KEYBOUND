@@ -568,6 +568,7 @@ MonoBehaviour:
   miniGameManager: {fileID: 116485354}
   startingStage: 1
   finalStage: 100
+  useCampaignBalance: 1
   miniGameSchedule:
   - StageNumber: 10
     Data: {fileID: 11400000, guid: f26ab5a290bb44109fe91652516c1699, type: 2}
@@ -3485,6 +3486,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Keybound.UI.MissionUI
   processor: {fileID: 632371430}
+  stageManager: {fileID: 349645084}
   description: {fileID: 1900400032}
 --- !u!1 &1900800010
 GameObject:
@@ -3889,7 +3891,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ScoreManager
   timeManager: {fileID: 1807373829}
   stageManager: {fileID: 349645084}
-  aimProcessor: {fileID: 632371430}
   pointsPerSurvivedSecond: 10
   pointsPerCompletedAim: 100
 --- !u!4 &111496400
