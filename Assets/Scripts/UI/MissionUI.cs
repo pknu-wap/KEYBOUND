@@ -46,7 +46,7 @@ namespace Keybound.UI
                 string prompt = string.IsNullOrEmpty(aim.QuestionText) ? aim.Description : aim.QuestionText;
                 string submitted = processor.SubmittedText;
                 int remaining = Mathf.Max(0, required - submitted.Length);
-                DisplayText($"{prompt}\n<color=#B9C7A9>{submitted}{new string('_', remaining)}</color>");
+                DisplayText($"{prompt}\n<color=#B3B3B3>{submitted}{new string('_', remaining)}</color>");
                 return;
             }
 
@@ -60,7 +60,7 @@ namespace Keybound.UI
             }
 
             DisplayText(aim.Type != AimType.Hold && required > 0
-                ? $"{instruction}  <color=#B9C7A9>{current}/{required}</color>"
+                ? $"{instruction}  <color=#B3B3B3>{current}/{required}</color>"
                 : instruction);
         }
 

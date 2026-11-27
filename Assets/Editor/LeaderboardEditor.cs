@@ -58,8 +58,7 @@ public sealed class LeaderboardEditor : EditorWindow
             using (new EditorGUI.DisabledScope(!loaded))
             {
                 EditorGUILayout.BeginHorizontal();
-                using (new EditorGUI.DisabledScope(records.Count >= LeaderboardManager.MaxRecords))
-                    if (GUILayout.Button("Add Record")) AddRecord();
+                if (GUILayout.Button("Add Record")) AddRecord();
                 if (GUILayout.Button("Sort"))
                 {
                     records = LeaderboardManager.OrderByRank(records).ToList();
@@ -67,7 +66,7 @@ public sealed class LeaderboardEditor : EditorWindow
                 }
                 EditorGUILayout.EndHorizontal();
 
-                EditorGUILayout.LabelField($"Records: {records.Count}/{LeaderboardManager.MaxRecords}" + (dirty ? " (Unsaved)" : ""));
+                EditorGUILayout.LabelField($"Records: {records.Count}" + (dirty ? " (Unsaved)" : ""));
                 scroll = EditorGUILayout.BeginScrollView(scroll);
                 int removeIndex = -1;
                 for (int i = 0; i < records.Count; i++)
@@ -132,10 +131,11 @@ public sealed class LeaderboardEditor : EditorWindow
     private void AddRecord()
     {
         int number = 1;
-        while (records.Exists(entry => string.Equals(entry.PlayerName, "PLAYER" + number, StringComparison.OrdinalIgnoreCase))) number++;
+        var names = new HashSet<string>(records.Select(entry => entry.PlayerName?.Trim()), StringComparer.OrdinalIgnoreCase);
+        while (names.Contains("P" + number)) number++;
         records.Add(new LeaderboardEntry
         {
-            PlayerName = "PLAYER" + number,
+            PlayerName = "P" + number,
             Score = 0,
             Stage = 1,
             SurvivalTime = 0f,

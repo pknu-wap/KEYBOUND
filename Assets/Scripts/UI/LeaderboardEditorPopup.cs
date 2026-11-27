@@ -14,10 +14,10 @@ namespace Keybound.UI
 
         internal bool IsOpen => overlay != null && overlay.activeSelf;
 
-        internal void Open(LeaderboardManager leaderboard)
+        internal void Open(LeaderboardManager leaderboard, Sprite frameSprite)
         {
             if (!DeveloperMode.IsEnabled || IsOpen || leaderboard == null) return;
-            if (overlay == null) BuildOverlay(leaderboard);
+            if (overlay == null) BuildOverlay(leaderboard, frameSprite);
 
             eventSystem = EventSystem.current;
             if (eventSystem != null)
@@ -56,7 +56,7 @@ namespace Keybound.UI
             if (overlay != null) Destroy(overlay);
         }
 
-        private void BuildOverlay(LeaderboardManager leaderboard)
+        private void BuildOverlay(LeaderboardManager leaderboard, Sprite frameSprite)
         {
             overlay = new GameObject("Leaderboard Edit Popup", typeof(RectTransform), typeof(Canvas),
                 typeof(CanvasScaler), typeof(GraphicRaycaster), typeof(Image));
@@ -73,7 +73,14 @@ namespace Keybound.UI
             var frame = DeveloperControls.Rect(overlay.transform, "Developer Panel", 0, 0, 984, 636);
             frame.anchorMin = frame.anchorMax = frame.pivot = new Vector2(.5f, .5f);
             frame.anchoredPosition = Vector2.zero;
-            frame.gameObject.AddComponent<Image>().color = new Color32(26, 30, 32, 255);
+            var frameImage = frame.gameObject.AddComponent<Image>();
+            frameImage.sprite = frameSprite;
+            frameImage.color = frameSprite != null ? Color.white : new Color32(18, 18, 18, 255);
+            if (frameSprite != null)
+            {
+                frameImage.type = Image.Type.Sliced;
+                frameImage.pixelsPerUnitMultiplier = 3f;
+            }
             DeveloperControls.Label(frame, "DEVELOPER MODE", 26, 17, 480, 38, 26, FontStyle.Bold);
             DeveloperControls.Label(frame, "Ctrl + Shift + F10", 654, 20, 155, 35, 16);
             DeveloperControls.Button(frame, "CLOSE", 818, 20, 140, 35).onClick.AddListener(Close);
@@ -86,8 +93,8 @@ namespace Keybound.UI
 
     internal static class DeveloperControls
     {
-        private static readonly Color Foreground = new Color32(237, 243, 238, 255);
-        private static readonly Color ControlBackground = new Color32(44, 52, 53, 255);
+        private static readonly Color Foreground = new Color32(239, 239, 239, 255);
+        private static readonly Color ControlBackground = new Color32(36, 36, 36, 255);
 
         internal static RectTransform Rect(Transform parent, string name, float x, float y, float width, float height)
         {
@@ -138,6 +145,9 @@ namespace Keybound.UI
         {
             var image = rect.gameObject.AddComponent<Image>();
             image.color = ControlBackground;
+            var outline = rect.gameObject.AddComponent<Outline>();
+            outline.effectColor = new Color32(110, 110, 110, 255);
+            outline.effectDistance = new Vector2(1f, -1f);
             return image;
         }
     }

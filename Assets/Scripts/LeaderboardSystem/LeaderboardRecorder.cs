@@ -14,7 +14,7 @@ public sealed class LeaderboardRecorder : MonoBehaviour
     public bool IsAborted => aborted;
     public bool IsStorageReady => leaderboardManager != null && leaderboardManager.IsStorageReady;
     public bool CanRegister => IsGameOver && !aborted && !HasSubmitted &&
-        leaderboardManager != null && leaderboardManager.CanQualify(CurrentResult);
+        leaderboardManager != null && leaderboardManager.CanSubmitRun(CurrentResult);
     public event Action OnResultChanged;
 
     private bool wasPlaying;

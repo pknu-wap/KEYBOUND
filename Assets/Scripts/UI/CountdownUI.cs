@@ -12,7 +12,8 @@ namespace Keybound.UI
         [SerializeField] private StageManager stageManager;
         [SerializeField] private TMP_Text stageText;
         [SerializeField] private bool showStageNumberOnly;
-        [SerializeField] private TMP_Text survivalText;
+        [SerializeField] private ScoreManager scoreManager;
+        [SerializeField] private TMP_Text scoreText;
         [SerializeField] private GameFlowManager gameFlow;
 
         private const float WarningThreshold = 10f;
@@ -38,9 +39,7 @@ namespace Keybound.UI
                 }
 
                 timeManager.OnRemainingTimeUpdated += DisplayCountdown;
-                timeManager.OnElapsedTimeChanged += DisplaySurvival;
                 DisplayCountdown(timeManager.RemainingTime);
-                DisplaySurvival(timeManager.ElapsedTime);
             }
             else
             {
@@ -51,6 +50,12 @@ namespace Keybound.UI
             {
                 stageManager.OnStageStarted += DisplayStage;
                 DisplayStage(stageManager.CurrentStage);
+            }
+
+            if (scoreManager != null)
+            {
+                scoreManager.OnScoreChanged += DisplayScore;
+                DisplayScore(scoreManager.TotalScore);
             }
 
             if (gameFlow != null)
@@ -68,13 +73,13 @@ namespace Keybound.UI
         private void OnDisable()
         {
             if (timeManager != null)
-            {
                 timeManager.OnRemainingTimeUpdated -= DisplayCountdown;
-                timeManager.OnElapsedTimeChanged -= DisplaySurvival;
-            }
 
             if (stageManager != null)
                 stageManager.OnStageStarted -= DisplayStage;
+
+            if (scoreManager != null)
+                scoreManager.OnScoreChanged -= DisplayScore;
 
             if (gameFlow != null)
             {
@@ -294,13 +299,10 @@ namespace Keybound.UI
             image.raycastTarget = false;
         }
 
-        private void DisplaySurvival(float seconds)
+        private void DisplayScore(int score)
         {
-            if (survivalText != null)
-            {
-                int elapsedSeconds = Mathf.Max(0, Mathf.FloorToInt(seconds));
-                survivalText.text = $"{elapsedSeconds / 60:00}:{elapsedSeconds % 60:00}";
-            }
+            if (scoreText != null)
+                scoreText.text = score.ToString("N0");
         }
 
         private void RefreshGameState(GameState _)

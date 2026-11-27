@@ -6,7 +6,7 @@ using UnityEngine;
 
 public sealed class LeaderboardManager : MonoBehaviour
 {
-    public const int MaxRecords = 10;
+    public const int DisplayedRecordCount = 10;
     public const int MaxNameLength = 8;
 
     private static readonly IComparer<LeaderboardEntry> RankComparer = Comparer<LeaderboardEntry>.Create(CompareEntries);
@@ -24,7 +24,8 @@ public sealed class LeaderboardManager : MonoBehaviour
         IsStorageReady = LeaderboardStorage.TryLoad(out var loaded);
         if (!IsStorageReady) return;
 
-        // 유효한 데이터만 사용하고 닉네임별 최고 기록을 유지한다.
+        // Keep the highest-ranked historical record when an older save contains duplicate names.
+        var byName = new Dictionary<string, LeaderboardEntry>(StringComparer.Ordinal);
         foreach (var entry in loaded)
         {
             if (entry == null || !TryNormalizeName(entry.PlayerName, out var name) ||
@@ -33,30 +34,23 @@ public sealed class LeaderboardManager : MonoBehaviour
                     DateTimeStyles.RoundtripKind, out var timestamp)) continue;
             entry.PlayerName = name;
             entry.RecordedAt = timestamp.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
-            int index = records.FindIndex(item => item.PlayerName == name);
-            if (index < 0) records.Add(entry);
-            else if (CompareEntries(entry, records[index]) < 0) records[index] = entry;
+            if (!byName.TryGetValue(name, out var previous) || CompareEntries(entry, previous) < 0)
+                byName[name] = entry;
         }
-        records = OrderByRank(records).Take(MaxRecords).ToList();
+        records = OrderByRank(byName.Values).ToList();
     }
 
-    public IReadOnlyList<LeaderboardEntry> GetRecords()
+    public IReadOnlyList<LeaderboardEntry> GetRecords(int limit = int.MaxValue)
     {
         EnsureLoaded();
-        var copy = new List<LeaderboardEntry>(records.Count);
-        foreach (var entry in records) copy.Add(entry.Copy());
-        return copy.AsReadOnly();
+        return records.Take(limit).Select(entry => entry.Copy()).ToList().AsReadOnly();
     }
 
-    // 닉네임 입력 전 상위 10위 진입 가능 여부를 확인한다.
-    public bool CanQualify(LeaderboardRunResult run)
+    public bool CanSubmitRun(LeaderboardRunResult run)
     {
         EnsureLoaded();
-        return IsStorageReady && IsValidRun(run) && FitsLeaderboard(CreateEntry(run, ""));
+        return IsStorageReady && IsValidRun(run);
     }
-
-    private bool FitsLeaderboard(LeaderboardEntry candidate) => records.Count < MaxRecords ||
-        CompareEntries(candidate, records[records.Count - 1]) < 0;
 
     // Recorder가 한 판에 한 번만 성공하도록 제어하고 Manager가 저장 정책을 담당한다.
     internal LeaderboardSubmitResult Submit(string playerName, LeaderboardRunResult run)
@@ -66,18 +60,13 @@ public sealed class LeaderboardManager : MonoBehaviour
         if (!IsValidRun(run)) return LeaderboardSubmitResult.InvalidRun;
         if (!TryNormalizeName(playerName, out var name)) return LeaderboardSubmitResult.InvalidName;
 
-        var candidate = CreateEntry(run, name);
-        int index = records.FindIndex(item => item.PlayerName == name);
-        if (index >= 0 && ComparePerformance(candidate, records[index]) >= 0)
-            return LeaderboardSubmitResult.PersonalBestNotBeaten;
-        if (!FitsLeaderboard(candidate)) return LeaderboardSubmitResult.NotQualified;
+        if (records.Exists(entry => entry.PlayerName == name))
+            return LeaderboardSubmitResult.DuplicateName;
 
-        var updated = new List<LeaderboardEntry>(records);
-        if (index >= 0) updated.RemoveAt(index);
-        updated.Add(candidate);
-        updated = OrderByRank(updated).Take(MaxRecords).ToList();
-
-        return TryPublish(updated) ? LeaderboardSubmitResult.Saved : LeaderboardSubmitResult.StorageError;
+        var updated = new List<LeaderboardEntry>(records) { CreateEntry(run, name) };
+        return TryPublish(OrderByRank(updated).ToList())
+            ? LeaderboardSubmitResult.Saved
+            : LeaderboardSubmitResult.StorageError;
     }
 
     internal bool TrySaveEdits(IReadOnlyList<LeaderboardEntry> entries, out string error)
@@ -98,12 +87,6 @@ public sealed class LeaderboardManager : MonoBehaviour
         out List<LeaderboardEntry> ordered, out string error)
     {
         ordered = null;
-        if (entries.Count > MaxRecords)
-        {
-            error = $"Keep at most {MaxRecords} records before saving.";
-            return false;
-        }
-
         var names = new HashSet<string>(StringComparer.Ordinal);
         var updated = new List<LeaderboardEntry>(entries.Count);
         for (int index = 0; index < entries.Count; index++)

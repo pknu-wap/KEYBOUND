@@ -277,25 +277,12 @@ public static class UIFlowValidation
                     Check(timer.RemainingTime > 0 && UnityEngine.Object.FindAnyObjectByType<CountdownUI>() != null,"Existing timer and UI connected");
                     Check(GameObject.Find("TimeText") == null && GameObject.Find("Time Left Label") == null,
                         "The separate remaining-time display is gone");
-                    var missionScreen = GameObject.Find("Mission Panel")?.GetComponent<CrtScreenGraphic>();
-                    Check(missionScreen != null && missionScreen.rectTransform.rect.height > 200f,
-                        "The combined CRT monitor is taller than the original mission screen");
-                    foreach (var name in new[] { "Stage Label", "Stage Number", "Survival Label", "Survival Time" })
-                    {
-                        var statusText = missionScreen.transform.Find(name) as RectTransform;
-                        Check(statusText != null && statusText.GetComponent<TMPro.TMP_Text>() != null,
-                            name + " is inside the CRT monitor");
-                        var bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(missionScreen.rectTransform, statusText);
-                        var screenRect = missionScreen.rectTransform.rect;
-                        Check(bounds.min.x >= screenRect.xMin && bounds.max.x <= screenRect.xMax &&
-                              bounds.min.y >= screenRect.yMax - 58f && bounds.max.y <= screenRect.yMax,
-                            name + " fits entirely in the CRT status row");
-                    }
-                    Check(missionScreen.transform.parent.GetComponentsInChildren<CrtScreenGraphic>().Length == 1,
-                        "Mission and status share one CRT screen");
-                    var timeGauge = missionScreen != null ? missionScreen.GetComponentInChildren<Slider>() : null;
-                    Check(timeGauge != null && !timeGauge.interactable && Mathf.Approximately(timeGauge.value, timer.RemainingTime),
-                        "The monitor gauge displays the live remaining time");
+                    var missionPanel = GameObject.Find("Mission Panel")?.transform as RectTransform;
+                    Check(missionPanel != null && missionPanel.GetComponent<Image>() == null,
+                        "Mission content has no outer frame");
+                    CheckMissionHeading(missionPanel);
+                    CheckStatusPanels(missionPanel, timer);
+                    CheckEscapePosition(ui, map, missionPanel);
                     CheckTextMissions();
                     InputSystem.QueueStateEvent(Keyboard.current,new KeyboardState(Key.A)); break;
                 case 2:
@@ -347,9 +334,9 @@ public static class UIFlowValidation
                             description.text.Contains("8 + 4 = ?") && description.text.Contains("__") &&
                             score.transform.parent == description.transform.parent,
                             "Number Hunt shows its current score and target alongside the current mission");
-                        var monitor = (RectTransform)score.transform.parent;
-                        var scoreBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(monitor, score.rectTransform);
-                        var missionBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(monitor, description.rectTransform);
+                        var panel = (RectTransform)score.transform.parent;
+                        var scoreBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(panel, score.rectTransform);
+                        var missionBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(panel, description.rectTransform);
                         Check(scoreBounds.max.y <= missionBounds.min.y, "Score and mission use separate lines");
                         miniGame.CancelMiniGame();
                         timer.AddTime(50f);
@@ -1108,6 +1095,98 @@ public static class UIFlowValidation
         var score = UnityEngine.Object.FindAnyObjectByType<ScoreManager>();
         Check(score != null && score.TotalScore == 0 && score.CompletedAimCount == 0,
             "Stage 01 begins with zero score and no completed missions");
+        var scoreLabel = GameObject.Find("Score Label")?.GetComponent<TMPro.TMP_Text>();
+        var scoreValue = GameObject.Find("Score Value")?.GetComponent<TMPro.TMP_Text>();
+        Check(scoreLabel != null && scoreLabel.text == "SCORE" && scoreValue != null && scoreValue.text == "0",
+            "The right HUD displays zero score at the start of the run");
+    }
+
+    private static void CheckMissionHeading(RectTransform missionPanel)
+    {
+        var label = missionPanel.Find("Mission Label") as RectTransform;
+        var description = missionPanel.Find("Mission Description") as RectTransform;
+        var left = missionPanel.Find("Mission Heading Left Line") as RectTransform;
+        var right = missionPanel.Find("Mission Heading Right Line") as RectTransform;
+        Check(label != null && description != null && left != null && right != null,
+            "The mission heading and side rules belong to the mission area");
+        Check(missionPanel.Find("Mission Bottom Line") == null, "The mission area has no lower rule");
+        var headingBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(missionPanel, label);
+        var contentBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(missionPanel, description);
+        var leftBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(missionPanel, left);
+        var rightBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(missionPanel, right);
+        Check(leftBounds.max.x < headingBounds.min.x && rightBounds.min.x > headingBounds.max.x &&
+            Mathf.Approximately(leftBounds.center.y, headingBounds.center.y) &&
+            Mathf.Approximately(rightBounds.center.y, headingBounds.center.y),
+            "The horizontal rules frame the MISSION heading");
+        Check(leftBounds.size.x < contentBounds.size.x / 3f &&
+            Mathf.Approximately(leftBounds.size.x, rightBounds.size.x),
+            "The two mission heading rules are short and equal in length");
+        Check(contentBounds.max.y < headingBounds.min.y && Mathf.Approximately(contentBounds.center.x, headingBounds.center.x),
+            "Mission text is centered below its heading");
+    }
+
+    private static void CheckStatusPanels(RectTransform missionPanel, TimeManager timer)
+    {
+        var hud = (RectTransform)missionPanel.parent;
+        var missionBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(hud, missionPanel);
+        var gauge = hud.Find("Time Gauge Frame") as RectTransform;
+        var slider = gauge != null ? gauge.GetComponentInChildren<Slider>() : null;
+        Check(slider != null && !slider.interactable && Mathf.Approximately(slider.value, timer.RemainingTime),
+            "The top-row gauge displays the live remaining time");
+        // The optional numeric time is attached to the moving fill, outside the gauge frame.
+        var gaugeCorners = new Vector3[4];
+        gauge.GetWorldCorners(gaugeCorners);
+        var gaugeMin = hud.InverseTransformPoint(gaugeCorners[0]);
+        var gaugeMax = hud.InverseTransformPoint(gaugeCorners[2]);
+        var gaugeBounds = Rect.MinMaxRect(gaugeMin.x, gaugeMin.y, gaugeMax.x, gaugeMax.y);
+        Check(gaugeBounds.yMin > missionBounds.max.y, "The time gauge sits above the mission panel");
+        var stageDisplay = hud.Find("Stage Display") as RectTransform;
+        var scoreDisplay = hud.Find("Score Display") as RectTransform;
+        Check(stageDisplay != null && scoreDisplay != null && stageDisplay.rect.size == scoreDisplay.rect.size,
+            "Stage and score displays are the same size");
+        foreach (var (display, labelName, valueName, onLeft) in new[]
+        {
+            (stageDisplay, "Stage Label", "Stage Number", true),
+            (scoreDisplay, "Score Label", "Score Value", false)
+        })
+        {
+            string displayName = display.name;
+            Check(display.GetComponent<Image>() == null, displayName + " has no outer frame");
+            var displayBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(hud, display);
+            float edgeGap = onLeft ? displayBounds.min.x - hud.rect.xMin : hud.rect.xMax - displayBounds.max.x;
+            float gaugeGap = onLeft ? gaugeBounds.xMin - displayBounds.max.x : displayBounds.min.x - gaugeBounds.xMax;
+            Check(edgeGap >= 0f && edgeGap <= 20f && gaugeGap > 0f && gaugeGap <= 20f &&
+                  displayBounds.min.y > missionBounds.max.y &&
+                  Mathf.Approximately(displayBounds.center.y, gaugeBounds.center.y),
+                displayName + " sits at the side of the HUD beside the expanded gauge");
+            Check(missionBounds.size.x > displayBounds.size.x && missionBounds.size.y > displayBounds.size.y,
+                "The mission area is larger than " + displayName);
+            foreach (var name in new[] { labelName, valueName })
+            {
+                var statusText = display.Find(name) as RectTransform;
+                Check(statusText != null && statusText.GetComponent<TMPro.TMP_Text>() != null,
+                    name + " belongs to its status display");
+                var bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(display, statusText);
+                Check(bounds.min.x >= display.rect.xMin && bounds.max.x <= display.rect.xMax &&
+                      bounds.min.y >= display.rect.yMin && bounds.max.y <= display.rect.yMax,
+                    name + " fits inside its status display");
+            }
+        }
+    }
+
+    private static void CheckEscapePosition(SceneUIManager ui, KeyboardMapManager map, RectTransform missionPanel)
+    {
+        Check(map.TryGetKey(Key.Digit1, out var digit), "The number row has a 1 key");
+        var keyRect = (RectTransform)digit.transform;
+        var escape = (RectTransform)ui.GetView(UIViewKind.Gameplay).primaryButton.transform;
+        var escapeBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(keyRect, escape);
+        float gap = escapeBounds.min.y - keyRect.rect.yMax;
+        Check(Mathf.Abs(escapeBounds.center.x - keyRect.rect.center.x) < 1f && gap >= 10f && gap <= 20f,
+            "ESC is centered above the 1 key with a little clearance");
+        var description = (RectTransform)missionPanel.Find("Mission Description");
+        var escapeInDescriptionSpace = RectTransformUtility.CalculateRelativeRectTransformBounds(description, escape);
+        Check(escapeInDescriptionSpace.max.x < description.rect.xMin,
+            "ESC has its own space beside the mission text");
     }
 
     private static void CheckTextMissions()
@@ -1140,6 +1219,8 @@ public static class UIFlowValidation
                 Check(description.text.StartsWith(aim.QuestionText + "\n", StringComparison.Ordinal) &&
                     description.text.Contains(new string('_', aim.RequiredCount)),
                     $"Mission panel shows the generated {type} prompt and blank input");
+                description.ForceMeshUpdate();
+                Check(!description.isTextOverflowing, $"The {type} prompt fits inside the mission panel");
             }
         }
         finally
@@ -1168,6 +1249,7 @@ public static class UIFlowValidation
 
         var template = AssetDatabase.LoadAssetAtPath<MiniGameData>(
             AssetDatabase.GUIDToAssetPath("c169fd898a7d13846a62167a10b7c24c"));
+        Check(template != null, "Obstacle Dodge template is available");
         var game = UnityEngine.Object.Instantiate(template);
         var config = ScriptableObject.CreateInstance<ObstacleDodgeData>();
         config.Waves.Add(new ObstacleWave { Patterns = { new ObstaclePattern { Keys = { Key.D } } } });

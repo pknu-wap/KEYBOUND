@@ -10,11 +10,13 @@ namespace Keybound.UI
     public sealed class LeaderboardDeveloperPanel : MonoBehaviour
     {
         private const int FirstRowY = 90;
+        private const int ViewportHeight = 360;
         private const int RowSpacing = 36;
         private const string EmptyMessage = "No records saved.";
         private static readonly CultureInfo NumberCulture = CultureInfo.InvariantCulture;
-        private readonly List<Row> rows = new List<Row>(LeaderboardManager.MaxRecords);
+        private readonly List<Row> rows = new List<Row>();
         private LeaderboardManager leaderboard;
+        private ScrollRect recordList;
         private Button addButton;
         private Button revertButton;
         private Button saveButton;
@@ -34,18 +36,47 @@ namespace Keybound.UI
             DeveloperControls.Label(transform, "SURVIVAL (SEC)", 502, 61, 160, 25, 16, FontStyle.Bold);
             DeveloperControls.Label(transform, "MISSIONS", 672, 61, 128, 25, 16, FontStyle.Bold);
 
+            CreateRecordList();
             status = DeveloperControls.Label(transform, "", 0, 454, 932, 28, 17);
             addButton = DeveloperControls.Button(transform, "ADD RECORD", 0, 494, 160, 36);
             revertButton = DeveloperControls.Button(transform, "REVERT", 658, 494, 126, 36);
             saveButton = DeveloperControls.Button(transform, "SAVE", 796, 494, 132, 36);
             var colors = saveButton.colors;
-            colors.normalColor = new Color32(150, 203, 158, 255);
-            colors.highlightedColor = new Color32(193, 255, 199, 255);
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color32(218, 218, 218, 255);
             saveButton.colors = colors;
 
             addButton.onClick.AddListener(AddRecord);
             revertButton.onClick.AddListener(Reload);
             saveButton.onClick.AddListener(Save);
+        }
+
+        private void CreateRecordList()
+        {
+            var viewport = DeveloperControls.Rect(transform, "Record Viewport", 0, FirstRowY, 910, ViewportHeight);
+            viewport.gameObject.AddComponent<RectMask2D>();
+            viewport.gameObject.AddComponent<Image>().color = Color.clear;
+            var content = DeveloperControls.Rect(viewport, "Records", 0, 0, 910, 0);
+
+            var track = DeveloperControls.Rect(transform, "Record Scrollbar", 916, FirstRowY, 12, ViewportHeight);
+            track.gameObject.AddComponent<Image>().color = new Color32(36, 36, 36, 255);
+            var handle = DeveloperControls.Rect(track, "Handle", 0, 0, 0, 0);
+            handle.anchorMin = Vector2.zero;
+            handle.anchorMax = Vector2.one;
+            var scrollbar = track.gameObject.AddComponent<Scrollbar>();
+            scrollbar.handleRect = handle;
+            scrollbar.targetGraphic = handle.gameObject.AddComponent<Image>();
+            scrollbar.targetGraphic.color = new Color32(140, 140, 140, 255);
+            scrollbar.direction = Scrollbar.Direction.BottomToTop;
+
+            recordList = viewport.gameObject.AddComponent<ScrollRect>();
+            recordList.viewport = viewport;
+            recordList.content = content;
+            recordList.horizontal = false;
+            recordList.movementType = ScrollRect.MovementType.Clamped;
+            recordList.scrollSensitivity = RowSpacing;
+            recordList.verticalScrollbar = scrollbar;
+            recordList.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
         }
 
         internal void Reload()
@@ -56,10 +87,13 @@ namespace Keybound.UI
 
             foreach (var entry in leaderboard.GetRecords())
                 AddRow(entry);
+            ResizeRecordList();
+            recordList.StopMovement();
+            recordList.verticalNormalizedPosition = 1f;
             dirty = false;
             UpdateButtons();
             status.text = leaderboard.IsStorageReady
-                ? (rows.Count == 0 ? EmptyMessage : "")
+                ? (rows.Count == 0 ? EmptyMessage : $"{rows.Count} records")
                 : "STORAGE UNAVAILABLE";
         }
 
@@ -67,19 +101,19 @@ namespace Keybound.UI
         {
             if (!addButton.interactable) return;
             var row = AddRow(new LeaderboardEntry { PlayerName = "", Stage = 1 });
+            ResizeRecordList();
             MarkDirty();
-            EventSystem.current?.SetSelectedGameObject(row.Name.gameObject);
-            row.Name.ActivateInputField();
+            FocusField(rows.Count - 1, row.Name);
         }
 
         private Row AddRow(LeaderboardEntry entry)
         {
-            var root = DeveloperControls.Rect(transform, "Record Row", 0, FirstRowY + RowSpacing * rows.Count, 932, 34);
+            var root = DeveloperControls.Rect(recordList.content, "Record Row", 0, RowSpacing * rows.Count, 910, 34);
             var row = new Row(root, entry);
             rows.Add(row);
             foreach (var field in row.Fields)
                 field.onValueChanged.AddListener(_ => MarkDirty());
-            DeveloperControls.Button(root, "REMOVE", 810, 2, 118, 30).onClick.AddListener(() => RemoveRow(row));
+            DeveloperControls.Button(root, "REMOVE", 810, 2, 98, 30).onClick.AddListener(() => RemoveRow(row));
             return row;
         }
 
@@ -88,8 +122,30 @@ namespace Keybound.UI
             if (!rows.Remove(row)) return;
             DestroyRow(row);
             for (int index = 0; index < rows.Count; index++)
-                rows[index].Root.anchoredPosition = new Vector2(0, -FirstRowY - RowSpacing * index);
+                rows[index].Root.anchoredPosition = new Vector2(0, -RowSpacing * index);
+            ResizeRecordList();
             MarkDirty();
+        }
+
+        private void ResizeRecordList()
+        {
+            recordList.content.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, RowSpacing * rows.Count);
+        }
+
+        private void FocusField(int index, InputField field)
+        {
+            float top = RowSpacing * index;
+            float bottom = top + RowSpacing;
+            float maxOffset = Mathf.Max(0, recordList.content.rect.height - ViewportHeight);
+            if (maxOffset > 0)
+            {
+                float offset = recordList.content.anchoredPosition.y;
+                offset = Mathf.Clamp(offset, bottom - ViewportHeight, top);
+                recordList.StopMovement();
+                recordList.verticalNormalizedPosition = 1f - Mathf.Clamp01(offset / maxOffset);
+            }
+            EventSystem.current?.SetSelectedGameObject(field.gameObject);
+            field.ActivateInputField();
         }
 
         private void DestroyRow(Row row)
@@ -112,7 +168,7 @@ namespace Keybound.UI
 
         private void UpdateButtons()
         {
-            addButton.interactable = leaderboard.IsStorageReady && rows.Count < LeaderboardManager.MaxRecords;
+            addButton.interactable = leaderboard.IsStorageReady;
             saveButton.interactable = leaderboard.IsStorageReady && dirty;
             revertButton.interactable = dirty;
         }
@@ -127,8 +183,7 @@ namespace Keybound.UI
                 if (!rows[index].TryRead(now, out var entry, out var invalidField, out var message))
                 {
                     status.text = $"Row {index + 1}: {message}";
-                    EventSystem.current?.SetSelectedGameObject(invalidField.gameObject);
-                    invalidField.ActivateInputField();
+                    FocusField(index, invalidField);
                     return;
                 }
                 draft.Add(entry);
@@ -141,7 +196,7 @@ namespace Keybound.UI
             }
 
             Reload();
-            status.text = "Leaderboard saved.";
+            status.text = $"Leaderboard saved. {rows.Count} records";
         }
 
         private sealed class Row
