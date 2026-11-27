@@ -32,6 +32,9 @@ public class StageManager : MonoBehaviour
     [SerializeField, Min(1)]
     private int startingStage = 1;
 
+    [SerializeField, Min(0)]
+    private int finalStage;
+
     [SerializeField]
     private List<MiniGameStageEntry> miniGameSchedule =
         new List<MiniGameStageEntry>();
@@ -81,6 +84,7 @@ public class StageManager : MonoBehaviour
     public event Action<StageResult> OnStageFinished;
     public event Action<bool> OnMiniGameTimePauseRequested;
     public event Action OnGameOver;
+    public event Action OnRunCleared;
 
     private bool transitioning;
     private Coroutine transition;
@@ -158,6 +162,8 @@ public class StageManager : MonoBehaviour
         StopStages();
 
         CurrentStage = Mathf.Max(1, startingStage);
+        if (finalStage > 0)
+            CurrentStage = Mathf.Min(CurrentStage, finalStage);
         IsGameRunning = true;
 
         StartStage();
@@ -187,7 +193,6 @@ public class StageManager : MonoBehaviour
         miniGameManager?.CancelMiniGame();
         processor?.StopAim();
 
-        IsGameRunning = false;
         IsPaused = false;
         transitioning = false;
 
@@ -399,6 +404,9 @@ public class StageManager : MonoBehaviour
         if (penalty > 0f)
             OnStagePenalty?.Invoke(penalty);
 
+        if (!IsGameRunning)
+            return;
+
         OnStageFinished?.Invoke(
             new StageResult(
                 CurrentStage,
@@ -408,6 +416,27 @@ public class StageManager : MonoBehaviour
                 penalty
             )
         );
+
+        if (IsGameRunning && result != StageResultType.Success && finalStage > 0 && CurrentStage >= finalStage)
+        {
+            transition = StartCoroutine(RetryStage());
+            return;
+        }
+
+        AdvanceStage();
+    }
+
+    private void AdvanceStage()
+    {
+        if (!IsGameRunning)
+            return;
+
+        if (finalStage > 0 && CurrentStage >= finalStage)
+        {
+            StopStages();
+            OnRunCleared?.Invoke();
+            return;
+        }
 
         transition = StartCoroutine(NextStage());
     }
@@ -465,7 +494,7 @@ public class StageManager : MonoBehaviour
         if (!IsGameRunning) return;
         OnStageFinished?.Invoke(new StageResult(stage, StageType.MiniGame,
             StageResultType.Success, reward, 0f));
-        if (IsGameRunning) transition = StartCoroutine(NextStage());
+        AdvanceStage();
     }
 
     private void MiniFailed(int stage)

@@ -305,6 +305,7 @@ MonoBehaviour:
   fullscreenToggle: {fileID: 0}
   skipTutorialToggle: {fileID: 0}
   showRemainingTimeToggle: {fileID: 0}
+  resultTitle: {fileID: 1093703600037423648}
   resultText: {fileID: 3645656330580090614}
   resultStageText: {fileID: 1900700033}
 --- !u!222 &7467987387168147588

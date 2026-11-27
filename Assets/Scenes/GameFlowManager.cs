@@ -32,6 +32,7 @@ public sealed class GameFlowManager : MonoBehaviour
     public int StartCountdownSeconds { get; private set; }
     public float? SurvivalSeconds { get; private set; }
     public int? FinalStage { get; private set; }
+    public bool RunCleared { get; private set; }
 
     public event Action<GameState> StateChanged;
     public event Action<int> StartCountdownChanged;
@@ -76,6 +77,7 @@ public sealed class GameFlowManager : MonoBehaviour
             stageManager.OnStagePenalty += HandleStagePenalty;
             stageManager.OnMiniGameTimePauseRequested += HandleMiniGameTimePause;
             stageManager.OnGameOver += HandleTimeExpired;
+            stageManager.OnRunCleared += HandleRunCleared;
         }
     }
 
@@ -103,6 +105,7 @@ public sealed class GameFlowManager : MonoBehaviour
             stageManager.OnStagePenalty -= HandleStagePenalty;
             stageManager.OnMiniGameTimePauseRequested -= HandleMiniGameTimePause;
             stageManager.OnGameOver -= HandleTimeExpired;
+            stageManager.OnRunCleared -= HandleRunCleared;
         }
     }
 
@@ -128,6 +131,7 @@ public sealed class GameFlowManager : MonoBehaviour
         miniGameTimePaused = false;
         SurvivalSeconds = null;
         FinalStage = null;
+        RunCleared = false;
         State = GameState.Playing;
 
         if (tutorialManager != null && tutorialManager.isActiveAndEnabled && !GameSettings.SkipTutorial)
@@ -246,7 +250,11 @@ public sealed class GameFlowManager : MonoBehaviour
             timeManager?.ResumeTimer();
     }
 
-    public void HandleTimeExpired()
+    public void HandleTimeExpired() => EndRun(false);
+
+    private void HandleRunCleared() => EndRun(true);
+
+    private void EndRun(bool cleared)
     {
         if (State == GameState.GameOver || IsTutorialActive)
             return;
@@ -262,6 +270,7 @@ public sealed class GameFlowManager : MonoBehaviour
             SurvivalSeconds = timeManager.ElapsedTime;
         if (stageManager != null && stageManager.CurrentStage > 0)
             FinalStage = stageManager.CurrentStage;
+        RunCleared = cleared;
 
         stageManager?.StopStages();
         timeManager?.StopTimer();

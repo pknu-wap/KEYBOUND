@@ -567,6 +567,7 @@ MonoBehaviour:
   processor: {fileID: 632371430}
   miniGameManager: {fileID: 116485354}
   startingStage: 1
+  finalStage: 100
   miniGameSchedule:
   - StageNumber: 10
     Data: {fileID: 11400000, guid: 9f4c6ab3a6291e34c86c25268ca820dc, type: 2}
