@@ -151,10 +151,7 @@ public class StageManager : MonoBehaviour
     {
         if (aimManager == null || processor == null)
         {
-            Debug.LogError(
-                "StageManager: Aim references missing",
-                this
-            );
+            AbortRun("Aim references missing.");
             return;
         }
 
@@ -259,9 +256,9 @@ public class StageManager : MonoBehaviour
         StartAim();
     }
 
-    private void AbortRun()
+    private void AbortRun(string reason = "Unable to start stage or aim.")
     {
-        Debug.LogError("StageManager: Unable to start stage or aim.", this);
+        Debug.LogError($"StageManager: {reason}", this);
         StopStages();
         OnGameOver?.Invoke();
     }
@@ -271,8 +268,7 @@ public class StageManager : MonoBehaviour
         // Aim 생성
         if (!aimManager.StartRandomAim())
         {
-            StopStages();
-            OnGameOver?.Invoke();
+            AbortRun();
             return;
         }
 

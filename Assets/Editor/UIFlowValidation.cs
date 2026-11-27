@@ -265,6 +265,7 @@ public static class UIFlowValidation
                     Check(SceneManager.GetActiveScene().name == "GameScene", "Enter loads GameScene");
                     Check(tutorialLessonChecked && GameSettings.HasCompletedTutorial == !Application.isBatchMode &&
                         !GameSettings.SkipTutorial, "Finishing the lessons records completion independently of the preference");
+                    CheckFreshScore();
                     CheckButtonNavigation();
                     Check(GameObject.Find("Tutorial Terminal") == null &&
                         GameObject.Find("Tutorial Instruction") == null && GameObject.Find("Tutorial Target") == null &&
@@ -468,6 +469,7 @@ public static class UIFlowValidation
                     ui.GetView(UIViewKind.StartMenu).primaryButton.onClick.Invoke(); break;
                 case 14:
                     Check(flow.State == GameState.Playing && player.enabled && timer.RemainingTime > 0,"New run initializes after game over");
+                    CheckFreshScore();
                     Check(GameObject.Find("Tutorial Terminal") == null && GameSettings.SkipTutorial &&
                         GameSettings.HasCompletedTutorial == !Application.isBatchMode,
                         "The saved skip preference starts Stage 01 without creating tutorial UI");
@@ -1092,10 +1094,20 @@ public static class UIFlowValidation
 
     private static void CheckButtonNavigation()
     {
-        var buttons = UnityEngine.Object.FindObjectsByType<Button>(
-            FindObjectsInactive.Include, FindObjectsSortMode.None);
-        Check(buttons.Length > 0 && Array.TrueForAll(buttons, button => button.navigation.mode == Navigation.Mode.None),
-            "All instantiated menu buttons have Navigation set to None");
+        var views = UnityEngine.Object.FindObjectsByType<UIView>(FindObjectsInactive.Include);
+        foreach (var view in views)
+        {
+            var buttons = new[] { view.primaryButton, view.settingsButton, view.menuButton, view.quitButton };
+            Check(Array.TrueForAll(buttons, button => button == null || button.navigation.mode == Navigation.Mode.None),
+                $"{view.kind} menu shortcuts have Navigation set to None");
+        }
+    }
+
+    private static void CheckFreshScore()
+    {
+        var score = UnityEngine.Object.FindAnyObjectByType<ScoreManager>();
+        Check(score != null && score.TotalScore == 0 && score.CompletedAimCount == 0,
+            "Stage 01 begins with zero score and no completed missions");
     }
 
     private static void CheckTextMissions()

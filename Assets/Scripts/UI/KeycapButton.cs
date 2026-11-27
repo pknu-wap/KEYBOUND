@@ -56,7 +56,7 @@ namespace Keybound.UI
 
         private void Update()
         {
-            if (keyboardSubmit != null && keyboardSubmit.WasPerformedThisFrame())
+            if (keyboardSubmit != null && keyboardSubmit.WasPerformedThisFrame() && IsInteractable() && !IsTextInputSelected())
                 BeginSubmit(keyboardSubmit);
         }
 
@@ -113,8 +113,16 @@ namespace Keybound.UI
             pendingSubmit = null;
             pendingSubmitAction = null;
             SetShortcutPressed(false);
-            if (submit.enabled && IsInteractable() && (releasedOnSubmit || submit.WasReleasedThisFrame()))
+            if (submit.enabled && IsInteractable() && (submit != keyboardSubmit || !IsTextInputSelected()) &&
+                (releasedOnSubmit || submit.WasReleasedThisFrame()))
                 onClick.Invoke();
+        }
+
+        private static bool IsTextInputSelected()
+        {
+            var events = EventSystem.current;
+            var selected = events != null ? events.currentSelectedGameObject : null;
+            return selected != null && selected.TryGetComponent<InputField>(out _);
         }
 
         public override void OnDeselect(BaseEventData eventData)

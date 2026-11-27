@@ -180,7 +180,7 @@ MonoBehaviour:
   map: {fileID: 1648942543}
   player: {fileID: 1276033144}
   timeManager: {fileID: 1807373829}
-  wallManager: {fileID: 0}
+  wallManager: {fileID: 683075399}
   warningColor: {r: 1, g: 0.6, b: 0, a: 0.8}
   obstacleColor: {r: 0.9, g: 0.2, b: 0.2, a: 0.85}
 --- !u!1 &120100263
@@ -568,12 +568,20 @@ MonoBehaviour:
   miniGameManager: {fileID: 116485354}
   startingStage: 1
   miniGameSchedule:
-  - StageNumber: 3
-    Data: {fileID: 11400000, guid: 9f4c6ab3a6291e34c86c25268ca820dc, type: 2}
   - StageNumber: 10
-    Data: {fileID: 11400000, guid: c169fd898a7d13846a62167a10b7c24c, type: 2}
-  - StageNumber: 25
+    Data: {fileID: 11400000, guid: 9f4c6ab3a6291e34c86c25268ca820dc, type: 2}
+  - StageNumber: 20
     Data: {fileID: 11400000, guid: fbf21c5ed0705e447b136f8257fc23dd, type: 2}
+  - StageNumber: 30
+    Data: {fileID: 11400000, guid: c169fd898a7d13846a62167a10b7c24c, type: 2}
+  - StageNumber: 40
+    Data: {fileID: 11400000, guid: 26aa91a426eaa8341a10e292c15e73a6, type: 2}
+  - StageNumber: 50
+    Data: {fileID: 11400000, guid: 1173e91d401688e46b6db45e1faf793c, type: 2}
+  - StageNumber: 60
+    Data: {fileID: 11400000, guid: fe098f93c7ba1654ebbf6964fae5bd1f, type: 2}
+  - StageNumber: 70
+    Data: {fileID: 11400000, guid: 0ccc495dc8b81c848bac3ccc3177aabc, type: 2}
   successReward: 10
   failurePenalty: 3
   defaultSecondsPerUnit: 3
@@ -1711,6 +1719,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Keybound.Player.PlayerKeyboardPosition
   keyboardMapManager: {fileID: 1648942543}
+  wallManager: {fileID: 683075399}
   startingKey: 31
   movementInputMode: 0
   enableDebugLogs: 1
@@ -3634,6 +3643,197 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &111496398
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 111496400}
+  - component: {fileID: 111496399}
+  m_Layer: 0
+  m_Name: ScoreManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &111496399
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 111496398}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ea6b2f42c555d64bbc04f25ab6bbc7b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ScoreManager
+  timeManager: {fileID: 1807373829}
+  stageManager: {fileID: 349645084}
+  aimProcessor: {fileID: 632371430}
+  pointsPerSurvivedSecond: 10
+  pointsPerCompletedAim: 100
+--- !u!4 &111496400
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 111496398}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 19.41963, y: 0.88696, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &513136660
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 513136662}
+  - component: {fileID: 513136661}
+  m_Layer: 0
+  m_Name: LeaderboardManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &513136661
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 513136660}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8c709fc955c4704980fed69c2a1ab5d, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::LeaderboardManager
+--- !u!4 &513136662
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 513136660}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1154117279
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1154117280}
+  - component: {fileID: 1154117281}
+  m_Layer: 0
+  m_Name: LeaderboardRecorder
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1154117280
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1154117279}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1154117281
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1154117279}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b26da57e5cd0acc43a4d3be96852edd1, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::LeaderboardRecorder
+  gameFlowManager: {fileID: 313466176}
+  scoreManager: {fileID: 111496399}
+  stageManager: {fileID: 349645084}
+  leaderboardManager: {fileID: 513136661}
+--- !u!1 &683075397
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 683075398}
+  - component: {fileID: 683075399}
+  m_Layer: 0
+  m_Name: WallSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &683075398
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 683075397}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &683075399
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 683075397}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 259fdd894f523c142af2f85b30f48d24, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::WallManager
+  map: {fileID: 1648942543}
+  player: {fileID: 1276033144}
+  timeManager: {fileID: 1807373829}
+  obstacleManager: {fileID: 116485355}
+  warningColor: {r: 0.5, g: 0.7, b: 1, a: 0.5}
+  wallColor: {r: 0.3, g: 0.4, b: 0.7, a: 1}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -3654,3 +3854,7 @@ SceneRoots:
   - {fileID: 381686748}
   - {fileID: 632371429}
   - {fileID: 1534853961}
+  - {fileID: 111496400}
+  - {fileID: 513136662}
+  - {fileID: 1154117280}
+  - {fileID: 683075398}

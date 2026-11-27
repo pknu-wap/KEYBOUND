@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -61,7 +62,7 @@ public sealed class LeaderboardEditor : EditorWindow
                     if (GUILayout.Button("Add Record")) AddRecord();
                 if (GUILayout.Button("Sort"))
                 {
-                    records.Sort(CompareEntries);
+                    records = LeaderboardManager.OrderByRank(records).ToList();
                     dirty = true;
                 }
                 EditorGUILayout.EndHorizontal();
@@ -123,7 +124,7 @@ public sealed class LeaderboardEditor : EditorWindow
         records = data;
         // 손상된 null 항목은 편집 목록에서 제외한다.
         records.RemoveAll(entry => entry == null);
-        records.Sort(CompareEntries);
+        records = LeaderboardManager.OrderByRank(records).ToList();
         dirty = false;
         SetMessage("Records loaded.");
     }
@@ -173,7 +174,7 @@ public sealed class LeaderboardEditor : EditorWindow
             entry.RecordedAt = timestamp.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
             updated.Add(entry);
         }
-        updated.Sort(CompareEntries);
+        updated = LeaderboardManager.OrderByRank(updated).ToList();
         if (!LeaderboardStorage.TrySave(updated))
         {
             SetMessage("Save failed. Check the Console and folder permissions.", MessageType.Error);
@@ -182,18 +183,6 @@ public sealed class LeaderboardEditor : EditorWindow
         records = updated;
         dirty = false;
         SetMessage("Records saved successfully.");
-    }
-
-    private static int CompareEntries(LeaderboardEntry a, LeaderboardEntry b)
-    {
-        int result = b.Score.CompareTo(a.Score);
-        if (result != 0) return result;
-        result = b.Stage.CompareTo(a.Stage);
-        if (result != 0) return result;
-        result = b.SurvivalTime.CompareTo(a.SurvivalTime);
-        if (result != 0) return result;
-        result = string.CompareOrdinal(a.RecordedAt, b.RecordedAt);
-        return result != 0 ? result : string.CompareOrdinal(a.PlayerName, b.PlayerName);
     }
 
     private void OpenSaveFolder()

@@ -11,6 +11,7 @@ namespace Keybound.UI
     {
         [SerializeField] private SceneUIManager menu;
         [SerializeField] private InputSystemUIInputModule inputModule;
+        [SerializeField] private LeaderboardHUD leaderboard;
 
         private InputActionAsset navigation;
         private InputActionReference submit;
@@ -37,6 +38,14 @@ namespace Keybound.UI
         private void Update()
         {
             var keyboard = InputKeyboard.current;
+            if (menu.LeaderboardOpen)
+            {
+                ClearShortcut();
+                if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
+                    leaderboard.CloseLeaderboard();
+                return;
+            }
+
             if (heldKey != null)
             {
                 if (heldKey.device != keyboard || pressedInSettings != menu.SettingsOpen || !CanPress(heldButton))

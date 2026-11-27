@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using UnityEngine;
 
 public sealed class LeaderboardManager : MonoBehaviour
@@ -8,6 +9,7 @@ public sealed class LeaderboardManager : MonoBehaviour
     public const int MaxRecords = 10;
     public const int MaxNameLength = 8;
 
+    private static readonly IComparer<LeaderboardEntry> RankComparer = Comparer<LeaderboardEntry>.Create(CompareEntries);
     private List<LeaderboardEntry> records = new List<LeaderboardEntry>();
     private bool initialized;
     public bool IsStorageReady { get; private set; }
@@ -35,7 +37,7 @@ public sealed class LeaderboardManager : MonoBehaviour
             if (index < 0) records.Add(entry);
             else if (CompareEntries(entry, records[index]) < 0) records[index] = entry;
         }
-        SortAndTrim(records);
+        records = OrderByRank(records).Take(MaxRecords).ToList();
     }
 
     public IReadOnlyList<LeaderboardEntry> GetRecords()
@@ -50,10 +52,11 @@ public sealed class LeaderboardManager : MonoBehaviour
     public bool CanQualify(LeaderboardRunResult run)
     {
         EnsureLoaded();
-        if (!IsStorageReady || !IsValidRun(run)) return false;
-        if (records.Count < MaxRecords) return true;
-        return ComparePerformance(CreateEntry(run, ""), records[records.Count - 1]) < 0;
+        return IsStorageReady && IsValidRun(run) && FitsLeaderboard(CreateEntry(run, ""));
     }
+
+    private bool FitsLeaderboard(LeaderboardEntry candidate) => records.Count < MaxRecords ||
+        CompareEntries(candidate, records[records.Count - 1]) < 0;
 
     // Recorder가 한 판에 한 번만 성공하도록 제어하고 Manager가 저장 정책을 담당한다.
     internal LeaderboardSubmitResult Submit(string playerName, LeaderboardRunResult run)
@@ -67,12 +70,12 @@ public sealed class LeaderboardManager : MonoBehaviour
         int index = records.FindIndex(item => item.PlayerName == name);
         if (index >= 0 && ComparePerformance(candidate, records[index]) >= 0)
             return LeaderboardSubmitResult.PersonalBestNotBeaten;
-        if (!CanQualify(run)) return LeaderboardSubmitResult.NotQualified;
+        if (!FitsLeaderboard(candidate)) return LeaderboardSubmitResult.NotQualified;
 
         var updated = new List<LeaderboardEntry>(records);
         if (index >= 0) updated.RemoveAt(index);
         updated.Add(candidate);
-        SortAndTrim(updated);
+        updated = OrderByRank(updated).Take(MaxRecords).ToList();
 
         // 파일 저장에 성공한 경우에만 메모리와 UI를 갱신한다.
         if (!LeaderboardStorage.TrySave(updated)) return LeaderboardSubmitResult.StorageError;
@@ -119,21 +122,16 @@ public sealed class LeaderboardManager : MonoBehaviour
         if (comparison != 0) return comparison;
         comparison = b.Stage.CompareTo(a.Stage);
         if (comparison != 0) return comparison;
-        return b.SurvivalTime.CompareTo(a.SurvivalTime);
+        return b.SurvivalHundredths.CompareTo(a.SurvivalHundredths);
     }
 
     private static int CompareEntries(LeaderboardEntry a, LeaderboardEntry b)
     {
         int comparison = ComparePerformance(a, b);
-        if (comparison != 0) return comparison;
-        comparison = string.CompareOrdinal(a.RecordedAt, b.RecordedAt);
-        return comparison != 0 ? comparison : string.CompareOrdinal(a.PlayerName, b.PlayerName);
+        return comparison != 0 ? comparison : string.CompareOrdinal(a.RecordedAt, b.RecordedAt);
     }
 
-    private static void SortAndTrim(List<LeaderboardEntry> entries)
-    {
-        entries.Sort(CompareEntries);
-        if (entries.Count > MaxRecords)
-            entries.RemoveRange(MaxRecords, entries.Count - MaxRecords);
-    }
+    // Preserve the saved order when two entries share the same registration timestamp.
+    public static IEnumerable<LeaderboardEntry> OrderByRank(IEnumerable<LeaderboardEntry> entries) =>
+        entries.OrderBy(entry => entry, RankComparer);
 }

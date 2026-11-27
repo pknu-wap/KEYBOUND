@@ -1,7 +1,6 @@
 using System;
 using UnityEngine;
 
-// GameScene에만 배치한다. 기존 GameOver UI는 수정하지 않는다.
 public sealed class LeaderboardRecorder : MonoBehaviour
 {
     [SerializeField] private GameFlowManager gameFlowManager;
@@ -13,11 +12,12 @@ public sealed class LeaderboardRecorder : MonoBehaviour
     public bool HasSubmitted { get; private set; }
     public bool IsGameOver => gameFlowManager != null && gameFlowManager.State == GameState.GameOver;
     public bool IsAborted => aborted;
+    public bool IsStorageReady => leaderboardManager != null && leaderboardManager.IsStorageReady;
     public bool CanRegister => IsGameOver && !aborted && !HasSubmitted &&
         leaderboardManager != null && leaderboardManager.CanQualify(CurrentResult);
     public event Action OnResultChanged;
 
-    private bool observedPlaying;
+    private bool wasPlaying;
     private bool pendingCapture;
     private bool aborted;
     private bool submitting;
@@ -52,22 +52,17 @@ public sealed class LeaderboardRecorder : MonoBehaviour
     {
         if (state == GameState.Starting)
         {
-            observedPlaying = false;
             pendingCapture = false;
             aborted = false;
             HasSubmitted = false;
             CurrentResult = null;
         }
-        else if (state == GameState.Playing)
-        {
-            // Pause -> Playing은 같은 판이므로 기록 상태를 초기화하지 않는다.
-            observedPlaying = true;
-        }
-        else if (state == GameState.GameOver && observedPlaying && !aborted &&
+        else if (state == GameState.GameOver && wasPlaying && !aborted &&
             CurrentResult == null && !HasSubmitted)
         {
             pendingCapture = true;
         }
+        wasPlaying = state == GameState.Playing;
         OnResultChanged?.Invoke();
     }
 

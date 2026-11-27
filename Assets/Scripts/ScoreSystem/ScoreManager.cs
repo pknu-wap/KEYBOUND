@@ -59,7 +59,7 @@ public class ScoreManager : MonoBehaviour
     private void HandleElapsedTimeChanged(float elapsed)
     {
         int currentSeconds = Mathf.Max(0, Mathf.FloorToInt(elapsed));
-        if (currentSeconds < SurvivedSeconds)
+        if (currentSeconds < SurvivedSeconds || (elapsed == 0f && CompletedAimCount > 0))
         {
             ResetScore();
         }
