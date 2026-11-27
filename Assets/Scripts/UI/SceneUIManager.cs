@@ -19,8 +19,10 @@ public class SceneUIManager : MonoBehaviour
     private KeycapButton heldMenuButton;
     private RectTransform heldEscapeGauge;
     private double escapePressedAt;
+    private CanvasGroup startMenuInput;
 
     public bool SettingsOpen { get; private set; }
+    public bool LeaderboardOpen { get; private set; }
     public UIView GetView(UIViewKind kind) => views.TryGetValue(kind, out var view) ? view : null;
     private void Awake()
     {
@@ -163,6 +165,8 @@ public class SceneUIManager : MonoBehaviour
         switch (v.kind)
         {
             case UIViewKind.StartMenu:
+                if (!v.TryGetComponent(out startMenuInput))
+                    startMenuInput = v.gameObject.AddComponent<CanvasGroup>();
                 v.primaryButton.onClick.AddListener(OnClickStart);
                 v.settingsButton?.onClick.AddListener(OpenSettings);
                 v.quitButton.onClick.AddListener(OnClickQuit); break;
@@ -182,7 +186,11 @@ public class SceneUIManager : MonoBehaviour
                 v.skipTutorialToggle.onValueChanged.AddListener(GameSettings.SetSkipTutorial);
                 v.showRemainingTimeToggle.onValueChanged.AddListener(GameSettings.SetShowRemainingTime);
                 break;
-            case UIViewKind.GameOver: v.menuButton.onClick.AddListener(OnClickGoToStart); break;
+            case UIViewKind.GameOver:
+                v.menuButton.onClick.AddListener(OnClickGoToStart);
+                if (v.TryGetComponent(out GameOverLeaderboard registration))
+                    registration.Bind(FindAnyObjectByType<LeaderboardRecorder>());
+                break;
             case UIViewKind.Gameplay: v.primaryButton.onClick.AddListener(() => gameFlowManager.Pause()); break;
         }
     }
@@ -214,7 +222,7 @@ public class SceneUIManager : MonoBehaviour
 
     public void OpenSettings()
     {
-        if (GetView(UIViewKind.Settings) == null ||
+        if (LeaderboardOpen || GetView(UIViewKind.Settings) == null ||
             (gameFlowManager != null && gameFlowManager.State != GameState.Paused))
             return;
 
@@ -300,8 +308,18 @@ public class SceneUIManager : MonoBehaviour
             if (button != null) EventSystem.current.SetSelectedGameObject(button.gameObject);
         }
     }
-    public void OnClickStart() { if (!SettingsOpen) gameSceneManager.StartGame(); }
+    public void SetLeaderboardOpen(bool open)
+    {
+        LeaderboardOpen = open;
+        if (startMenuInput != null)
+        {
+            startMenuInput.interactable = !open;
+            startMenuInput.blocksRaycasts = !open;
+        }
+    }
+
+    public void OnClickStart() { if (!SettingsOpen && !LeaderboardOpen) gameSceneManager.StartGame(); }
     public void OnClickGoToStart() { gameSceneManager.GoToStartScene(); }
-    public void OnClickQuit() { if (!SettingsOpen) gameSceneManager.QuitGame(); }
+    public void OnClickQuit() { if (!SettingsOpen && !LeaderboardOpen) gameSceneManager.QuitGame(); }
     public void OnClickRestart() { /* Legacy callback intentionally has no restart action. */ }
 }

@@ -10,6 +10,8 @@ public sealed class LeaderboardEntry
     public int CompletedAimCount;
     public string RecordedAt;
 
+    internal double SurvivalHundredths => Math.Round(SurvivalTime * 100d, MidpointRounding.AwayFromZero);
+
     public LeaderboardEntry Copy()
     {
         return (LeaderboardEntry)MemberwiseClone();

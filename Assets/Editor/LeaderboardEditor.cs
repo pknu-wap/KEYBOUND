@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -61,7 +62,7 @@ public sealed class LeaderboardEditor : EditorWindow
                     if (GUILayout.Button("Add Record")) AddRecord();
                 if (GUILayout.Button("Sort"))
                 {
-                    records.Sort(CompareEntries);
+                    records = LeaderboardManager.OrderByRank(records).ToList();
                     dirty = true;
                 }
                 EditorGUILayout.EndHorizontal();
@@ -123,7 +124,7 @@ public sealed class LeaderboardEditor : EditorWindow
         records = data;
         // 손상된 null 항목은 편집 목록에서 제외한다.
         records.RemoveAll(entry => entry == null);
-        records.Sort(CompareEntries);
+        records = LeaderboardManager.OrderByRank(records).ToList();
         dirty = false;
         SetMessage("Records loaded.");
     }
@@ -146,34 +147,11 @@ public sealed class LeaderboardEditor : EditorWindow
 
     private void Save()
     {
-        // 기존 Manager의 닉네임, 데이터 유효성, 순위 기준을 유지한다.
-        if (records.Count > LeaderboardManager.MaxRecords)
+        if (!LeaderboardManager.TryPrepareEdits(records, out var updated, out var error))
         {
-            SetMessage("Keep at most 10 records before saving.", MessageType.Error);
+            SetMessage(error, MessageType.Error);
             return;
         }
-        var names = new HashSet<string>(StringComparer.Ordinal);
-        var updated = new List<LeaderboardEntry>();
-        for (int i = 0; i < records.Count; i++)
-        {
-            var entry = records[i].Copy();
-            if (!LeaderboardManager.TryNormalizeName(entry.PlayerName, out var name) || !names.Add(name))
-            {
-                SetMessage($"Record {i + 1}: invalid or duplicate player name.", MessageType.Error);
-                return;
-            }
-            if (entry.Score < 0 || entry.Stage < 1 || entry.CompletedAimCount < 0 ||
-                entry.SurvivalTime < 0f || float.IsNaN(entry.SurvivalTime) || float.IsInfinity(entry.SurvivalTime) ||
-                !DateTime.TryParseExact(entry.RecordedAt, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var timestamp))
-            {
-                SetMessage($"Record {i + 1}: invalid data or timestamp. Use the original UTC round-trip format.", MessageType.Error);
-                return;
-            }
-            entry.PlayerName = name;
-            entry.RecordedAt = timestamp.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
-            updated.Add(entry);
-        }
-        updated.Sort(CompareEntries);
         if (!LeaderboardStorage.TrySave(updated))
         {
             SetMessage("Save failed. Check the Console and folder permissions.", MessageType.Error);
@@ -182,18 +160,6 @@ public sealed class LeaderboardEditor : EditorWindow
         records = updated;
         dirty = false;
         SetMessage("Records saved successfully.");
-    }
-
-    private static int CompareEntries(LeaderboardEntry a, LeaderboardEntry b)
-    {
-        int result = b.Score.CompareTo(a.Score);
-        if (result != 0) return result;
-        result = b.Stage.CompareTo(a.Stage);
-        if (result != 0) return result;
-        result = b.SurvivalTime.CompareTo(a.SurvivalTime);
-        if (result != 0) return result;
-        result = string.CompareOrdinal(a.RecordedAt, b.RecordedAt);
-        return result != 0 ? result : string.CompareOrdinal(a.PlayerName, b.PlayerName);
     }
 
     private void OpenSaveFolder()
