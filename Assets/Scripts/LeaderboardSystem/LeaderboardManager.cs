@@ -28,7 +28,7 @@ public sealed class LeaderboardManager : MonoBehaviour
         foreach (var entry in loaded)
         {
             if (entry == null || !TryNormalizeName(entry.PlayerName, out var name) ||
-                !IsValidRun(new LeaderboardRunResult(entry.Score, entry.Stage, entry.SurvivalTime, entry.CompletedAimCount)) ||
+                !IsValidEntry(entry) ||
                 !DateTime.TryParseExact(entry.RecordedAt, "O", CultureInfo.InvariantCulture,
                     DateTimeStyles.RoundtripKind, out var timestamp)) continue;
             entry.PlayerName = name;
@@ -77,11 +77,72 @@ public sealed class LeaderboardManager : MonoBehaviour
         updated.Add(candidate);
         updated = OrderByRank(updated).Take(MaxRecords).ToList();
 
-        // 파일 저장에 성공한 경우에만 메모리와 UI를 갱신한다.
-        if (!LeaderboardStorage.TrySave(updated)) return LeaderboardSubmitResult.StorageError;
+        return TryPublish(updated) ? LeaderboardSubmitResult.Saved : LeaderboardSubmitResult.StorageError;
+    }
+
+    internal bool TrySaveEdits(IReadOnlyList<LeaderboardEntry> entries, out string error)
+    {
+        EnsureLoaded();
+        if (!IsStorageReady)
+        {
+            error = "STORAGE UNAVAILABLE";
+            return false;
+        }
+        if (!TryPrepareEdits(entries, out var ordered, out error)) return false;
+        if (TryPublish(ordered)) return true;
+        error = "SAVE FAILED. CHECK THE SAVE FOLDER AND TRY AGAIN.";
+        return false;
+    }
+
+    public static bool TryPrepareEdits(IReadOnlyList<LeaderboardEntry> entries,
+        out List<LeaderboardEntry> ordered, out string error)
+    {
+        ordered = null;
+        if (entries.Count > MaxRecords)
+        {
+            error = $"Keep at most {MaxRecords} records before saving.";
+            return false;
+        }
+
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        var updated = new List<LeaderboardEntry>(entries.Count);
+        for (int index = 0; index < entries.Count; index++)
+        {
+            var entry = entries[index];
+            if (entry == null || !TryNormalizeName(entry.PlayerName, out var name))
+            {
+                error = $"Row {index + 1}: use a 1-8 character name with letters or digits.";
+                return false;
+            }
+            if (!names.Add(name))
+            {
+                error = $"Row {index + 1}: {name} already exists.";
+                return false;
+            }
+            if (!IsValidEntry(entry) || !DateTime.TryParseExact(entry.RecordedAt, "O", CultureInfo.InvariantCulture,
+                    DateTimeStyles.RoundtripKind, out var timestamp))
+            {
+                error = $"Row {index + 1}: invalid score, stage, survival time, mission count or timestamp.";
+                return false;
+            }
+
+            var copy = entry.Copy();
+            copy.PlayerName = name;
+            copy.RecordedAt = timestamp.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
+            updated.Add(copy);
+        }
+
+        ordered = OrderByRank(updated).ToList();
+        error = null;
+        return true;
+    }
+
+    private bool TryPublish(List<LeaderboardEntry> updated)
+    {
+        if (!LeaderboardStorage.TrySave(updated)) return false;
         records = updated;
         OnLeaderboardChanged?.Invoke();
-        return LeaderboardSubmitResult.Saved;
+        return true;
     }
 
     public static bool TryNormalizeName(string input, out string name)
@@ -98,10 +159,14 @@ public sealed class LeaderboardManager : MonoBehaviour
 
     private static bool IsValidRun(LeaderboardRunResult run)
     {
-        return run != null && run.Score >= 0 && run.Stage >= 1 &&
-            run.SurvivalTime >= 0f && !float.IsNaN(run.SurvivalTime) &&
-            !float.IsInfinity(run.SurvivalTime) && run.CompletedAimCount >= 0;
+        return run != null && IsValidResult(run.Score, run.Stage, run.SurvivalTime, run.CompletedAimCount);
     }
+
+    private static bool IsValidEntry(LeaderboardEntry entry) =>
+        IsValidResult(entry.Score, entry.Stage, entry.SurvivalTime, entry.CompletedAimCount);
+
+    private static bool IsValidResult(int score, int stage, float survival, int completedAims) =>
+        score >= 0 && stage >= 1 && survival >= 0f && !float.IsInfinity(survival) && completedAims >= 0;
 
     private static LeaderboardEntry CreateEntry(LeaderboardRunResult run, string name)
     {

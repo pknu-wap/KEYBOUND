@@ -38,6 +38,21 @@ namespace Keybound.UI
         private void Update()
         {
             var keyboard = InputKeyboard.current;
+            if (keyboard != null && keyboard.f10Key.wasPressedThisFrame &&
+                keyboard.ctrlKey.isPressed && keyboard.shiftKey.isPressed)
+            {
+                ClearShortcut();
+                DeveloperMode.Toggle();
+                return;
+            }
+
+            if (leaderboard != null && leaderboard.EditorOpen)
+            {
+                ClearShortcut();
+                if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
+                    leaderboard.CloseEditor();
+                return;
+            }
             if (menu.LeaderboardOpen)
             {
                 ClearShortcut();

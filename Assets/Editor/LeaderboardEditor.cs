@@ -147,34 +147,11 @@ public sealed class LeaderboardEditor : EditorWindow
 
     private void Save()
     {
-        // 기존 Manager의 닉네임, 데이터 유효성, 순위 기준을 유지한다.
-        if (records.Count > LeaderboardManager.MaxRecords)
+        if (!LeaderboardManager.TryPrepareEdits(records, out var updated, out var error))
         {
-            SetMessage("Keep at most 10 records before saving.", MessageType.Error);
+            SetMessage(error, MessageType.Error);
             return;
         }
-        var names = new HashSet<string>(StringComparer.Ordinal);
-        var updated = new List<LeaderboardEntry>();
-        for (int i = 0; i < records.Count; i++)
-        {
-            var entry = records[i].Copy();
-            if (!LeaderboardManager.TryNormalizeName(entry.PlayerName, out var name) || !names.Add(name))
-            {
-                SetMessage($"Record {i + 1}: invalid or duplicate player name.", MessageType.Error);
-                return;
-            }
-            if (entry.Score < 0 || entry.Stage < 1 || entry.CompletedAimCount < 0 ||
-                entry.SurvivalTime < 0f || float.IsNaN(entry.SurvivalTime) || float.IsInfinity(entry.SurvivalTime) ||
-                !DateTime.TryParseExact(entry.RecordedAt, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var timestamp))
-            {
-                SetMessage($"Record {i + 1}: invalid data or timestamp. Use the original UTC round-trip format.", MessageType.Error);
-                return;
-            }
-            entry.PlayerName = name;
-            entry.RecordedAt = timestamp.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
-            updated.Add(entry);
-        }
-        updated = LeaderboardManager.OrderByRank(updated).ToList();
         if (!LeaderboardStorage.TrySave(updated))
         {
             SetMessage("Save failed. Check the Console and folder permissions.", MessageType.Error);

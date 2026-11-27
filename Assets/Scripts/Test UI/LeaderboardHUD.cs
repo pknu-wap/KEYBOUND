@@ -28,6 +28,11 @@ public sealed class LeaderboardHUD : MonoBehaviour
 
     [SerializeField] private SceneUIManager startMenu;
     private GameObject previousSelection;
+    private Button editButton;
+    private Text debugIndicator;
+    private LeaderboardEditorPopup editorPopup;
+
+    internal bool EditorOpen => editorPopup != null && editorPopup.IsOpen;
 
     private void Awake()
     {
@@ -44,6 +49,11 @@ public sealed class LeaderboardHUD : MonoBehaviour
         if (registerButton != null) registerButton.onClick.AddListener(RegisterScore);
         if (openButton != null) openButton.onClick.AddListener(OpenLeaderboard);
         if (closeButton != null) closeButton.onClick.AddListener(CloseLeaderboard);
+        if (startMenu != null)
+        {
+            DeveloperMode.Changed += RefreshDeveloperControls;
+            RefreshDeveloperControls();
+        }
     }
 
     private void Start()
@@ -51,6 +61,8 @@ public sealed class LeaderboardHUD : MonoBehaviour
         var menuView = startMenu != null ? startMenu.GetView(UIViewKind.StartMenu) : null;
         if (menuView != null && openButton != null)
             openButton.transform.SetParent(menuView.transform, false);
+        if (startMenu != null && leaderboardPanel != null && closeButton != null)
+            CreateDeveloperControls();
         RefreshResult();
         RefreshLeaderboard();
     }
@@ -63,6 +75,9 @@ public sealed class LeaderboardHUD : MonoBehaviour
         if (registerButton != null) registerButton.onClick.RemoveListener(RegisterScore);
         if (openButton != null) openButton.onClick.RemoveListener(OpenLeaderboard);
         if (closeButton != null) closeButton.onClick.RemoveListener(CloseLeaderboard);
+        DeveloperMode.Changed -= RefreshDeveloperControls;
+        if (debugIndicator != null) debugIndicator.gameObject.SetActive(false);
+        if (editButton != null) editButton.gameObject.SetActive(false);
     }
 
     public void RefreshResult()
@@ -125,6 +140,7 @@ public sealed class LeaderboardHUD : MonoBehaviour
         if (leaderboardPanel == null || !leaderboardPanel.activeSelf)
             return;
 
+        CloseEditor();
         leaderboardPanel.SetActive(false);
         if (startMenu == null)
             return;
@@ -139,6 +155,53 @@ public sealed class LeaderboardHUD : MonoBehaviour
             EventSystem.current?.SetSelectedGameObject(focus);
         }
         previousSelection = null;
+    }
+
+    private void CreateDeveloperControls()
+    {
+        editButton = Instantiate(closeButton, leaderboardPanel.transform, false);
+        editButton.name = "Edit Leaderboard";
+        editButton.onClick = new Button.ButtonClickedEvent();
+        editButton.onClick.AddListener(OpenEditor);
+        editButton.GetComponentInChildren<TMP_Text>(true).text = "Edit";
+        var editRect = (RectTransform)editButton.transform;
+        editRect.anchoredPosition += Vector2.right * (editRect.sizeDelta.x + 18f);
+
+        debugIndicator = DeveloperControls.Label(leaderboardPanel.transform.parent, "DEBUG ON", 0, 0, 110, 22, 14, FontStyle.Bold);
+        debugIndicator.name = "Debug Indicator";
+        debugIndicator.color = new Color32(165, 218, 173, 255);
+        debugIndicator.alignment = TextAnchor.MiddleRight;
+        var debugRect = debugIndicator.rectTransform;
+        debugRect.anchorMin = debugRect.anchorMax = debugRect.pivot = Vector2.right;
+        debugRect.anchoredPosition = new Vector2(-22, 14);
+        RefreshDeveloperControls();
+    }
+
+    private void RefreshDeveloperControls()
+    {
+        bool enabled = DeveloperMode.IsEnabled;
+        if (!enabled) CloseEditor();
+        if (editButton != null)
+        {
+            var events = EventSystem.current;
+            if (!enabled && events != null && events.currentSelectedGameObject == editButton.gameObject)
+                events.SetSelectedGameObject(closeButton.gameObject);
+            editButton.gameObject.SetActive(enabled);
+        }
+        if (debugIndicator != null)
+            debugIndicator.gameObject.SetActive(enabled);
+    }
+
+    private void OpenEditor()
+    {
+        if (!DeveloperMode.IsEnabled || !leaderboardPanel.activeInHierarchy) return;
+        if (editorPopup == null) editorPopup = gameObject.AddComponent<LeaderboardEditorPopup>();
+        editorPopup.Open(leaderboardManager);
+    }
+
+    internal void CloseEditor()
+    {
+        if (editorPopup != null) editorPopup.Close();
     }
 
     public void RefreshLeaderboard()
