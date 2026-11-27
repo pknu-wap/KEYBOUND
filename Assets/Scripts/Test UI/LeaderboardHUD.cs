@@ -22,6 +22,7 @@ public sealed class LeaderboardHUD : MonoBehaviour
 
     [Header("Leaderboard UI (both scenes)")]
     [SerializeField] private GameObject leaderboardPanel;
+    [SerializeField] private Image leaderboardFrame;
     [SerializeField] private TMP_Text leaderboardText;
     [SerializeField] private Button openButton;
     [SerializeField] private Button closeButton;
@@ -96,7 +97,7 @@ public sealed class LeaderboardHUD : MonoBehaviour
         else if (recorder.IsAborted) statusText.text = "INVALID RUN";
         else if (leaderboardManager == null || !leaderboardManager.IsStorageReady) statusText.text = "STORAGE UNAVAILABLE";
         else if (result == null) statusText.text = "WAITING FOR RESULT";
-        else statusText.text = canRegister ? "TOP 10 QUALIFIED" : "NOT IN TOP 10";
+        else statusText.text = canRegister ? "USE 1-8 LETTERS OR NUMBERS" : "RECORD UNAVAILABLE";
     }
 
     public void RegisterScore()
@@ -108,8 +109,7 @@ public sealed class LeaderboardHUD : MonoBehaviour
         {
             case LeaderboardSubmitResult.Saved: statusText.text = "RECORD SAVED"; break;
             case LeaderboardSubmitResult.InvalidName: statusText.text = "USE 1-8 LETTERS OR NUMBERS"; break;
-            case LeaderboardSubmitResult.PersonalBestNotBeaten: statusText.text = "PERSONAL BEST NOT BEATEN"; break;
-            case LeaderboardSubmitResult.NotQualified: statusText.text = "NOT IN TOP 10"; break;
+            case LeaderboardSubmitResult.DuplicateName: statusText.text = "NAME ALREADY TAKEN  /  TRY ANOTHER"; break;
             case LeaderboardSubmitResult.AlreadySubmitted: statusText.text = "ALREADY SAVED"; break;
             case LeaderboardSubmitResult.StorageError: statusText.text = "SAVE FAILED"; break;
             default: statusText.text = "INVALID RUN"; break;
@@ -163,13 +163,13 @@ public sealed class LeaderboardHUD : MonoBehaviour
         editButton.name = "Edit Leaderboard";
         editButton.onClick = new Button.ButtonClickedEvent();
         editButton.onClick.AddListener(OpenEditor);
-        editButton.GetComponentInChildren<TMP_Text>(true).text = "Edit";
+        editButton.GetComponentInChildren<TMP_Text>(true).text = "EDIT";
         var editRect = (RectTransform)editButton.transform;
         editRect.anchoredPosition += Vector2.right * (editRect.sizeDelta.x + 18f);
 
         debugIndicator = DeveloperControls.Label(leaderboardPanel.transform.parent, "DEBUG ON", 0, 0, 110, 22, 14, FontStyle.Bold);
         debugIndicator.name = "Debug Indicator";
-        debugIndicator.color = new Color32(165, 218, 173, 255);
+        debugIndicator.color = new Color32(179, 179, 179, 255);
         debugIndicator.alignment = TextAnchor.MiddleRight;
         var debugRect = debugIndicator.rectTransform;
         debugRect.anchorMin = debugRect.anchorMax = debugRect.pivot = Vector2.right;
@@ -196,7 +196,7 @@ public sealed class LeaderboardHUD : MonoBehaviour
     {
         if (!DeveloperMode.IsEnabled || !leaderboardPanel.activeInHierarchy) return;
         if (editorPopup == null) editorPopup = gameObject.AddComponent<LeaderboardEditorPopup>();
-        editorPopup.Open(leaderboardManager);
+        editorPopup.Open(leaderboardManager, leaderboardFrame != null ? leaderboardFrame.sprite : null);
     }
 
     internal void CloseEditor()
@@ -212,13 +212,15 @@ public sealed class LeaderboardHUD : MonoBehaviour
             leaderboardText.text = "STORAGE UNAVAILABLE";
             return;
         }
-        var records = leaderboardManager.GetRecords();
-        var builder = new StringBuilder("<mspace=0.63em>RANK   NAME          SCORE   STAGE   TIME\n");
-        for (int i = 0; i < LeaderboardManager.MaxRecords; i++)
+        var records = leaderboardManager.GetRecords(LeaderboardManager.DisplayedRecordCount);
+        var builder = new StringBuilder("<mspace=0.72em>");
+        builder.AppendLine($"<color=#B3B3B3><b>{"RANK",4}  {"PLAYER",-8}  {"SCORE",10}  {"STAGE",5}  {"TIME",8}</b></color>");
+        builder.AppendLine();
+        for (int i = 0; i < LeaderboardManager.DisplayedRecordCount; i++)
         {
             if (i >= records.Count)
             {
-                builder.AppendLine($"{i + 1:00}     ---");
+                builder.AppendLine($"<color=#808080>{i + 1,4:00}  {"--",-8}  {"--",10}  {"--",5}  {"--",8}</color>");
                 continue;
             }
             var entry = records[i];
@@ -226,7 +228,7 @@ public sealed class LeaderboardHUD : MonoBehaviour
             double minutes = Math.Floor(hundredths / 6000);
             int seconds = (int)(hundredths % 6000) / 100;
             int fraction = (int)(hundredths % 100);
-            builder.AppendLine($"{i + 1:00}     {entry.PlayerName,-8}   {entry.Score,8:N0}   {entry.Stage,5:00}   {minutes:00}:{seconds:00}.{fraction:00}");
+            builder.AppendLine($"{i + 1,4:00}  {entry.PlayerName,-8}  {entry.Score,10:N0}  {entry.Stage,5:00}  {minutes:00}:{seconds:00}.{fraction:00}");
         }
         leaderboardText.text = builder.Append("</mspace>").ToString();
     }

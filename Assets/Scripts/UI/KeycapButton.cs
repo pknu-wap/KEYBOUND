@@ -10,9 +10,8 @@ namespace Keybound.UI
     [AddComponentMenu("UI/Keycap Button")]
     public sealed class KeycapButton : Button
     {
-        private const float Travel = 4f;
-
         [SerializeField] private bool submitOnRelease;
+        [SerializeField, Min(0f)] private float pressDepth = 4f;
 
         private Shadow baseShadow;
         private Coroutine pendingSubmit;
@@ -24,25 +23,25 @@ namespace Keybound.UI
         private bool pressed;
         private bool shortcutPressed;
 
-        protected override void Awake()
-        {
-            base.Awake();
-
-            if (targetGraphic == null || targetGraphic.rectTransform != transform)
-                return;
-
-            face = targetGraphic.rectTransform;
-            restPosition = face.anchoredPosition;
-            restRaycastPadding = targetGraphic.raycastPadding;
-
-            baseShadow = gameObject.AddComponent<Shadow>();
-            baseShadow.effectColor = new Color(0.37f, 0.37f, 0.37f, 1f);
-            baseShadow.effectDistance = new Vector2(0f, -Travel);
-        }
-
         protected override void OnEnable()
         {
             base.OnEnable();
+            if (!Application.IsPlaying(gameObject))
+                return;
+
+            if (baseShadow == null && targetGraphic != null && targetGraphic.rectTransform == transform)
+            {
+                face = targetGraphic.rectTransform;
+                restPosition = face.anchoredPosition;
+                restRaycastPadding = targetGraphic.raycastPadding;
+
+                baseShadow = GetComponent<Shadow>();
+                if (baseShadow == null)
+                    baseShadow = gameObject.AddComponent<Shadow>();
+                baseShadow.effectColor = new Color(0.37f, 0.37f, 0.37f, 1f);
+                baseShadow.effectDistance = Vector2.down * pressDepth;
+            }
+
             if (!submitOnRelease)
                 return;
 
@@ -192,7 +191,7 @@ namespace Keybound.UI
                 return;
 
             pressed = isPressed;
-            float offset = pressed ? Travel : 0f;
+            float offset = pressed ? pressDepth : 0f;
             face.anchoredPosition = restPosition + Vector2.down * offset;
             baseShadow.enabled = !pressed;
 

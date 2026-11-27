@@ -40,8 +40,7 @@ public enum LeaderboardSubmitResult
     Saved,
     InvalidName,
     InvalidRun,
-    NotQualified,
-    PersonalBestNotBeaten,
+    DuplicateName,
     AlreadySubmitted,
     StorageError
 }

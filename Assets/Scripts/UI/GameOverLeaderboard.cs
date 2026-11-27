@@ -48,7 +48,7 @@ namespace Keybound.UI
             else if (result == null)
                 statusText.text = "";
             else
-                statusText.text = canRegister ? "TOP 10  /  A-Z, 0-9  /  1-8 CHARACTERS" : "NOT IN TOP 10";
+                statusText.text = canRegister ? "A-Z, 0-9  /  1-8 CHARACTERS" : "RECORD UNAVAILABLE";
         }
 
         private void RegisterScore()
@@ -61,8 +61,7 @@ namespace Keybound.UI
             {
                 LeaderboardSubmitResult.Saved => "RECORD SAVED",
                 LeaderboardSubmitResult.InvalidName => "USE 1-8 LETTERS OR NUMBERS",
-                LeaderboardSubmitResult.PersonalBestNotBeaten => "PERSONAL BEST NOT BEATEN",
-                LeaderboardSubmitResult.NotQualified => "NOT IN TOP 10",
+                LeaderboardSubmitResult.DuplicateName => "NAME ALREADY TAKEN  /  TRY ANOTHER",
                 LeaderboardSubmitResult.AlreadySubmitted => "RECORD SAVED",
                 LeaderboardSubmitResult.StorageError => "SAVE FAILED  /  TRY AGAIN",
                 _ => "RECORD UNAVAILABLE"
@@ -72,7 +71,7 @@ namespace Keybound.UI
             {
                 EventSystem.current?.SetSelectedGameObject(GetComponent<UIView>().menuButton.gameObject);
             }
-            else if (result == LeaderboardSubmitResult.InvalidName || result == LeaderboardSubmitResult.PersonalBestNotBeaten)
+            else if (result == LeaderboardSubmitResult.InvalidName || result == LeaderboardSubmitResult.DuplicateName)
             {
                 EventSystem.current?.SetSelectedGameObject(playerNameInput.gameObject);
                 playerNameInput.ActivateInputField();
