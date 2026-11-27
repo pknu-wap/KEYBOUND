@@ -567,21 +567,43 @@ MonoBehaviour:
   processor: {fileID: 632371430}
   miniGameManager: {fileID: 116485354}
   startingStage: 1
+  finalStage: 100
+  useCampaignBalance: 1
   miniGameSchedule:
   - StageNumber: 10
-    Data: {fileID: 11400000, guid: 9f4c6ab3a6291e34c86c25268ca820dc, type: 2}
+    Data: {fileID: 11400000, guid: f26ab5a290bb44109fe91652516c1699, type: 2}
+  - StageNumber: 15
+    Data: {fileID: 11400000, guid: 10a27fe14f5c61d4dbba0dabfa00ab35, type: 2}
   - StageNumber: 20
     Data: {fileID: 11400000, guid: fbf21c5ed0705e447b136f8257fc23dd, type: 2}
+    PlayWithoutMission: 1
+  - StageNumber: 25
+    Data: {fileID: 11400000, guid: bef1a0f9e48281948905d9b5390b5423, type: 2}
   - StageNumber: 30
     Data: {fileID: 11400000, guid: c169fd898a7d13846a62167a10b7c24c, type: 2}
+    PlayWithoutMission: 1
+  - StageNumber: 35
+    Data: {fileID: 11400000, guid: 3154f51351dbc6c48ac5a6f4f589df1a, type: 2}
   - StageNumber: 40
     Data: {fileID: 11400000, guid: 26aa91a426eaa8341a10e292c15e73a6, type: 2}
+    PlayWithoutMission: 1
+  - StageNumber: 45
+    Data: {fileID: 11400000, guid: 16643125bf90ae747a8ea41e98110d0b, type: 2}
   - StageNumber: 50
     Data: {fileID: 11400000, guid: 1173e91d401688e46b6db45e1faf793c, type: 2}
+    PlayWithoutMission: 1
   - StageNumber: 60
     Data: {fileID: 11400000, guid: fe098f93c7ba1654ebbf6964fae5bd1f, type: 2}
+  - StageNumber: 65
+    Data: {fileID: 11400000, guid: 9f85b81bb2803e34a89be33fbe898eb7, type: 2}
   - StageNumber: 70
     Data: {fileID: 11400000, guid: 0ccc495dc8b81c848bac3ccc3177aabc, type: 2}
+  - StageNumber: 80
+    Data: {fileID: 11400000, guid: 03887f2a9218493ea744203526234129, type: 2}
+  - StageNumber: 90
+    Data: {fileID: 11400000, guid: 0fdcef58f62942958af9d3c28c6cc303, type: 2}
+  - StageNumber: 100
+    Data: {fileID: 11400000, guid: 0c3f7c24d68a4dc9a95660314129fb9e, type: 2}
   successReward: 10
   failurePenalty: 3
   defaultSecondsPerUnit: 3
@@ -3464,6 +3486,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Keybound.UI.MissionUI
   processor: {fileID: 632371430}
+  stageManager: {fileID: 349645084}
   description: {fileID: 1900400032}
 --- !u!1 &1900800010
 GameObject:
@@ -3868,7 +3891,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ScoreManager
   timeManager: {fileID: 1807373829}
   stageManager: {fileID: 349645084}
-  aimProcessor: {fileID: 632371430}
   pointsPerSurvivedSecond: 10
   pointsPerCompletedAim: 100
 --- !u!4 &111496400

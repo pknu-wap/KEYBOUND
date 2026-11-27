@@ -9,6 +9,7 @@ public class MiniGameStageEntry
 {
     [Min(1)] public int StageNumber = 5;
     public MiniGameData Data;
+    public bool PlayWithoutMission;
 }
 
 [Serializable]
@@ -31,6 +32,12 @@ public class StageManager : MonoBehaviour
     [Header("Stages")]
     [SerializeField, Min(1)]
     private int startingStage = 1;
+
+    [SerializeField, Min(0)]
+    private int finalStage;
+
+    [SerializeField]
+    private bool useCampaignBalance;
 
     [SerializeField]
     private List<MiniGameStageEntry> miniGameSchedule =
@@ -64,13 +71,18 @@ public class StageManager : MonoBehaviour
     public float AimTimeTotal { get; private set; }
 
     // UI에서 현재 Aim 보상/패널티 설정값 확인
-    public float ClearRewardTime => CurrentStageType == StageType.MiniGame ? 0f : successReward;
+    public float ClearRewardTime => processor != null && processor.CurrentAim != null && useCampaignBalance
+        ? CampaignMissionBalance.RewardSeconds(processor.CurrentAim, CurrentStage, CurrentStageType == StageType.MiniGame)
+        : CurrentStageType == StageType.MiniGame ? 0f : successReward;
     public float FailurePenaltyTime => CurrentStageType == StageType.MiniGame ? 0f : failurePenalty;
+
+    internal bool UsesCampaignBalance => useCampaignBalance;
 
     public bool PauseMainTimerDuringMiniGame => false;
 
     public event Action<int> OnStageStarted;
     public event Action<int> OnStageCleared;
+    public event Action<AimData> OnMissionCleared;
 
     public event Action<float> OnStageRewardChanged;
     public event Action<float> OnStageReward;
@@ -81,9 +93,11 @@ public class StageManager : MonoBehaviour
     public event Action<StageResult> OnStageFinished;
     public event Action<bool> OnMiniGameTimePauseRequested;
     public event Action OnGameOver;
+    public event Action OnRunCleared;
 
     private bool transitioning;
     private Coroutine transition;
+    private int completedMiniMissions;
 
     private void OnEnable()
     {
@@ -95,6 +109,7 @@ public class StageManager : MonoBehaviour
             miniGameManager.OnMiniGameCompleted += MiniCompleted;
             miniGameManager.OnMiniGameFailed += MiniFailed;
             miniGameManager.OnCollisionPenalty += CollisionPenalty;
+            miniGameManager.OnTimeReward += RewardMiniGameTime;
         }
     }
 
@@ -108,6 +123,7 @@ public class StageManager : MonoBehaviour
             miniGameManager.OnMiniGameCompleted -= MiniCompleted;
             miniGameManager.OnMiniGameFailed -= MiniFailed;
             miniGameManager.OnCollisionPenalty -= CollisionPenalty;
+            miniGameManager.OnTimeReward -= RewardMiniGameTime;
         }
 
         if (transition != null)
@@ -141,8 +157,6 @@ public class StageManager : MonoBehaviour
                 ? processor.CurrentAim
                 : null;
 
-            processor?.StopAim();
-
             FinishAim(StageResultType.Timeout, aim);
         }
     }
@@ -158,6 +172,8 @@ public class StageManager : MonoBehaviour
         StopStages();
 
         CurrentStage = Mathf.Max(1, startingStage);
+        if (finalStage > 0)
+            CurrentStage = Mathf.Min(CurrentStage, finalStage);
         IsGameRunning = true;
 
         StartStage();
@@ -187,7 +203,6 @@ public class StageManager : MonoBehaviour
         miniGameManager?.CancelMiniGame();
         processor?.StopAim();
 
-        IsGameRunning = false;
         IsPaused = false;
         transitioning = false;
 
@@ -225,6 +240,7 @@ public class StageManager : MonoBehaviour
             return;
 
         transitioning = false;
+        completedMiniMissions = 0;
         CurrentStageType = StageType.Aim;
 
         OnStageModeChanged?.Invoke(StageType.Aim);
@@ -240,18 +256,17 @@ public class StageManager : MonoBehaviour
             OnStageRewardChanged?.Invoke(0f);
             OnStageStarted?.Invoke(CurrentStage);
 
-            if (miniGameManager == null || !miniGameManager.StartMiniGame(CurrentStage, entry.Data))
+            if (miniGameManager == null || !miniGameManager.StartMiniGame(CurrentStage, entry.Data, useCampaignBalance))
             {
                 AbortRun();
                 return;
             }
 
-            if (IsGameRunning && !transitioning)
+            if (!entry.PlayWithoutMission && entry.Data.RunsWithMission && IsGameRunning && !transitioning)
                 StartAim();
             return;
         }
 
-        OnStageRewardChanged?.Invoke(successReward);
         OnStageStarted?.Invoke(CurrentStage);
         StartAim();
     }
@@ -266,9 +281,19 @@ public class StageManager : MonoBehaviour
     private void StartAim()
     {
         // Aim 생성
-        if (!aimManager.StartRandomAim())
+        if (!aimManager.StartRandomAim(useCampaignBalance ? CurrentStage : 0))
         {
             AbortRun();
+            return;
+        }
+
+        var aim = processor.CurrentAim;
+        OnStageRewardChanged?.Invoke(ClearRewardTime);
+
+        if (useCampaignBalance)
+        {
+            AimTimeTotal = AimTimeRemaining = CampaignMissionBalance.TimeLimit(aim, CurrentStage);
+            OnAimTimeChanged?.Invoke(AimTimeRemaining, AimTimeTotal);
             return;
         }
 
@@ -278,8 +303,6 @@ public class StageManager : MonoBehaviour
             OnAimTimeChanged?.Invoke(0f, 0f);
             return;
         }
-
-        var aim = processor.CurrentAim;
 
         // Aim 목표량 계산
         float units = aim != null &&
@@ -348,14 +371,6 @@ public class StageManager : MonoBehaviour
         if (!IsGameRunning || IsPaused || transitioning)
             return;
 
-        if (CurrentStageType == StageType.MiniGame)
-        {
-            miniGameManager?.NotifyAimCompleted(aim);
-            if (IsGameRunning && !transitioning && miniGameManager != null && miniGameManager.IsPlaying)
-                transition = StartCoroutine(NextMiniAim());
-            return;
-        }
-
         FinishAim(StageResultType.Success, aim);
     }
 
@@ -364,32 +379,39 @@ public class StageManager : MonoBehaviour
         AimData aim
     )
     {
-        if (!IsGameRunning || transitioning || CurrentStageType != StageType.Aim)
+        if (!IsGameRunning || transitioning)
             return;
 
-        transitioning = true;
-
+        bool success = result == StageResultType.Success;
+        float reward = success ? ClearRewardTime : 0f;
         processor?.StopAim();
-
-        AimTimeRemaining = 0f;
-        AimTimeTotal = 0f;
-
+        AimTimeRemaining = AimTimeTotal = 0f;
         OnAimTimeChanged?.Invoke(0f, 0f);
 
-        float reward =
-            result == StageResultType.Success
-                ? successReward
-                : 0f;
+        if (success)
+            OnMissionCleared?.Invoke(aim);
 
-        float penalty =
-            result == StageResultType.Success
-                ? 0f
-                : failurePenalty;
+        if (CurrentStageType == StageType.MiniGame)
+        {
+            if (reward > 0f)
+                OnStageReward?.Invoke(reward);
+            if (success)
+            {
+                completedMiniMissions++;
+                miniGameManager?.NotifyAimCompleted(aim);
+            }
+            if (IsGameRunning && !transitioning && miniGameManager != null && miniGameManager.IsPlaying &&
+                completedMiniMissions < miniGameManager.ActiveData.ConcurrentMissionLimit)
+                transition = StartCoroutine(NextMiniAim());
+            return;
+        }
 
-        if (result == StageResultType.Success)
+        transitioning = true;
+        float penalty = success ? 0f : failurePenalty *
+            (useCampaignBalance && aim != null ? aim.PenaltyMultiplier : 1f);
+        if (success)
         {
             OnStageCleared?.Invoke(CurrentStage);
-
             AudioManager.Instance?.PlayClearSFX();
         }
 
@@ -398,6 +420,9 @@ public class StageManager : MonoBehaviour
 
         if (penalty > 0f)
             OnStagePenalty?.Invoke(penalty);
+
+        if (!IsGameRunning)
+            return;
 
         OnStageFinished?.Invoke(
             new StageResult(
@@ -408,6 +433,27 @@ public class StageManager : MonoBehaviour
                 penalty
             )
         );
+
+        if (IsGameRunning && !success && finalStage > 0 && CurrentStage >= finalStage)
+        {
+            transition = StartCoroutine(RetryStage());
+            return;
+        }
+
+        AdvanceStage();
+    }
+
+    private void AdvanceStage()
+    {
+        if (!IsGameRunning)
+            return;
+
+        if (finalStage > 0 && CurrentStage >= finalStage)
+        {
+            StopStages();
+            OnRunCleared?.Invoke();
+            return;
+        }
 
         transition = StartCoroutine(NextStage());
     }
@@ -465,7 +511,7 @@ public class StageManager : MonoBehaviour
         if (!IsGameRunning) return;
         OnStageFinished?.Invoke(new StageResult(stage, StageType.MiniGame,
             StageResultType.Success, reward, 0f));
-        if (IsGameRunning) transition = StartCoroutine(NextStage());
+        AdvanceStage();
     }
 
     private void MiniFailed(int stage)
@@ -493,5 +539,11 @@ public class StageManager : MonoBehaviour
             return;
 
         OnStagePenalty?.Invoke(seconds);
+    }
+
+    private void RewardMiniGameTime(float seconds)
+    {
+        if (IsGameRunning && CurrentStageType == StageType.MiniGame)
+            OnStageReward?.Invoke(seconds);
     }
 }

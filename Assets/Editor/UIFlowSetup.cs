@@ -122,7 +122,7 @@ public static class UIFlowSetup
             var backdrop = root.gameObject.AddComponent<Image>(); backdrop.color = new Color(0,0,0,.75f);
             var panel = Rect("Panel", root, Vector2.zero, new Vector2(500,480));
             panel.gameObject.AddComponent<Image>().color = new Color(.14f,.16f,.2f,1);
-            Label(panel, kind == UIViewKind.StartMenu ? "KEYBOUND" : kind == UIViewKind.PauseMenu ? "PAUSED" : kind == UIViewKind.GameOver ? "GAME OVER" : "SETTINGS", new Vector2(0,175), 34);
+            var title = Label(panel, kind == UIViewKind.StartMenu ? "KEYBOUND" : kind == UIViewKind.PauseMenu ? "PAUSED" : kind == UIViewKind.GameOver ? "GAME OVER" : "SETTINGS", new Vector2(0,175), 34);
             switch (kind)
             {
                 case UIViewKind.StartMenu:
@@ -133,6 +133,7 @@ public static class UIFlowSetup
                     v.settingsButton = Button(panel,"SETTINGS",new Vector2(0,-10));
                     v.menuButton = Button(panel,"MAIN MENU",new Vector2(0,-90)); break;
                 case UIViewKind.GameOver:
+                    v.resultTitle = title;
                     v.resultText = Label(panel,"Survival time: --",new Vector2(0,30),24);
                     v.menuButton = Button(panel,"MAIN MENU",new Vector2(0,-80)); break;
                 case UIViewKind.Settings:

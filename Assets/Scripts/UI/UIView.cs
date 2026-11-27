@@ -17,6 +17,7 @@ namespace Keybound.UI
         public Toggle fullscreenToggle;
         public Toggle skipTutorialToggle;
         public Toggle showRemainingTimeToggle;
+        public Text resultTitle;
         public Text resultText;
         public Text resultStageText;
     }

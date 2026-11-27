@@ -23,6 +23,8 @@ public class AimData
 
     public int RequiredCount;
     public float RequiredDuration;
+    public int CalculationOperations;
+    internal int TravelSteps;
 
     public string Description = "";
 

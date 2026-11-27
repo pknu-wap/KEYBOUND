@@ -6,9 +6,11 @@ namespace Keybound.UI
     public sealed class MissionUI : MonoBehaviour
     {
         [SerializeField] private AimConditionProcessor processor;
+        [SerializeField] private StageManager stageManager;
         [SerializeField] private TMP_Text description;
 
         private string tutorialGuide;
+        private int remainingSeconds;
 
         private void OnEnable()
         {
@@ -16,6 +18,11 @@ namespace Keybound.UI
                 return;
 
             processor.OnAimProgressChanged += Display;
+            if (stageManager != null)
+            {
+                stageManager.OnAimTimeChanged += DisplayTime;
+                remainingSeconds = Mathf.CeilToInt(stageManager.AimTimeRemaining);
+            }
             Display(processor.CurrentProgress, processor.RequiredProgress);
         }
 
@@ -23,6 +30,18 @@ namespace Keybound.UI
         {
             if (processor != null)
                 processor.OnAimProgressChanged -= Display;
+            if (stageManager != null)
+                stageManager.OnAimTimeChanged -= DisplayTime;
+        }
+
+        private void DisplayTime(float remaining, float total)
+        {
+            int seconds = Mathf.CeilToInt(remaining);
+            if (seconds == remainingSeconds)
+                return;
+
+            remainingSeconds = seconds;
+            Display(processor.CurrentProgress, processor.RequiredProgress);
         }
 
         internal void SetTutorialGuide(string guide)
@@ -66,6 +85,9 @@ namespace Keybound.UI
 
         private void DisplayText(string mission)
         {
+            if (remainingSeconds > 0 && !string.IsNullOrEmpty(mission))
+                mission += $"  <size=65%><color=#B3B3B3>{remainingSeconds}s LEFT  |  +{stageManager.ClearRewardTime:0.#}s</color></size>";
+
             if (string.IsNullOrEmpty(tutorialGuide))
                 description.text = mission;
             else if (string.IsNullOrEmpty(mission))

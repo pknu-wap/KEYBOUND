@@ -10,7 +10,9 @@ public class AimConditionGenerator : MonoBehaviour
     [SerializeField]
     private bool logGeneration = true;
 
-    public AimData Generate(AimGenerationSettings settings)
+    public AimData Generate(AimGenerationSettings settings) => Generate(settings, 0, Key.None);
+
+    internal AimData Generate(AimGenerationSettings settings, int campaignStage, Key origin)
     {
         if (settings == null || !settings.Enabled)
             return null;
@@ -42,20 +44,19 @@ public class AimConditionGenerator : MonoBehaviour
             availableKeys.Count
         );
 
+        if (campaignStage > 0)
+        {
+            var range = CampaignMissionBalance.KeyCount(campaignStage, settings.AimType);
+            maxKeys = Mathf.Min(maxKeys, range.max);
+            minKeys = Mathf.Min(maxKeys, range.min);
+        }
+
         int keyCount = Random.Range(
             minKeys,
             maxKeys + 1
         );
 
-        // 키 목록 무작위 섞기
-        for (int i = availableKeys.Count - 1; i > 0; i--)
-        {
-            int j = Random.Range(0, i + 1);
-
-            Key temp = availableKeys[i];
-            availableKeys[i] = availableKeys[j];
-            availableKeys[j] = temp;
-        }
+        Shuffle(availableKeys);
 
         // Aim 데이터 생성
         // 제한시간은 StageManager에서 관리
@@ -91,6 +92,13 @@ public class AimConditionGenerator : MonoBehaviour
                     settings.MaxPressCount
                 );
 
+                if (campaignStage > 0)
+                {
+                    var range = CampaignMissionBalance.PressCount(campaignStage);
+                    maxPress = Mathf.Min(maxPress, range.max);
+                    minPress = Mathf.Min(maxPress, range.min);
+                }
+
                 aim.RequiredCount = Random.Range(
                     minPress,
                     maxPress + 1
@@ -123,9 +131,10 @@ public class AimConditionGenerator : MonoBehaviour
 
             case AimType.Sequence:
             {
-                aim.TargetKeys.AddRange(
-                    availableKeys.Take(keyCount)
-                );
+                if (campaignStage > 0)
+                    PickCampaignSequence(aim, availableKeys, origin, keyCount);
+                else
+                    aim.TargetKeys.AddRange(availableKeys.Take(keyCount));
 
                 aim.RequiredCount = aim.TargetKeys.Count;
 
@@ -149,6 +158,13 @@ public class AimConditionGenerator : MonoBehaviour
                     minHold,
                     settings.MaxHoldTime
                 );
+
+                if (campaignStage > 0)
+                {
+                    var range = CampaignMissionBalance.HoldSeconds(campaignStage);
+                    maxHold = Mathf.Min(maxHold, range.max);
+                    minHold = Mathf.Min(maxHold, range.min);
+                }
 
                 aim.RequiredDuration = Random.Range(
                     minHold,
@@ -185,6 +201,35 @@ public class AimConditionGenerator : MonoBehaviour
         }
 
         return aim;
+    }
+
+    private static void PickCampaignSequence(AimData aim, List<Key> keys, Key origin, int count)
+    {
+        // Moving through a target out of order resets the sequence.
+        for (int attempt = 0; attempt < 8; attempt++)
+        {
+            aim.TargetKeys.Clear();
+            aim.TargetKeys.AddRange(keys.Take(count));
+            if (CampaignMissionRoute.TrySequenceSteps(origin, aim.TargetKeys, out aim.TravelSteps) &&
+                aim.TravelSteps <= 2 + 3 * count)
+                return;
+
+            Shuffle(keys);
+        }
+
+        // A straight row always leaves an open approach via its neighboring row.
+        aim.TargetKeys.Clear();
+        aim.TargetKeys.AddRange(CampaignMissionRoute.RowSequence(origin, count));
+        CampaignMissionRoute.TrySequenceSteps(origin, aim.TargetKeys, out aim.TravelSteps);
+    }
+
+    private static void Shuffle(List<Key> keys)
+    {
+        for (int i = keys.Count - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            (keys[i], keys[j]) = (keys[j], keys[i]);
+        }
     }
 
     public static string GetKeyName(Key key)

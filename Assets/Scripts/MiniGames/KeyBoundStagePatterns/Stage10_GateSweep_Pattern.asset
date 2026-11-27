@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac7546f85d962364398217546997b4d1, type: 3}
+  m_Name: Stage10_GateSweep_Pattern
+  m_EditorClassIdentifier: Assembly-CSharp::ObstacleDodgeData
+  CollisionPenaltySeconds: 2
+  Waves:
+  - Name: Left Gate
+    Patterns:
+    - StartDelaySeconds: 1
+      LifetimeSeconds: 1.15
+      Keys: 2a00000025000000210000001a00000026000000i
+    - StartDelaySeconds: 3.45
+      LifetimeSeconds: 1.15
+      Keys: 2c00000020000000140000001900000024000000i
+    - StartDelaySeconds: 5.9
+      LifetimeSeconds: 1.15
+      Keys: 2e0000002700000016000000180000001c000000i
+  - Name: Right Gate
+    Patterns:
+    - StartDelaySeconds: 1
+      LifetimeSeconds: 1.15
+      Keys: 31000000250000001d0000001a00000008000000i
+    - StartDelaySeconds: 3.45
+      LifetimeSeconds: 1.15
+      Keys: 2f0000001300000023000000180000001b000000i
+    - StartDelaySeconds: 5.9
+      LifetimeSeconds: 1.15
+      Keys: 2d00000020000000220000001500000010000000i

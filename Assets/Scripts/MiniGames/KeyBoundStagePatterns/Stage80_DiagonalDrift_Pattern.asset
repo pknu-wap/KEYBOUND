@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac7546f85d962364398217546997b4d1, type: 3}
+  m_Name: Stage80_DiagonalDrift_Pattern
+  m_EditorClassIdentifier: Assembly-CSharp::ObstacleDodgeData
+  CollisionPenaltySeconds: 3
+  Waves:
+  - Name: Downward Drift
+    Patterns:
+    - StartDelaySeconds: 1
+      LifetimeSeconds: 1.05
+      Keys: 290000002a000000310000003200000025000000130000001e00000012000000140000002400000010000000i
+    - StartDelaySeconds: 3.2
+      LifetimeSeconds: 1.05
+      Keys: 2b0000002c000000200000002200000015000000160000001c0000001b000000i
+    - StartDelaySeconds: 5.4
+      LifetimeSeconds: 1.05
+      Keys: 2d0000002e00000027000000230000001800000019000000280000000700000008000000i
+    - StartDelaySeconds: 7.6
+      LifetimeSeconds: 1.05
+      Keys: 2f000000300000001f000000170000001d0000000f000000210000001a00000006000000260000001100000009000000i
+    - StartDelaySeconds: 9.8
+      LifetimeSeconds: 1.05
+      Keys: 290000002a000000310000003200000025000000130000001e00000012000000140000002400000010000000i
+  - Name: Upward Drift
+    Patterns:
+    - StartDelaySeconds: 1
+      LifetimeSeconds: 1.05
+      Keys: 290000002a00000031000000320000001f000000170000001d00000018000000190000001c0000001b000000i
+    - StartDelaySeconds: 3.2
+      LifetimeSeconds: 1.05
+      Keys: 2b0000002c00000025000000130000001e0000000f000000210000001a00000006000000280000000700000008000000i
+    - StartDelaySeconds: 5.4
+      LifetimeSeconds: 1.05
+      Keys: 2d0000002e00000020000000220000001200000014000000260000001100000009000000i
+    - StartDelaySeconds: 7.6
+      LifetimeSeconds: 1.05
+      Keys: 2f00000030000000270000002300000015000000160000002400000010000000i
+    - StartDelaySeconds: 9.8
+      LifetimeSeconds: 1.05
+      Keys: 290000002a00000031000000320000001f000000170000001d00000018000000190000001c0000001b000000i
+  - Name: Crossing Bands
+    Patterns:
+    - StartDelaySeconds: 1
+      LifetimeSeconds: 1.05
+      Keys: 290000003100000025000000170000001e0000001200000018000000240000001c000000i
+    - StartDelaySeconds: 3.2
+      LifetimeSeconds: 1.05
+      Keys: 2b0000002f000000200000002700000015000000240000001c000000i
+    - StartDelaySeconds: 5.4
+      LifetimeSeconds: 1.05
+      Keys: 2d00000020000000270000001200000018000000260000000700000009000000i
+    - StartDelaySeconds: 7.6
+      LifetimeSeconds: 1.05
+      Keys: 2b0000002f00000025000000170000001e0000000f0000001a000000260000000700000009000000i
+    - StartDelaySeconds: 9.8
+      LifetimeSeconds: 1.05
+      Keys: 290000003100000025000000170000001e0000001200000018000000240000001c000000i

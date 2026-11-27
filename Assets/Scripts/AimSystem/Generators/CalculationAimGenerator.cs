@@ -10,7 +10,9 @@ public class CalculationAimGenerator : MonoBehaviour
     [SerializeField] private CalculationAimDatabase fixedProblemDatabase;
     [SerializeField, Min(1)] private int maxRandomAttempts = 300;
 
-    public AimData Generate(AimGenerationSettings settings)
+    public AimData Generate(AimGenerationSettings settings) => Generate(settings, 0);
+
+    internal AimData Generate(AimGenerationSettings settings, int campaignStage)
     {
         if (settings == null || !settings.Enabled) return null;
         bool fixedFirst = settings.CalculationMode == CalculationGenerationMode.FixedOnly ||
@@ -18,15 +20,25 @@ public class CalculationAimGenerator : MonoBehaviour
              UnityEngine.Random.value < settings.FixedProbability);
         int answer;
         string question;
+        int randomOperations = settings.OperationCount;
+        int maxOperations = int.MaxValue;
+        if (campaignStage > 0)
+        {
+            maxOperations = CampaignMissionBalance.MaxCalculationOperations(campaignStage);
+            randomOperations = UnityEngine.Random.Range(Mathf.Max(1, maxOperations - 1), maxOperations + 1);
+        }
+        int operations = randomOperations;
         bool success = fixedFirst
-            ? TryFixed(out answer, out question)
-            : TryRandom(settings, out answer, out question);
+            ? TryFixed(maxOperations, out answer, out question, out operations)
+            : TryRandom(settings, operations, out answer, out question);
         if (!success && settings.CalculationMode == CalculationGenerationMode.Both)
         {
             Debug.LogWarning("[CalculationAimGenerator] Preferred source unavailable; trying fallback.", this);
             success = fixedFirst
-                ? TryRandom(settings, out answer, out question)
-                : TryFixed(out answer, out question);
+                ? TryRandom(settings, randomOperations, out answer, out question)
+                : TryFixed(maxOperations, out answer, out question, out operations);
+            if (fixedFirst)
+                operations = randomOperations;
         }
         if (!success)
         {
@@ -41,6 +53,7 @@ public class CalculationAimGenerator : MonoBehaviour
             TargetText = target,
             Description = question,
             RequiredCount = target.Length,
+            CalculationOperations = operations,
             RewardMultiplier = Mathf.Max(0, settings.RewardMultiplier),
             PenaltyMultiplier = Mathf.Max(0, settings.PenaltyMultiplier)
         };
@@ -53,19 +66,25 @@ public class CalculationAimGenerator : MonoBehaviour
         return aim;
     }
 
-    private bool TryFixed(out int answer, out string question)
+    private bool TryFixed(int maxOperations, out int answer, out string question, out int operations)
     {
         answer = 0;
         question = "";
+        operations = 0;
         List<FixedCalculationProblem> valid = new List<FixedCalculationProblem>();
         if (fixedProblemDatabase != null)
             foreach (FixedCalculationProblem item in fixedProblemDatabase.Problems)
-                if (item != null && item.TryEvaluate(out int result, out string expr)) valid.Add(item);
+                if (item != null && item.TryEvaluate(out _, out _) &&
+                    item.Operators.Count <= maxOperations &&
+                    (maxOperations == int.MaxValue || item.Operators.Count >= maxOperations - 1))
+                    valid.Add(item);
         if (valid.Count == 0) return false;
-        return valid[UnityEngine.Random.Range(0, valid.Count)].TryEvaluate(out answer, out question);
+        var selected = valid[UnityEngine.Random.Range(0, valid.Count)];
+        operations = selected.Operators.Count;
+        return selected.TryEvaluate(out answer, out question);
     }
 
-    private bool TryRandom(AimGenerationSettings settings, out int answer, out string question)
+    private bool TryRandom(AimGenerationSettings settings, int operations, out int answer, out string question)
     {
         answer = 0;
         question = "";
@@ -73,14 +92,14 @@ public class CalculationAimGenerator : MonoBehaviour
         int max = settings.MaxNumber;
         int minAnswer = Mathf.Max(0, settings.MinAnswer);
         int maxAnswer = settings.MaxAnswer;
-        if (min > max || minAnswer > maxAnswer || settings.OperationCount < 1 ||
+        if (min > max || minAnswer > maxAnswer || operations < 1 ||
             (!settings.AllowAddition && !settings.AllowSubtraction) ||
-            max == int.MaxValue || settings.OperationCount > 100) return false;
+            max == int.MaxValue || operations > 100) return false;
         for (int attempt = 0; attempt < maxRandomAttempts; attempt++)
         {
             long value = UnityEngine.Random.Range(min, max + 1);
             string expression = value.ToString();
-            for (int i = 0; i < settings.OperationCount; i++)
+            for (int i = 0; i < operations; i++)
             {
                 int number = UnityEngine.Random.Range(min, max + 1);
                 bool add = settings.AllowAddition &&

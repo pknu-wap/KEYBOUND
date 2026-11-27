@@ -8,5 +8,6 @@ namespace Keybound.ContentLab
     public sealed class LabMiniGameData : MiniGameData
     {
         public LabMiniGameKind Kind;
+        public override int ConcurrentMissionLimit => StageCount;
     }
 }

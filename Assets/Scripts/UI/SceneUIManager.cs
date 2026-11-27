@@ -272,6 +272,9 @@ public class SceneUIManager : MonoBehaviour
         if (result == null)
             return;
 
+        if (result.resultTitle != null)
+            result.resultTitle.text = gameFlowManager.RunCleared ? "CLEAR!" : "///   GAME OVER   ///";
+
         if (result.resultText != null)
         {
             if (gameFlowManager.SurvivalSeconds is float survival)

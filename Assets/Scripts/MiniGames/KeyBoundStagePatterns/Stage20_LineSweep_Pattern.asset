@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac7546f85d962364398217546997b4d1, type: 3}
   m_Name: Stage20_LineSweep_Pattern
   m_EditorClassIdentifier: Assembly-CSharp::ObstacleDodgeData
-  CollisionPenaltySeconds: 3
+  CollisionPenaltySeconds: 2
   Waves:
   - Name: Wave 1 - LineSweep
     Patterns:

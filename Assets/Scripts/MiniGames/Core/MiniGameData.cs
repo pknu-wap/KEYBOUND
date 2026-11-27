@@ -19,6 +19,7 @@ public class MiniGameData : ScriptableObject {
  [SerializeField] private MiniGameStageMode stageMode;
  public virtual MiniGameStageMode StageMode => stageMode;
  public bool RunsWithMission => StageMode != MiniGameStageMode.OneStageAlone;
+ public virtual int ConcurrentMissionLimit => int.MaxValue;
  public int StageCount => StageMode switch
  {
      MiniGameStageMode.ThreeStagesWithMission => 3,
